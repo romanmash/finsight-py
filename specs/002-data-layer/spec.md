@@ -96,7 +96,7 @@ As a developer, I want development-specific Docker Compose overrides so that I c
 ### Functional Requirements
 
 - **FR-001**: Prisma schema MUST define all 15 models: `User`, `RefreshToken`, `Mission`, `AgentRun`, `PriceSnapshot`, `Alert`, `WatchlistItem`, `KbEntry`, `KbThesisSnapshot`, `ScreenerRun`, `TradeTicket`, `DailyBrief`, `PortfolioItem`, `SystemEvent`, `WatchList`
-- **FR-002**: `User` model MUST include `telegramChatId BigInt?` field for proactive Telegram push
+- **FR-002**: `User` model MUST include `telegramHandle String? @unique` for Telegram authentication and `telegramChatId BigInt?` for proactive Telegram push
 - **FR-003**: `KbEntry` model MUST include `embedding` field of type `Unsupported("vector(1536)")` for pgvector
 - **FR-004**: `KbThesisSnapshot` MUST have `missionId` field with a `Mission` relation for traceability
 - **FR-005**: All mission-related models MUST have relations back to `Mission` for cascade queries

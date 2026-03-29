@@ -58,7 +58,7 @@ Everything in `CASE.md` and `CONTEXT.md` represents finalised decisions made thr
 | `pattern_request` | Technician → Reporter *(no KB write)* |
 | `alert_investigation` | Researcher → Analyst → (optionally Technician) → Bookkeeper → Reporter |
 | `earnings_prebrief` | Researcher → Analyst → Bookkeeper → Reporter |
-| `trade_request` | Researcher → Analyst → Technician → Bookkeeper → Trader → Reporter |
+| `trade_request` | Researcher → Analyst → Bookkeeper → Trader → Reporter |
 | `daily_brief` | Researcher×N (parallel) → Analyst×N → Bookkeeper×N → Reporter |
 
 **Config**

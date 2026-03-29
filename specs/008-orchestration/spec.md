@@ -30,7 +30,7 @@ As a user, I want the Manager to understand my query and route it to the correct
 2. **Given** message "/compare NVDA AMD", **When** Manager classifies, **Then** intent = `comparison`, pipeline = Researcher×2 (parallel) → Analyst (comparison) → Bookkeeper×2 → Reporter
 3. **Given** message "/devil NVDA", **When** Manager classifies, **Then** intent = `devil_advocate`, pipeline = Researcher → Analyst (devil's advocate) → Bookkeeper → Reporter
 4. **Given** message "/pattern NVDA 3w", **When** Manager classifies, **Then** intent = `pattern_request`, pipeline = Technician → Reporter (no Bookkeeper for standalone pattern)
-5. **Given** message "/trade NVDA buy 10", **When** Manager classifies, **Then** intent = `trade_request`, pipeline = Researcher → Analyst → Technician → Bookkeeper → Trader → Reporter
+5. **Given** message "/trade NVDA buy 10", **When** Manager classifies, **Then** intent = `trade_request`, pipeline = Researcher → Analyst → Bookkeeper → Trader → Reporter
 
 ---
 
@@ -171,7 +171,7 @@ As a developer reviewing a mission, I want a LangSmith trace link for every miss
 | `devil_advocate` | Researcher → Analyst (devil's advocate) → Bookkeeper → Reporter |
 | `pattern_request` | Technician → Reporter |
 | `earnings_prebrief` | Researcher → Analyst → Bookkeeper → Reporter |
-| `trade_request` | Researcher → Analyst → Technician → Bookkeeper → Trader → Reporter |
+| `trade_request` | Researcher → Analyst → Bookkeeper → Trader → Reporter |
 | `daily_brief` | (all portfolio tickers) Researcher×N → Analyst×N → Bookkeeper×N → Reporter |
 
 ---
