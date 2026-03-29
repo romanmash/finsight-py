@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinSight · Mission Control — Dashboard Reference</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary:   #ffffff;
+    --bg-secondary: #f5f5f4;
+    --bg-tertiary:  #eeece8;
+    --text-primary: #1a1a1a;
+    --text-secondary: #555550;
+    --text-tertiary: #888882;
+    --border-light: rgba(0,0,0,0.10);
+    --border-mid:   rgba(0,0,0,0.18);
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --green:  #1D9E75;
+    --green-bg: #E1F5EE;
+    --green-text: #085041;
+    --green-ring: #9FE1CB;
+    --amber:  #EF9F27;
+    --amber-bg: #FAEEDA;
+    --amber-text: #854F0B;
+    --red:    #E24B4A;
+    --red-bg: #FCEBEB;
+    --red-text: #A32D2D;
+    --blue:   #185FA5;
+    --blue-bg: #E6F1FB;
+    --blue-text: #042C53;
+    --purple-bg: #EEEDFE;
+    --purple-text: #26215C;
+    --purple-border: #534AB7;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 13px;
+    line-height: 1.4;
+    min-height: 100vh;
+  }
+
+  /* ── SHELL ─────────────────────────────────────────────────── */
+  .mc {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--bg-tertiary);
+  }
+
+  /* ── HEADER ────────────────────────────────────────────────── */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 16px;
+    background: var(--bg-primary);
+    border-bottom: 0.5px solid var(--border-light);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header-title { font-size: 13px; font-weight: 500; white-space: nowrap; }
+  .header-spend { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+  .header-spend strong { font-weight: 500; color: var(--text-primary); }
+  .header-pills { display: flex; gap: 5px; flex: 1; }
+  .pill {
+    font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+  }
+  .pill-ok   { background: var(--green-bg);  color: var(--green-text); }
+  .pill-warn { background: var(--amber-bg);  color: var(--amber-text); }
+  .header-meta { font-size: 11px; color: var(--text-tertiary); white-space: nowrap; }
+
+  /* ── BODY GRID ─────────────────────────────────────────────── */
+  .body {
+    display: grid;
+    grid-template-columns: 280px 1fr 200px 180px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .panel {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow-y: auto;
+    min-height: 600px;
+  }
+  .panel + .panel { border-left: 0.5px solid var(--border-light); }
+
+  .plabel {
+    font-size: 10px; font-weight: 500;
+    color: var(--text-tertiary);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding-bottom: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── AGENT CARD ────────────────────────────────────────────── */
+  .ac {
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-light);
+    border-left: 2.5px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 5px 9px;
+    display: grid;
+    grid-template-columns: 84px 1fr auto;
+    align-items: center;
+    gap: 8px;
+  }
+  .ac.active { border-left-color: var(--green); background: #f7fffc; }
+  .ac.queued { border-left-color: var(--amber); background: #fffdf7; }
+  .ac.error  { border-left-color: var(--red);   background: #fff8f8; }
+
+  .ac-left { min-width: 0; }
+  .ac-name  { font-size: 12px; font-weight: 500; color: var(--text-primary); white-space: nowrap; }
+  .ac-model { font-size: 9px; color: var(--text-tertiary); font-family: 'SF Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .ac-mid { min-width: 0; }
+  .ac-task { font-size: 10px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ac-sub  { font-size: 9px;  color: var(--text-tertiary);  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .ac-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .ac-status { display: flex; align-items: center; gap: 4px; font-size: 10px; white-space: nowrap; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot-active { background: var(--green); }
+  .dot-queued { background: var(--amber); }
+  .dot-idle   { background: var(--border-mid); }
+  .s-active { color: var(--green-text); }
+  .s-queued { color: var(--amber-text); }
+  .s-idle   { color: var(--text-tertiary); }
+  .ac-cost { font-size: 9px; color: var(--text-tertiary); white-space: nowrap; }
+
+  /* ── MISSION PANEL ─────────────────────────────────────────── */
+  .mission-card {
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 9px 11px;
+    flex-shrink: 0;
+  }
+  .mission-badge {
+    font-size: 9px; font-weight: 500;
+    color: var(--green-text);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .mission-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+  .mission-sub  { font-size: 10px; color: var(--text-tertiary); margin-bottom: 8px; }
+
+  /* Pipeline */
+  .pipeline { display: flex; flex-direction: column; }
+  .pipe-step { display: flex; align-items: flex-start; gap: 7px; }
+  .pipe-col  { display: flex; flex-direction: column; align-items: center; width: 12px; flex-shrink: 0; padding-top: 4px; }
+  .pipe-node { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .pn-done   { background: var(--green); }
+  .pn-active { background: var(--green); box-shadow: 0 0 0 2.5px var(--green-ring); }
+  .pn-pend   { background: var(--border-mid); }
+  .pipe-vert { width: 1px; background: var(--border-light); flex: 1; min-height: 8px; margin-top: 2px; }
+  .pipe-body { flex: 1; min-width: 0; padding-bottom: 7px; }
+  .pipe-label { font-size: 11px; font-weight: 500; }
+  .pl-done  { color: var(--text-tertiary); }
+  .pl-active{ color: var(--green-text); }
+  .pl-pend  { color: var(--text-tertiary); }
+
+  /* Tool calls */
+  .tools { margin-top: 4px; display: flex; flex-direction: column; gap: 3px; }
+  .tc    { display: flex; align-items: center; gap: 5px; font-size: 10px; }
+  .tc-done { width: 5px; height: 5px; border-radius: 50%; background: var(--green-ring); flex-shrink: 0; margin: 1px; }
+  .tc-spin {
+    width: 7px; height: 7px; border-radius: 50%;
+    border: 1.5px solid var(--green); border-top-color: transparent;
+    flex-shrink: 0;
+    animation: spin 0.8s linear infinite;
+  }
+  .tc-pend { width: 5px; height: 5px; border-radius: 50%; background: var(--border-light); flex-shrink: 0; margin: 1px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .tc-name { color: var(--text-secondary); font-family: 'SF Mono', monospace; }
+  .tc-src  { color: var(--text-tertiary); }
+
+  /* Mission log */
+  .logitem {
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 5px 8px;
+    display: flex; gap: 7px; align-items: flex-start;
+  }
+  .ld { width: 6px; height: 6px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
+  .ld-run  { background: var(--green); }
+  .ld-done { background: var(--border-mid); }
+  .log-body { flex: 1; min-width: 0; }
+  .log-type   { font-size: 11px; font-weight: 500; color: var(--text-primary); }
+  .log-detail { font-size: 10px; color: var(--text-tertiary); display: flex; gap: 6px; flex-wrap: wrap; margin-top: 1px; }
+  .log-ls { color: var(--blue); cursor: pointer; }
+  .log-ls:hover { text-decoration: underline; }
+
+  /* ── SYSTEM PANEL ──────────────────────────────────────────── */
+  .hgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .hitem {
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 4px 6px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .hdot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .h-ok  { background: var(--green); }
+  .h-warn{ background: var(--amber); }
+  .h-err { background: var(--red); }
+  .hname { font-size: 10px; color: var(--text-secondary); }
+
+  .statsbox {
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 6px 9px;
+  }
+  .srow { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 0.5px solid var(--border-light); }
+  .srow:last-child { border-bottom: none; }
+  .slabel { font-size: 10px; color: var(--text-secondary); }
+  .sval   { font-size: 10px; font-weight: 500; color: var(--text-primary); }
+  .s-warn  { color: var(--amber-text); }
+  .s-spend { color: var(--blue); }
+  .s-ok    { color: var(--green-text); }
+
+  /* ── SPEND + ADMIN ─────────────────────────────────────────── */
+  .abtn {
+    width: 100%;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    padding: 6px 9px;
+    font-size: 11px;
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s;
+  }
+  .abtn:hover { background: var(--bg-tertiary); }
+
+  /* Budget bar */
+  .budget-bar-wrap { background: var(--bg-tertiary); border-radius: 4px; height: 4px; overflow: hidden; margin-top: 4px; }
+  .budget-bar { background: var(--blue); height: 100%; border-radius: 4px; width: 17%; }
+</style>
+</head>
+<body>
+<div class="mc">
+
+  <!-- HEADER -->
+  <header class="header">
+    <span class="header-title">FinSight · Mission Control</span>
+    <span class="header-spend">Today: <strong>$0.84</strong> / $5.00</span>
+    <div class="header-pills">
+      <span class="pill pill-ok">12 services up</span>
+      <span class="pill pill-ok">LM Studio</span>
+      <span class="pill pill-warn">1 alert</span>
+      <span class="pill pill-warn">1 ticket</span>
+    </div>
+    <span class="header-meta">admin · auto-refresh 3s</span>
+  </header>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- COL 1 — Agent Floor -->
+    <div class="panel">
+      <div class="plabel">Agent floor</div>
+
+      <div class="ac active">
+        <div class="ac-left"><div class="ac-name">Manager</div><div class="ac-model">claude-sonnet · anthropic</div></div>
+        <div class="ac-mid"><div class="ac-task">Routing NVDA/AMD comparison</div><div class="ac-sub">comparison · dispatching Researchers</div></div>
+        <div class="ac-right"><div class="ac-status"><div class="dot dot-active"></div><span class="s-active">active</span></div><span class="ac-cost">1,240 tok · $0.019</span></div>
+      </div>
+
+      <div class="ac active">
+        <div class="ac-left"><div class="ac-name">Researcher</div><div class="ac-model">gpt-4o · openai</div></div>
+        <div class="ac-mid"><div class="ac-task">Fetching NVDA + AMD data</div><div class="ac-sub">parallel · news · fundamentals</div></div>
+        <div class="ac-right"><div class="ac-status"><div class="dot dot-active"></div><span class="s-active">active</span></div><span class="ac-cost">4,120 tok · $0.041</span></div>
+      </div>
+
+      <div class="ac queued">
+        <div class="ac-left"><div class="ac-name">Analyst</div><div class="ac-model">claude-sonnet · anthropic</div></div>
+        <div class="ac-mid"><div class="ac-task">Waiting for Researcher</div><div class="ac-sub">comparison synthesis queued</div></div>
+        <div class="ac-right"><div class="ac-status"><div class="dot dot-queued"></div><span class="s-queued">queued</span></div><span class="ac-cost">8,930 tok · $0.134</span></div>
+      </div>
+
+      <div class="ac">
+        <div class="ac-left"><div class="ac-name">Watchdog</div><div class="ac-model">gpt-4o-mini · openai</div></div>
+        <div class="ac-mid"><div class="ac-task">Next scan in 14 min</div><div class="ac-sub">6 tickers · all watchlists</div></div>
+        <div class="ac-right"><div class="ac-status"><div class="dot dot-idle"></div><span class="s-idle">idle</span></div><span class="ac-cost">892 tok · $0.001</span></div>
+      </div>
+
+      <div class="ac">
+        <div class="ac-left"><div class="ac-name">Screener</div><div class="ac-model">gpt-4o-mini · openai</div></div>
+        <div class="ac-mid"><div class="ac-task">Last run 07:02</div><div class="ac-sub">3 sector finds today</div></div>
+        <div class="ac-right"><div class="ac-status"><div class="dot dot-idle"></div><span class="s-idle">idle</span></div><span class="ac-cost">340 tok · &lt;$0.001</span></div>
+      </div>
+
+      <div class="ac">
+        <div class="ac-left"><div class="ac-name">Technician</div><div class="ac-model">gpt-4o · openai</div></div>
+        <div class="ac-mid"><div class="ac-task">Last: NVDA 3w TA</div><div class="ac-sub">08:31 · RSI + MACD done</div></div>
+        <div class="ac-right"><div class="ac-status"><div class="dot dot-idle"></div><span class="s-idle">idle</span></div><span class="ac-cost">1,100 tok · $0.011</span></div>
+      </div>
+
+      <div class="ac">
+        <div class="ac-left"><div class="ac-name">Bookkeeper</div><div class="ac-model">gpt-4o-mini · openai</div></div>
+        <div class="ac-mid"><div class="ac-task">KB: 47 entries</div><div class="ac-sub">2 contradictions flagged</div></div>
+        <div class="ac-right"><div class="ac-status"><div class="dot dot-idle"></div><span class="s-idle">idle</span></div><span class="ac-cost">2,100 tok · $0.003</span></div>
+      </div>
+
+      <div class="ac">
+        <div class="ac-left"><div class="ac-name">Reporter</div><div class="ac-model">llama-3.2-8b · lmstudio</div></div>
+        <div class="ac-mid"><div class="ac-task">Last output 08:14</div><div class="ac-sub">local model · 0 API tokens</div></div>
+        <div class="ac-right"><div class="ac-status"><div class="dot dot-idle"></div><span class="s-idle">idle</span></div><span class="ac-cost">$0.000</span></div>
+      </div>
+
+      <div class="ac">
+        <div class="ac-left"><div class="ac-name">Trader</div><div class="ac-model">gpt-4o-mini · openai</div></div>
+        <div class="ac-mid"><div class="ac-task">1 ticket pending</div><div class="ac-sub">NVDA buy 10 · awaiting approval</div></div>
+        <div class="ac-right"><div class="ac-status"><div class="dot dot-idle"></div><span class="s-idle">idle</span></div><span class="ac-cost">400 tok · $0.001</span></div>
+      </div>
+    </div>
+
+    <!-- COL 2 — Active Mission + Log -->
+    <div class="panel">
+      <div class="plabel">Active mission</div>
+
+      <div class="mission-card">
+        <div class="mission-badge">running · 09:14 · 23s elapsed</div>
+        <div class="mission-name">comparison · NVDA, AMD</div>
+        <div class="mission-sub">@user1 via Telegram · parallel Researcher dispatch</div>
+
+        <div class="pipeline">
+
+          <div class="pipe-step">
+            <div class="pipe-col"><div class="pipe-node pn-done"></div><div class="pipe-vert"></div></div>
+            <div class="pipe-body"><div class="pipe-label pl-done">Manager — intent classified, Researchers dispatched in parallel</div></div>
+          </div>
+
+          <div class="pipe-step">
+            <div class="pipe-col"><div class="pipe-node pn-active"></div><div class="pipe-vert"></div></div>
+            <div class="pipe-body">
+              <div class="pipe-label pl-active">Researcher × 2 — fetching NVDA + AMD concurrently</div>
+              <div class="tools">
+                <div class="tc"><div class="tc-done"></div><span class="tc-name">get_fundamentals</span><span class="tc-src">· market-data-mcp · ×2 done</span></div>
+                <div class="tc"><div class="tc-done"></div><span class="tc-name">get_analyst_ratings</span><span class="tc-src">· market-data-mcp · ×2 done</span></div>
+                <div class="tc"><div class="tc-spin"></div><span class="tc-name">get_ticker_news</span><span class="tc-src">· news-mcp · running</span></div>
+                <div class="tc"><div class="tc-spin"></div><span class="tc-name">sharepoint_search</span><span class="tc-src">· enterprise-mcp · running</span></div>
+                <div class="tc"><div class="tc-pend"></div><span class="tc-name" style="color:var(--text-tertiary)">get_gdelt_risk</span><span class="tc-src">· macro-signals-mcp · pending</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pipe-step">
+            <div class="pipe-col"><div class="pipe-node pn-pend"></div><div class="pipe-vert"></div></div>
+            <div class="pipe-body"><div class="pipe-label pl-pend">Analyst — comparison synthesis (awaiting both Researcher outputs)</div></div>
+          </div>
+
+          <div class="pipe-step">
+            <div class="pipe-col"><div class="pipe-node pn-pend"></div><div class="pipe-vert"></div></div>
+            <div class="pipe-body"><div class="pipe-label pl-pend">Bookkeeper — contradiction check + KB write ×2</div></div>
+          </div>
+
+          <div class="pipe-step">
+            <div class="pipe-col"><div class="pipe-node pn-pend"></div></div>
+            <div class="pipe-body"><div class="pipe-label pl-pend">Reporter — format comparison table + Telegram delivery</div></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="plabel" style="margin-top:2px;">Mission log</div>
+
+      <div class="logitem">
+        <div class="ld ld-run"></div>
+        <div class="log-body">
+          <div class="log-type">comparison · NVDA, AMD</div>
+          <div class="log-detail"><span>09:14</span><span>running · 23s</span></div>
+        </div>
+      </div>
+
+      <div class="logitem">
+        <div class="ld ld-done"></div>
+        <div class="log-body">
+          <div class="log-type">pattern_request · NVDA 3w</div>
+          <div class="log-detail"><span>08:31</span><span>complete · 18s</span><span>1,100 tok</span><span>$0.011</span><span class="log-ls">→ LangSmith ↗</span></div>
+        </div>
+      </div>
+
+      <div class="logitem">
+        <div class="ld ld-done"></div>
+        <div class="log-body">
+          <div class="log-type">devil_advocate · NVDA</div>
+          <div class="log-detail"><span>09:01</span><span>complete · 31s</span><span>9,200 tok</span><span>$0.142</span><span class="log-ls">→ LangSmith ↗</span></div>
+        </div>
+      </div>
+
+      <div class="logitem">
+        <div class="ld ld-done"></div>
+        <div class="log-body">
+          <div class="log-type">daily_brief · all tickers</div>
+          <div class="log-detail"><span>06:00</span><span>complete · 51s</span><span>14,200 tok</span><span>$0.568</span><span class="log-ls">→ LangSmith ↗</span></div>
+        </div>
+      </div>
+
+      <div class="logitem">
+        <div class="ld ld-done"></div>
+        <div class="log-body">
+          <div class="log-type">screener_scan</div>
+          <div class="log-detail"><span>07:02</span><span>complete · 12s</span><span>340 tok</span><span>$0.001</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- COL 3 — System Health + KB + Queues -->
+    <div class="panel">
+      <div class="plabel">System health</div>
+      <div class="hgrid">
+        <div class="hitem"><div class="hdot h-ok"></div><span class="hname">postgres</span></div>
+        <div class="hitem"><div class="hdot h-ok"></div><span class="hname">redis</span></div>
+        <div class="hitem"><div class="hdot h-ok"></div><span class="hname">market-data</span></div>
+        <div class="hitem"><div class="hdot h-ok"></div><span class="hname">macro-signals</span></div>
+        <div class="hitem"><div class="hdot h-ok"></div><span class="hname">news-mcp</span></div>
+        <div class="hitem"><div class="hdot h-ok"></div><span class="hname">rag-retrieval</span></div>
+        <div class="hitem"><div class="hdot h-ok"></div><span class="hname">enterprise</span></div>
+        <div class="hitem"><div class="hdot h-ok"></div><span class="hname">trader</span></div>
+        <div class="hitem"><div class="hdot h-ok"></div><span class="hname">LM Studio</span></div>
+        <div class="hitem"><div class="hdot h-ok"></div><span class="hname">Telegram</span></div>
+      </div>
+
+      <div class="plabel" style="margin-top:4px;">Knowledge base</div>
+      <div class="statsbox">
+        <div class="srow"><span class="slabel">Entries</span><span class="sval">47</span></div>
+        <div class="srow"><span class="slabel">Contradictions</span><span class="sval s-warn">2</span></div>
+        <div class="srow"><span class="slabel">Tickers tracked</span><span class="sval">6</span></div>
+        <div class="srow"><span class="slabel">Last write</span><span class="sval">09:01</span></div>
+      </div>
+
+      <div class="plabel" style="margin-top:4px;">Queues &amp; alerts</div>
+      <div class="statsbox">
+        <div class="srow"><span class="slabel">Queue depth</span><span class="sval s-ok">0</span></div>
+        <div class="srow"><span class="slabel">Alerts pending</span><span class="sval s-warn">2</span></div>
+        <div class="srow"><span class="slabel">Tickets pending</span><span class="sval s-warn">1</span></div>
+      </div>
+
+      <div class="plabel" style="margin-top:4px;">Model routing</div>
+      <div class="statsbox">
+        <div class="srow"><span class="slabel">Anthropic</span><span class="sval s-ok">active</span></div>
+        <div class="srow"><span class="slabel">OpenAI</span><span class="sval s-ok">active</span></div>
+        <div class="srow"><span class="slabel">Azure OAI</span><span class="sval" style="color:var(--text-tertiary)">standby</span></div>
+        <div class="srow"><span class="slabel">LM Studio</span><span class="sval s-ok">available</span></div>
+      </div>
+    </div>
+
+    <!-- COL 4 — Spend + Admin -->
+    <div class="panel">
+      <div class="plabel">Today's spend</div>
+      <div class="statsbox">
+        <div class="srow"><span class="slabel">Total</span><span class="sval s-spend">$0.84</span></div>
+        <div class="srow"><span class="slabel">Anthropic</span><span class="sval">$0.608</span></div>
+        <div class="srow"><span class="slabel">OpenAI</span><span class="sval">$0.232</span></div>
+        <div class="srow"><span class="slabel">Azure OAI</span><span class="sval">$0.000</span></div>
+        <div class="srow"><span class="slabel">LM Studio</span><span class="sval s-ok">$0.000</span></div>
+        <div class="srow"><span class="slabel">Budget</span><span class="sval">$5.00 / day</span></div>
+      </div>
+      <div class="budget-bar-wrap"><div class="budget-bar"></div></div>
+      <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;">17% of daily budget used</div>
+
+      <div class="plabel" style="margin-top:6px;">Admin tools</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <button class="abtn">+ Create user</button>
+        <button class="abtn">Manage users</button>
+        <button class="abtn">Reload config</button>
+        <button class="abtn">Trigger Screener</button>
+        <button class="abtn">Trigger Watchdog</button>
+      </div>
+
+      <div class="plabel" style="margin-top:6px;">Config</div>
+      <div class="statsbox">
+        <div class="srow"><span class="slabel">Log level</span><span class="sval">info</span></div>
+        <div class="srow"><span class="slabel">Hot reload</span><span class="sval s-ok">on</span></div>
+        <div class="srow"><span class="slabel">Trader agent</span><span class="sval s-ok">on</span></div>
+        <div class="srow"><span class="slabel">Screener</span><span class="sval s-ok">on</span></div>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+</div><!-- /mc -->
+</body>
+</html>

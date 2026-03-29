@@ -1,0 +1,41 @@
+# Current Local Setup
+
+Dev Laptop has local SSH connection to the Linux Server.
+Any other needed software or frameworks can be easily installed on any local machine below.
+
+## Dev Laptop
+
+### Hardware
+- HW: ROG Strix G18 G815LR
+- CPU: Intel Core Ultra 9 275HX (2.70 GHz), 8P+16E cores, 24 threads
+- GPU: NVIDIA GeForce RTX 5070 Ti (CUDA, Vulkan), 12 GB, GDDR7
+- NPU: Intel AI Boost (DirectML, OpenVINO, Windows ML, ONNX RT, WebNN), 36 TOPs (total), 13 TOPs (NPU), 8 TOPs (GPU)
+- RAM: 128 GB, DDR5
+- Screen: 18" WQXGA 2560 x 1600
+
+### Software
+- Windows 11 Pro x64
+- Node.js 20 LTS (v20.x)
+- pnpm 9
+- LM Studio
+- Podman Desktop (Docker-compatible socket — `docker` CLI proxies to Podman)
+- WSL (Ubuntu)
+
+## Linux Server
+
+### Hardware
+- HW: HP ENVY x360 model15-cp0002no, 2018 model
+- CPU: Ryzen 5 2500U, quad-core (Zen architecture, base 2.0GHz, turbo up to 3.6GHz
+- GPU: AMD Radeon Vega 8 iGPU (integrated)
+- NPU: none
+- RAM: 16 GB, DDR4
+- Screen: 15.6" Full HD IPS, touchscreen convertible
+
+
+### Software
+- Ubuntu Desktop 24.04
+- Docker
+
+## Wi-Fi Router
+- Gigabit Ethernet
+- OpenVPN server (Developer Laptop can get access to local network from outside home-office)

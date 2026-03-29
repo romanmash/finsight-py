@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Bash(pnpm -r typecheck)",
+      "Bash(pnpm -r test)",
+      "Bash(pnpm -r lint)",
+      "Bash(pnpm install)",
+      "Bash(pnpm prisma migrate dev*)",
+      "Bash(pnpm prisma db seed)",
+      "Bash(pnpm prisma generate)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add*)",
+      "Bash(docker compose config)",
+      "Bash(cat *)",
+      "Bash(ls *)",
+      "Bash(find *)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(git push*)",
+      "Bash(git commit*)",
+      "Bash(docker compose up*)",
+      "Bash(docker compose down*)",
+      "Bash(npx -y*)"
+    ]
+  }
+}
