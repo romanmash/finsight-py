@@ -38,6 +38,8 @@ infra/                         → Pulumi IaC (TypeScript)
 scripts/                       → deploy.sh, logs.sh
 ```
 
+<!-- MANUAL ADDITIONS START -->
+
 ## Rules (NON-NEGOTIABLE)
 
 1. **Read the constitution first** — `.specify/memory/constitution.md` defines project principles, agent boundaries, and quality gates. Every implementation decision must be justifiable against it.
@@ -144,3 +146,5 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # Dev mode
 - Admin routes behind `roleGuard('admin')`
 - Trader creates tickets — NEVER executes trades autonomously
 - Any unknown model in `pricing.yaml` → cost = $0 with warning (never block)
+
+<!-- MANUAL ADDITIONS END -->
