@@ -11,7 +11,8 @@
     "build": "pnpm -r --if-present build",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "check:secrets": "node scripts/check-no-hardcoded-secrets.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -27,4 +28,5 @@
     "@prisma/client": "^6.19.2"
   }
 }
+
 

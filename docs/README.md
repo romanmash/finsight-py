@@ -221,8 +221,8 @@ LANGSMITH_API_KEY
 LANGSMITH_PROJECT=finsight-ai-hub
 TELEGRAM_BOT_TOKEN
 TELEGRAM_ADMIN_HANDLE      # @yourtelegramhandle — used by seed script
-DATABASE_URL               # postgresql://postgres:postgres@postgres:5432/finsight
-REDIS_URL                  # redis://redis:6379
+DATABASE_URL               # postgresql://<db_user>:<db_password>@<db_host>:5432/<db_name>
+REDIS_URL                  # redis://<redis_host>:6379
 JWT_SECRET                 # 64+ random characters
 ADMIN_EMAIL=admin@finsight.local
 ADMIN_PASSWORD
@@ -278,3 +278,4 @@ SAXO_REDIRECT_URI
 ---
 
 *All questions about **what to build** → `CASE.md`. All questions about **why and how** → `CONTEXT.md`. All questions about **implementing a specific feature** → `specs/NNN-feature-name/`.*
+

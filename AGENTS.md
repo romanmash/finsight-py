@@ -45,13 +45,14 @@ scripts/                       → deploy.sh, logs.sh
 1. **Read the constitution first** — `.specify/memory/constitution.md` defines project principles, agent boundaries, and quality gates. Every implementation decision must be justifiable against it.
 2. **Spec scope is strict** — each feature spec lists exactly which files to create. Do NOT implement code from other specs. Do NOT add features not in the current spec.
 3. **Everything-as-Code** — all behavioral configuration lives in `config/runtime/*.yaml`, validated by Zod at startup. No hardcoded model names, thresholds, or schedules in source code.
-4. **TypeScript strict mode** — no `any`, explicit return types on every function, all domain types from `@finsight/shared-types`.
-5. **Agent boundaries** — each agent has a sole responsibility. Do not let Researcher synthesise, Analyst fetch, Reporter analyse, or Bookkeeper format. See constitution.
-6. **Test offline** — all tests must pass without network access, without LM Studio, without Docker. Mock external APIs with `msw`.
-7. **Conventional Commits** — `<type>(<scope>): <description>`. Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`. Scopes: `types`, `config`, `api`, `mcp`, `agents`, `manager`, `kb`, `dashboard`, `telegram`, `prisma`, `infra`, `spec`.
-8. **Fail-fast config** — if any YAML file is invalid at startup, call `process.exit(1)` with the exact Zod error path. Never start with bad config.
-9. **Cost tracking** — every LLM call must record `tokensIn`, `tokensOut`, `costUsd`, `provider`, `model`, `durationMs` in an `AgentRun` record.
-10. **Colocated prompts** — agent prompts live at `agents/X.prompt.ts` alongside `agents/X.ts`. Shared prompts in `agents/shared/`.
+4. **No hardcoded values or secrets** — no magic numbers for business behavior and no hardcoded credentials/tokens/passwords/API keys anywhere in code, tests, docs, or examples. Put behavior in `config/runtime/*.yaml` and secrets in `.env` only.
+5. **TypeScript strict mode** — no `any`, explicit return types on every function, all domain types from `@finsight/shared-types`.
+6. **Agent boundaries** — each agent has a sole responsibility. Do not let Researcher synthesise, Analyst fetch, Reporter analyse, or Bookkeeper format. See constitution.
+7. **Test offline** — all tests must pass without network access, without LM Studio, without Docker. Mock external APIs with `msw`.
+8. **Conventional Commits** — `<type>(<scope>): <description>`. Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`. Scopes: `types`, `config`, `api`, `mcp`, `agents`, `manager`, `kb`, `dashboard`, `telegram`, `prisma`, `infra`, `spec`.
+9. **Fail-fast config** — if any YAML file is invalid at startup, call `process.exit(1)` with the exact Zod error path. Never start with bad config.
+10. **Cost tracking** — every LLM call must record `tokensIn`, `tokensOut`, `costUsd`, `provider`, `model`, `durationMs` in an `AgentRun` record.
+11. **Colocated prompts** — agent prompts live at `agents/X.prompt.ts` alongside `agents/X.ts`. Shared prompts in `agents/shared/`.
 
 ## Development Workflow
 

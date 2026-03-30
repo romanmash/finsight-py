@@ -8,110 +8,109 @@
 
 ## Overview
 
-Create the Hono API server entry point, implement JWT authentication (access + refresh tokens), create all middleware (request-id, logger, auth, role-guard, rate-limiter), build the auth routes (`/auth/*`), and build the admin routes (`/admin/*`) including the mission control status endpoint (`GET /api/admin/status`). This feature does NOT include agent routes, chat, or mission orchestration — those come in Feature 008.
+Create the Hono API entry point and foundational API layer: JWT authentication (`/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me`), middleware pipeline (request-id, logger, auth, role guard, rate limiter), admin routes for user/config management, and `GET /api/admin/status` for mission-control polling.
 
-**Why this feature exists:** Every other API route needs authentication, logging, and request tracking. The admin dashboard (Feature 010) depends entirely on `GET /api/admin/status`. User management is required before any Telegram integration can authenticate users.
+**Why this feature exists:** All subsequent API capabilities depend on authenticated access, structured request tracing, and role-based controls. The admin dashboard in feature 010 requires `GET /api/admin/status` as its core polling endpoint.
 
 ---
 
 ## User Scenarios & Testing
 
-### User Story 1 — JWT Authentication (Priority: P1)
+### User Story 1 — JWT Authentication Flow (Priority: P1)
 
-As a user, I want to log in with email/password and receive a JWT so that I can access protected API endpoints.
+As a platform user, I want to authenticate with email/password and use JWT tokens so that I can securely access protected API routes.
 
-**Why P1**: Every API endpoint (except `/auth/login`) requires a valid JWT. No feature works without auth.
+**Why P1**: No protected API capability can be used without a working authentication lifecycle.
 
-**Independent Test**: Call `POST /auth/login` with valid credentials, receive tokens, then call `GET /me` with the access token.
+**Independent Test**: Authenticate via `POST /auth/login`, then call `GET /auth/me` with the returned access token; verify refresh and logout behavior independently.
 
 **Acceptance Scenarios**:
 
-1. **Given** a user exists with email `admin@finsight.local`, **When** I POST to `/auth/login` with correct password, **Then** I receive `{ accessToken, refreshToken, user: { id, email, name, role } }`
-2. **Given** I POST to `/auth/login` with wrong password, **Then** I receive a `401` response with `{ error: 'Invalid credentials' }`
-3. **Given** a valid `accessToken`, **When** I call `GET /me`, **Then** I receive the full user object (no password hash)
-4. **Given** an expired `accessToken`, **When** I call `GET /me`, **Then** I receive a `401` response
-5. **Given** a valid `refreshToken`, **When** I POST to `/auth/refresh`, **Then** I receive a new `accessToken`
-6. **Given** a valid `refreshToken`, **When** I POST to `/auth/logout`, **Then** the refresh token is invalidated and returns `204`
+1. **Given** a valid user account, **When** `POST /auth/login` is called with correct credentials, **Then** the response returns `accessToken`, sets secure httpOnly refresh cookie, and returns user profile fields without password hash
+2. **Given** invalid credentials, **When** `POST /auth/login` is called, **Then** the response is `401 Unauthorized`
+3. **Given** a valid access token, **When** `GET /auth/me` is called, **Then** the response returns the caller's profile and role
+4. **Given** an expired or malformed access token, **When** `GET /auth/me` is called, **Then** the response is `401 Unauthorized`
+5. **Given** a valid refresh-session cookie, **When** `POST /auth/refresh` is called, **Then** a new access token is issued
+6. **Given** an active session, **When** `POST /auth/logout` is called, **Then** the refresh token is invalidated and cannot be reused
 
 ---
 
-### User Story 2 — Middleware Pipeline (Priority: P1)
+### User Story 2 — Middleware Security & Traceability (Priority: P1)
 
-As a developer, I want structured logging with request IDs and auth enforcement so that every API request is traceable and secured.
+As a developer/operator, I want every request to be traceable and consistently protected so that troubleshooting and access control are reliable.
 
-**Why P1**: Request tracing (via request-id) is essential for debugging multi-agent pipelines. Auth middleware prevents unauthorized access.
+**Why P1**: Request traceability and authorization enforcement are mandatory platform foundations.
 
-**Independent Test**: Make an API request and verify the response includes `x-request-id` header and the server logs contain the same ID.
+**Independent Test**: Call a protected route and verify `x-request-id` response header, structured logs, auth rejection for missing token, and role rejection for non-admin user.
 
 **Acceptance Scenarios**:
 
-1. **Given** any API request, **When** it is processed, **Then** the response includes an `x-request-id` header with a unique UUID
-2. **Given** an API request, **When** it is logged, **Then** Pino JSON log includes `requestId`, `method`, `path`, `statusCode`, `durationMs`
-3. **Given** a request to `/api/*` without a JWT, **When** it is processed, **Then** it receives `401 Unauthorized`
-4. **Given** a request to `/admin/*` with a non-admin JWT, **When** it is processed, **Then** it receives `403 Forbidden`
-5. **Given** a user exceeds the rate limit, **When** they make another request, **Then** they receive `429 Too Many Requests`
+1. **Given** any API request, **When** it is processed, **Then** the response includes a unique `x-request-id`
+2. **Given** any API request, **When** it completes, **Then** the request log contains requestId, method, path, statusCode, and duration
+3. **Given** a protected route call without JWT, **When** auth middleware executes, **Then** the response is `401 Unauthorized`
+4. **Given** an admin-only route call by non-admin user, **When** role guard executes, **Then** the response is `403 Forbidden`
+5. **Given** a caller exceeds configured limit, **When** another request is sent within the same window, **Then** the response is `429 Too Many Requests`
 
 ---
 
-### User Story 3 — User Management (Priority: P1)
+### User Story 3 — Admin User Management (Priority: P1)
 
-As an admin, I want to create, list, and manage users so that I can control who has access to the platform and with what role.
+As an admin, I want to manage platform users so that access can be granted, revoked, and role-scoped for operations and testing.
 
-**Why P1**: Without user management, there's no admin user for the demo, no analyst user for Telegram, and no auth can work.
+**Why P1**: Admin-managed user lifecycle is required for secure multi-user usage and Telegram identity mapping.
 
-**Independent Test**: Login as admin, create a new analyst user, verify the user appears in the list.
+**Independent Test**: Log in as admin, create an analyst, list users, then deactivate that user; verify non-admin caller receives `403`.
 
 **Acceptance Scenarios**:
 
-1. **Given** I am authenticated as admin, **When** I POST to `/admin/users` with `{ email, password, name, role: 'analyst', telegramHandle: '@user1' }`, **Then** a new user is created and returned with `201`
-2. **Given** I am authenticated as admin, **When** I GET `/admin/users`, **Then** I receive an array of all users (without password hashes)
-3. **Given** I am authenticated as admin, **When** I PATCH `/admin/users/:id` with `{ active: false }`, **Then** the user is deactivated
-4. **Given** I am authenticated as non-admin, **When** I POST to `/admin/users`, **Then** I receive `403 Forbidden`
+1. **Given** an authenticated admin, **When** `POST /admin/users` is called with required fields, **Then** a new user is created with `201 Created`
+2. **Given** an authenticated admin, **When** `GET /admin/users` is called, **Then** all users are returned without password hashes
+3. **Given** an authenticated admin, **When** `PATCH /admin/users/:id` sets `active: false`, **Then** the targeted user is deactivated
+4. **Given** a non-admin caller, **When** any user-management route is called, **Then** the response is `403 Forbidden`
 
 ---
 
-### User Story 4 — Admin Status Dashboard API (Priority: P1)
+### User Story 4 — Mission Control Status Endpoint (Priority: P1)
 
-As the admin dashboard, I want a single endpoint that returns the complete system status so that I can render the mission control view with 3-second polling.
+As the admin dashboard client, I want one consolidated status endpoint so that the mission-control view can refresh every 3 seconds with consistent data.
 
-**Why P1**: The admin dashboard (Feature 010) fetches this endpoint every 3 seconds. It's the most called endpoint in the system.
+**Why P1**: Feature 010 depends directly on this endpoint for real-time dashboard rendering.
 
-**Independent Test**: Start the API with seeded data, call `GET /api/admin/status`, verify the response shape matches `AdminStatusResponse`.
+**Independent Test**: With Redis and DB data available, call `GET /api/admin/status` and verify presence of agent states, spend totals, health signals, and mission summaries.
 
 **Acceptance Scenarios**:
 
-1. **Given** the system is running, **When** I call `GET /api/admin/status`, **Then** I receive agent states for all 9 agents (from Redis MGET)
-2. **Given** an agent is active, **When** status is polled, **Then** its state includes `currentTask`, `currentMissionId`, and `startedAt`
-3. **Given** today's missions have recorded costs, **When** status is polled, **Then** `spend` includes per-provider breakdown (from `AgentRun` table, cached 30s in Redis)
-4. **Given** a mission is running, **When** status is polled, **Then** `activeMission` includes pipeline steps with tool call states
-5. **Given** health checks are configured, **When** status is polled, **Then** `health` includes ping status for all 6 MCP servers, postgres, redis, LM Studio, and Telegram
+1. **Given** agent runtime keys exist in Redis, **When** `GET /api/admin/status` is called, **Then** it returns state entries for all 9 agents
+2. **Given** AgentRun records exist for today, **When** the endpoint is called, **Then** spend totals and per-provider totals are returned
+3. **Given** mission activity exists, **When** the endpoint is called, **Then** active mission and recent mission log data are returned
+4. **Given** dependency checks are configured, **When** the endpoint is called, **Then** health summary includes postgres, redis, all MCP services, LM Studio, and Telegram status
+5. **Given** status data is expensive to recompute repeatedly, **When** polling occurs, **Then** spend aggregation can be cached with short TTL without returning stale structural schema
 
 ---
 
-### User Story 5 — Config Admin (Priority: P2)
+### User Story 5 — Admin Config Visibility & Reload (Priority: P2)
 
-As an admin, I want to view and reload the runtime configuration so that I can verify settings and trigger hot-reload during demos.
+As an admin, I want to inspect and reload runtime configuration so that controlled configuration changes can be validated during operations.
 
-**Why P2**: Important for demo flexibility but the system works with cold-start config.
+**Why P2**: High operational value, but system core remains functional without live reload.
 
-**Independent Test**: Call `GET /admin/config`, verify it returns the current merged config. Call `POST /admin/config/reload`, verify it returns changed keys.
+**Independent Test**: Call `GET /admin/config` for merged config output, update a runtime YAML value, call `POST /admin/config/reload`, and verify changed keys response.
 
 **Acceptance Scenarios**:
 
-1. **Given** I am admin, **When** I GET `/admin/config`, **Then** I receive the full merged config object (all 11 YAML sections)
-2. **Given** I am admin and a YAML file was modified, **When** I POST `/admin/config/reload`, **Then** I receive `{ changed: ['agents'] }` (example)
-3. **Given** I am admin, **When** I POST `/api/watchdog/trigger`, **Then** a manual Watchdog scan is enqueued and `202 Accepted` is returned
-4. **Given** I am admin, **When** I POST `/api/screener/trigger`, **Then** a manual Screener scan is enqueued and `202 Accepted` is returned
+1. **Given** authenticated admin access, **When** `GET /admin/config` is called, **Then** the full merged runtime config is returned
+2. **Given** a valid runtime config change, **When** `POST /admin/config/reload` is called, **Then** changed top-level keys are returned
+3. **Given** admin-triggered operations, **When** `POST /api/watchdog/trigger` or `POST /api/screener/trigger` is called, **Then** a job is enqueued and `202 Accepted` is returned quickly
 
 ---
 
 ### Edge Cases
 
-- What happens when the DB is unavailable during status poll? → Return partial response with DB health as `'error'`, don't crash
-- What happens when Redis is unavailable during auth? → Rate limiter fails open (allows request), logs warning
-- What happens when the access token is malformed (not JWT)? → 401 with `'Invalid token format'`
-- What happens when the refresh token has been revoked? → 401 with `'Token revoked'`
-- What happens when `GET /api/admin/status` takes > 3 seconds? → Timeout after 5s, return cached last-known status
+- What happens when DB connectivity is unavailable during status polling? -> Return degraded/partial status payload with explicit health error markers, without crashing API process
+- What happens when Redis is unavailable for rate limiting or state reads? -> Auth/session endpoints fail closed with explicit 503 errors for Redis-backed session operations; rate limiter fails open with warning logs; /api/admin/status returns degraded sections and explicit health errors
+- What happens when a refresh token is revoked or already rotated? -> Reject refresh attempt with `401 Unauthorized`
+- What happens when duplicate user identity data is submitted (`email` or `telegramHandle`)? -> Reject create/update with deterministic conflict response
+- What happens when status aggregation exceeds expected latency? -> Enforce a 5-second timeout budget and return partial/degraded status payload instead of hanging the request
 
 ---
 
@@ -119,81 +118,32 @@ As an admin, I want to view and reload the runtime configuration so that I can v
 
 ### Functional Requirements
 
-- **FR-001**: Hono app MUST register middleware in order: requestId → logger → auth → roleGuard → rateLimiter → langsmithInject
-- **FR-002**: `requestId` middleware MUST generate a UUID v4 and attach it to both `ctx.var.requestId` and response header `x-request-id`
-- **FR-003**: `logger` middleware MUST use Pino with structured JSON output including requestId, method, path, statusCode, durationMs
-- **FR-004**: `auth` middleware MUST validate JWT from `Authorization: Bearer <token>` header and attach decoded payload to `ctx.var.user`
-- **FR-005**: `roleGuard(role)` middleware MUST return 403 if `ctx.var.user.role` does not match the required role
-- **FR-006**: `rateLimiter` MUST be Redis-backed with configurable limits from `telegram.yaml: rateLimitPerUserPerMinute`
-- **FR-007**: JWT access tokens MUST expire after value from `auth.yaml: accessTokenExpiryMinutes` (default: 15)
-- **FR-008**: JWT refresh tokens MUST expire after value from `auth.yaml: refreshTokenExpiryDays` (default: 7)
-- **FR-009**: Passwords MUST be hashed with bcrypt (cost factor from `auth.yaml: bcryptRounds`, default: 12)
-- **FR-010**: `GET /api/admin/status` MUST aggregate: 9 agent states (Redis MGET), today's spend (AgentRun grouped by provider, cached 30s), active mission, last 10 missions, service health pings, KB stats, queue depths
-- **FR-011**: `GET /api/admin/status` MUST complete within 5 seconds
-- **FR-012**: All admin routes MUST require `role: 'admin'`
-- **FR-013**: `POST /api/watchdog/trigger` and `POST /api/screener/trigger` MUST enqueue a BullMQ job and return `202 Accepted` immediately
+- **FR-001**: System MUST expose auth routes: `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`
+- **FR-002**: `POST /auth/login` MUST validate credentials, return access token plus sanitized user profile, and set refresh token in secure httpOnly cookie on success
+- **FR-003**: `POST /auth/refresh` MUST read refresh token from secure httpOnly cookie, reject revoked/expired sessions, and issue a new access token only for valid active sessions
+- **FR-004**: `POST /auth/logout` MUST invalidate the current refresh token/session represented by secure httpOnly cookie and prevent reuse
+- **FR-005**: Middleware pipeline MUST assign and propagate a per-request identifier and include it in response headers and logs
+- **FR-006**: Middleware pipeline MUST enforce JWT authentication on protected routes and attach authenticated user context for downstream handlers
+- **FR-007**: Admin-only routes MUST enforce role-based access control and return `403 Forbidden` for non-admin callers
+- **FR-008**: Rate limiting MUST apply configured request limits and return `429 Too Many Requests` after threshold is exceeded
+- **FR-009**: Password storage MUST use one-way hashing and MUST never return password hash fields in API responses
+- **FR-010**: Access-token and refresh-token validity windows MUST be controlled by runtime configuration values
+- **FR-011**: System MUST expose admin user-management routes: `POST /admin/users`, `GET /admin/users`, `PATCH /admin/users/:id`
+- **FR-012**: User-management routes MUST support role assignment and active/inactive state changes
+- **FR-013**: System MUST expose runtime-config admin routes: `GET /admin/config`, `POST /admin/config/reload`
+- **FR-014**: `GET /api/admin/status` MUST return a consolidated mission-control response that includes agent states, spend summary, mission summary, service health, KB summary, and queue summary
+- **FR-015**: `GET /api/admin/status` MUST be safe for 3-second polling cadence and MUST complete within 5 seconds
+- **FR-016**: `POST /api/watchdog/trigger` and `POST /api/screener/trigger` MUST enqueue work and return `202 Accepted` without waiting for job completion
+- **FR-017**: API errors for auth/admin/status flows MUST use deterministic status codes and structured response bodies
+- **FR-018**: Authentication and authorization behavior MUST support admin-created users only (no public self-registration flow)
+- **FR-019**: Redis-unavailable behavior MUST be explicit and consistent: refresh/logout operations that require Redis-backed token state fail closed with `503 Service Unavailable`; rate limiting fails open with warning logs; `GET /api/admin/status` returns degraded sections with explicit health markers
 
 ### Key Entities
 
-- **JwtPayload**: `{ sub: string, role: UserRole, iat: number, exp: number }`
-- **AdminStatusResponse**: Comprehensive status object with agents, spend, activeMission, missionLog, health, kb, queues sections
-
-### AdminStatusResponse Shape
-
-```typescript
-interface AdminStatusResponse {
-  agents: Record<AgentName, {
-    state: AgentState;
-    currentTask: string | null;
-    currentMissionId: string | null;
-    startedAt: string | null;
-    lastActivitySummary: string | null;
-    model: string;
-    provider: Provider;
-    todayCostUsd: number;
-    todayTokensIn: number;
-    todayTokensOut: number;
-  }>;
-  spend: {
-    totalUsd: number;
-    byProvider: Record<Provider, number>;
-    budgetUsd: number;
-    budgetUsedPct: number;
-  };
-  activeMission: {
-    id: string;
-    type: MissionType;
-    tickers: string[];
-    trigger: MissionTrigger;
-    startedAt: string;
-    elapsedMs: number;
-    steps: Array<{
-      agent: AgentName;
-      state: 'done' | 'running' | 'pending';
-      label: string;
-      toolCalls?: Array<{
-        name: string;
-        mcpServer: string;
-        state: 'done' | 'running' | 'pending';
-      }>;
-    }>;
-  } | null;
-  missionLog: Array<{
-    id: string;
-    type: MissionType;
-    tickers: string[];
-    status: MissionStatus;
-    startedAt: string;
-    durationMs: number;
-    totalTokens: number;
-    totalCostUsd: number;
-    langsmithUrl: string | null;
-  }>;
-  health: Record<string, 'ok' | 'error' | 'degraded'>;
-  kb: { entries: number; contradictions: number; tickersTracked: number; lastWrite: string | null };
-  queues: { depth: number; alertsPending: number; ticketsPending: number };
-}
-```
+- **AuthenticatedSession**: Security context representing user identity, role, issued-at, expiry, and refresh-token lifecycle state
+- **ApiUserProfile**: User representation returned by auth/admin endpoints without password hash, including role and optional Telegram identity fields
+- **AdminStatusSnapshot**: Consolidated status payload for dashboard polling including agent runtime state, spend summary, health summary, mission summary, KB summary, and queue summary
+- **RequestAuditRecord**: Structured request log record keyed by request identifier and containing method/path/status/latency metadata
 
 ---
 
@@ -201,10 +151,25 @@ interface AdminStatusResponse {
 
 ### Measurable Outcomes
 
-- **SC-001**: `POST /auth/login` with valid credentials returns valid JWT (verified by `GET /me`)
-- **SC-002**: `POST /auth/login` with wrong password returns 401
-- **SC-003**: `GET /me` with expired token returns 401
-- **SC-004**: `POST /admin/users` without admin JWT returns 403
-- **SC-005**: `GET /api/admin/status` returns correct `AdminStatusResponse` shape with all 9 agents
-- **SC-006**: Rate limiter returns 429 after exceeding configured limit
-- **SC-007**: All auth + admin integration tests pass with real DB (testcontainers)
+- **SC-001**: Valid credential login returns usable access token, sets refresh cookie, and allows successful `GET /auth/me` authorization flow
+- **SC-002**: Invalid credentials and invalid tokens are rejected with correct `401 Unauthorized` behavior
+- **SC-003**: Non-admin access to admin-only routes is consistently rejected with `403 Forbidden`
+- **SC-004**: Rate limiting produces `429 Too Many Requests` once configured threshold is exceeded
+- **SC-005**: `GET /api/admin/status` returns complete mission-control payload schema including all 9 agent slots
+- **SC-006**: Manual trigger routes return `202 Accepted` and do not block on worker completion
+- **SC-007**: Auth/admin/status test suite passes in offline-capable local test execution with mocked external services
+- **SC-008**: `GET /api/admin/status` completes within 5 seconds under normal local runtime conditions and returns degraded/partial payload rather than timing out indefinitely when a dependency is unavailable
+
+---
+
+## Assumptions
+
+- Accounts are provisioned by admin users; self-signup is out of scope for this feature
+- Role model remains `admin`, `analyst`, `viewer` as defined in shared types and prior specs
+- Access token is transmitted via `Authorization: Bearer <token>` and refresh token lifecycle is persisted through the data layer from feature 002
+- Dashboard polling cadence remains 3 seconds and depends on one consolidated status endpoint (`GET /api/admin/status`)
+- Agent orchestration/chat business flows are not implemented here and remain in scope for later features
+
+
+
+

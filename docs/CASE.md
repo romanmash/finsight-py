@@ -1902,8 +1902,8 @@ TELEGRAM_BOT_TOKEN=
 TELEGRAM_ADMIN_HANDLE=@yourtelegramhandle   # Used by seed script to create the admin User record with this handle
 
 # Infrastructure
-DATABASE_URL=postgresql://postgres:postgres@postgres:5432/finsight
-REDIS_URL=redis://redis:6379
+DATABASE_URL=postgresql://<db_user>:<db_password>@<db_host>:5432/<db_name>
+REDIS_URL=redis://<redis_host>:6379
 
 # Auth
 JWT_SECRET=                # 64+ random characters
@@ -2159,3 +2159,4 @@ Show `infra/pulumi/index.ts` — Fargate task definitions, RDS, ElastiCache.
 ---
 
 *End of CASE.md — FinSight AI Hub v4.4*
+
