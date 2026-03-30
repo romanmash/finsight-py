@@ -4,6 +4,7 @@
 **Created**: 2026-03-28
 **Status**: Draft
 **Constitution**: [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md)
+**Depends on**: None
 
 ## Overview
 

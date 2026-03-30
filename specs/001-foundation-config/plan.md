@@ -1,8 +1,9 @@
 # Implementation Plan: Foundation & Config System
 
-**Feature**: `001-foundation-config`
+**Branch**: `001-foundation-config`
+**Date**: 2026-03-28
 **Spec**: [`spec.md`](./spec.md)
-**Constitution**: [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md)
+**Input**: Feature specification from `specs/001-foundation-config/spec.md`
 
 ---
 
@@ -396,7 +397,7 @@ pnpm --filter @finsight/api test
 
 ---
 
-## Complexity Assessment
+## Complexity Tracking
 
 ### Estimated Effort
 Moderate. Many files but each is straightforward. The 11 YAML files and 11 Zod schemas are repetitive by design. The config loader and pricing calculator are the only files with real logic.

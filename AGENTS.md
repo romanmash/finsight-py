@@ -62,6 +62,36 @@ scripts/                       → deploy.sh, logs.sh
 7. **Typecheck** with `pnpm -r typecheck` (zero errors)
 8. **Commit** using conventional commit format
 
+## SpecKit Skill Workflow (Codex)
+
+SpecKit skills (`/speckit.plan`, `/speckit.tasks`, `/speckit.implement`) use the current **git branch name** to locate the active feature directory (`specs/<branch>/`). Since Codex typically runs on `main`, you MUST set the `SPECIFY_FEATURE` environment variable to tell SpecKit which feature to work on.
+
+**Set before invoking any SpecKit skill:**
+
+```bash
+export SPECIFY_FEATURE=001-foundation-config   # matches the specs/ directory name
+```
+
+Or configure it in your Codex session environment. The SpecKit PowerShell scripts read this variable first (before checking the git branch), so it takes priority.
+
+**Workflow for feature 001 (plan + tasks already exist — start at implement):**
+
+```bash
+export SPECIFY_FEATURE=001-foundation-config
+/speckit.implement
+```
+
+**Workflow for features 002–011 (only spec.md exists — full workflow):**
+
+```bash
+export SPECIFY_FEATURE=002-data-layer   # adjust per feature
+/speckit.plan                           # generates plan.md, research.md, data-model.md, contracts/
+/speckit.tasks                          # generates tasks.md
+/speckit.implement                      # executes all tasks
+```
+
+**After `/speckit.plan` runs**: It will call `update-agent-context.ps1` which updates this file (AGENTS.md) with new technology context from the plan. This is expected — the script preserves manually-written sections between its markers.
+
 ## Key Commands
 
 ```bash
