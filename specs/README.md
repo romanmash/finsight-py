@@ -20,7 +20,7 @@ Features are ordered by dependency. Implement them in sequence.
 
 | # | Feature | Directory | Dependencies | Spec | Plan | Tasks |
 |---|---|---|---|---|---|---|
-| 001 | Foundation & Config | [`001-foundation-config/`](./001-foundation-config/) | — | ✅ | — | — |
+| 001 | Foundation & Config | [`001-foundation-config/`](./001-foundation-config/) | — | ✅ | ✅ | ✅ |
 | 002 | Data Layer | [`002-data-layer/`](./002-data-layer/) | 001 | ✅ | — | — |
 | 003 | API & Auth | [`003-api-auth/`](./003-api-auth/) | 001, 002 | ✅ | — | — |
 | 004 | MCP Platform | [`004-mcp-platform/`](./004-mcp-platform/) | 001, 002 | ✅ | — | — |

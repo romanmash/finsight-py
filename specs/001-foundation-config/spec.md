@@ -110,7 +110,7 @@ As an operator, I want accurate cost tracking per LLM call so that I can monitor
 ### Functional Requirements
 
 - **FR-001**: System MUST use pnpm workspaces with `packages/*` and `apps/*` workspace patterns
-- **FR-002**: `@finsight/shared-types` MUST export all 9 agent names, 8 mission types, 5 mission statuses, 5 mission triggers, 7 alert types, 3 alert severities, 4 ticket statuses, 3 user roles, 4 providers, 3 confidence levels, and 3 analyst modes as const enum objects + inferred types
+- **FR-002**: `@finsight/shared-types` MUST export all 9 agent names, 8 mission types, 4 mission statuses, 5 mission triggers, 7 alert types, 3 alert severities, 5 ticket statuses, 3 user roles, 4 providers, 3 confidence levels, and 3 analyst modes as const enum objects + inferred types
 - **FR-003**: `@finsight/shared-types` MUST export typed interfaces: `AgentConfig`, `AgentModelConfig`, `ResearchOutput`, `AnalystOutput`, `TechnicianOutput`, `BookkeeperInput`, `KbEntrySnippet`
 - **FR-004**: `@finsight/shared-types` MUST export MCP output types: `QuoteOutput`, `OhlcvOutput`, `FundamentalsOutput`, `EarningsOutput`, `AnalystRatingsOutput`, `PriceTargetsOutput`
 - **FR-005**: `@finsight/shared-types` MUST export API response types: `AdminStatusResponse`, `MissionResponse`, `ChatResponse`
