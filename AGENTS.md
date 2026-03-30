@@ -8,10 +8,20 @@ FinSight AI Hub is a multi-agent fintech market intelligence platform built with
 
 **This is a Spec-Driven Development project.** All implementation is governed by feature specs in `specs/NNN-feature-name/`.
 
+## Read Order (mandatory before any implementation)
+
+1. `.specify/constitution.md` — non-negotiable principles and quality gates
+2. `specs/README.md` — feature catalogue with build order and dependencies
+3. The specific `specs/NNN-feature-name/spec.md` for your current task
+4. The specific `specs/NNN-feature-name/plan.md` for implementation details
+5. `docs/CONTEXT.md` — architectural decisions and environment constraints
+6. `docs/CASE.md` — full system specification (reference, not required in full)
+
 ## Architecture
 
 ```
 packages/shared-types/         → @finsight/shared-types (domain types, zero dependencies)
+apps/api/                      → Hono API + all 9 agents + BullMQ workers
 apps/api/src/agents/           → 9 agent implementations + colocated prompts (*.prompt.ts)
 apps/api/src/agents/shared/    → Shared prompt fragments
 apps/api/src/mcp/              → MCP client (tool registration) + model router
@@ -39,6 +49,7 @@ scripts/                       → deploy.sh, logs.sh
 7. **Conventional Commits** — `<type>(<scope>): <description>`. Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`. Scopes: `types`, `config`, `api`, `mcp`, `agents`, `manager`, `kb`, `dashboard`, `telegram`, `prisma`, `infra`, `spec`.
 8. **Fail-fast config** — if any YAML file is invalid at startup, call `process.exit(1)` with the exact Zod error path. Never start with bad config.
 9. **Cost tracking** — every LLM call must record `tokensIn`, `tokensOut`, `costUsd`, `provider`, `model`, `durationMs` in an `AgentRun` record.
+10. **Colocated prompts** — agent prompts live at `agents/X.prompt.ts` alongside `agents/X.ts`. Shared prompts in `agents/shared/`.
 
 ## Development Workflow
 
@@ -61,6 +72,7 @@ pnpm -r test                     # Run all tests (offline, no Docker required)
 pnpm prisma migrate dev          # Apply database migrations
 pnpm prisma db seed              # Load demo data
 docker compose up -d             # Start all 12 containers
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # Dev mode
 ```
 
 ## Key Files
@@ -72,9 +84,10 @@ docker compose up -d             # Start all 12 containers
 | `specs/NNN-*/plan.md` | Feature SDDs — technical design, file list | Reference only during implementation |
 | `docs/CASE.md` | Full system specification (2000+ lines) | Update if schema/architecture changes |
 | `docs/CONTEXT.md` | Architecture decisions and constraints | Reference only |
+| `docs/SPECKIT.md` | Original 14-component briefs with detailed TypeScript interfaces | Reference when writing `plan.md` |
 | `config/runtime/*.yaml` | Runtime configuration (Everything-as-Code) | Update values as needed |
 | `prisma/schema.prisma` | Database schema (source of truth) | Change via migrations only |
-| `CLAUDE.md` | Claude Code agent instructions | Update when workflow changes |
+| `CLAUDE.md` | Claude Code entry point — imports `@AGENTS.md` | Do not edit directly |
 
 ## Technology Stack (Locked)
 
