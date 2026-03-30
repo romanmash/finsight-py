@@ -1,0 +1,16 @@
+{
+  "reporter": {
+    "primary": {
+      "provider": "lmstudio",
+      "model": "llama-3.2-8b-instruct",
+      "temperature": 0.5,
+      "maxTokens": 4096
+    },
+    "fallback": {
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "temperature": 0.5,
+      "maxTokens": 4096
+    }
+  }
+}

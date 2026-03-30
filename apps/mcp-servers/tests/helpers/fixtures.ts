@@ -15,6 +15,11 @@ export const mcpConfigFixture: McpConfig = {
     alphaVantageBaseUrl: 'https://alpha-vantage.test/query',
     newsBaseUrl: 'https://news.test'
   },
+  localProvider: {
+    baseUrl: 'http://localhost:1234',
+    healthProbeIntervalMs: 300000,
+    healthProbeTimeoutMs: 2000
+  },
   retrieval: {
     vectorWeight: 0.7,
     bm25Weight: 0.3,
@@ -27,34 +32,40 @@ export const mcpConfigFixture: McpConfig = {
     marketData: {
       url: 'http://market-data-mcp:3001',
       timeoutMs: 500,
+      required: true,
       retry: { maxAttempts: 2, backoffMs: 1 },
       cache: { quoteTtlSec: 60, fundamentalsTtlSec: 60, earningsTtlSec: 60, ratingsTtlSec: 60 }
     },
     macroSignals: {
       url: 'http://macro-signals-mcp:3002',
       timeoutMs: 500,
+      required: true,
       retry: { maxAttempts: 2, backoffMs: 1 },
       cache: { gdeltTtlSec: 60, ecoCalendarTtlSec: 60, indicatorTtlSec: 60 }
     },
     news: {
       url: 'http://news-mcp:3003',
       timeoutMs: 500,
+      required: true,
       retry: { maxAttempts: 2, backoffMs: 1 },
       cache: { latestTtlSec: 60, sentimentTtlSec: 60 }
     },
     ragRetrieval: {
       url: 'http://rag-retrieval-mcp:3004',
       timeoutMs: 500,
+      required: true,
       retry: { maxAttempts: 1, backoffMs: 0 }
     },
     enterpriseConnector: {
       url: 'http://enterprise-connector-mcp:3005',
       timeoutMs: 500,
+      required: true,
       retry: { maxAttempts: 1, backoffMs: 0 }
     },
     traderPlatform: {
       url: 'http://trader-platform-mcp:3006',
       timeoutMs: 500,
+      required: true,
       retry: { maxAttempts: 1, backoffMs: 0 }
     }
   }
@@ -82,4 +93,3 @@ export const traderConfigFixture: TraderConfig = {
   requireTechnicianAlignment: false,
   platform: 'mock'
 };
-

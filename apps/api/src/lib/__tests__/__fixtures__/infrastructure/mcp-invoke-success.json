@@ -1,0 +1,7 @@
+{
+  "output": {
+    "ticker": "NVDA",
+    "price": 123.45
+  },
+  "durationMs": 42
+}

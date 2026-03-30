@@ -1,0 +1,16 @@
+{
+  "tools": [
+    {
+      "name": "get_quote",
+      "description": "Fetch quote",
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" }
+    },
+    {
+      "name": "get_news",
+      "description": "Fetch news",
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" }
+    }
+  ]
+}

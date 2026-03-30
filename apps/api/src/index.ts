@@ -2,6 +2,8 @@ import { serve } from '@hono/node-server';
 
 import { createApp } from './app.js';
 import { initConfig } from './lib/config.js';
+import { initMcpInfrastructure } from './mcp/index.js';
+import { initializeLocalProviderHealthMonitor } from './providers/lmstudio-health.js';
 
 function getPort(): number {
   const value = process.env.PORT;
@@ -14,6 +16,8 @@ function getPort(): number {
 }
 
 await initConfig();
+await initMcpInfrastructure();
+await initializeLocalProviderHealthMonitor();
 
 const app = createApp();
 const port = getPort();

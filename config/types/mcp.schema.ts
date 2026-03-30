@@ -21,7 +21,8 @@ const serverSchema = z.object({
   url: z.string().url(),
   timeoutMs: z.number().int().positive(),
   retry: retryPolicySchema.optional(),
-  cache: cacheSchema.optional()
+  cache: cacheSchema.optional(),
+  required: z.boolean().default(true)
 }).strict();
 
 const providerSchema = z.object({
@@ -32,12 +33,19 @@ const providerSchema = z.object({
   newsBaseUrl: z.string().url()
 }).strict();
 
+const localProviderSchema = z.object({
+  baseUrl: z.string().url(),
+  healthProbeIntervalMs: z.number().int().positive(),
+  healthProbeTimeoutMs: z.number().int().positive()
+}).strict();
+
 export const mcpConfigSchema = z.object({
   invoke: z.object({
     defaultTimeoutMs: z.number().int().positive(),
     defaultRetry: retryPolicySchema
   }).strict().optional(),
   providers: providerSchema,
+  localProvider: localProviderSchema.optional(),
   retrieval: z.object({
     vectorWeight: z.number().min(0).max(1),
     bm25Weight: z.number().min(0).max(1),
@@ -57,3 +65,4 @@ export const mcpConfigSchema = z.object({
 }).strict();
 
 export type McpConfig = z.infer<typeof mcpConfigSchema>;
+

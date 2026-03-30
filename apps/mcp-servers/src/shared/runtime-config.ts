@@ -22,7 +22,7 @@ async function loadYamlFile(filePath: string): Promise<unknown> {
 }
 
 function parseWithSchema<T>(
-  schema: z.ZodType<T>,
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>,
   value: unknown,
   fileName: string
 ): T {
@@ -51,3 +51,4 @@ export async function loadMcpRuntimeConfig(): Promise<McpRuntimeConfig> {
     trader: parseWithSchema(traderConfigSchema, traderRaw, 'trader.yaml')
   };
 }
+
