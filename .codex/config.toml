@@ -1,4 +1,0 @@
-model = "o4-mini"
-model_reasoning_effort = "medium"
-personality = "pragmatic"
-instructions = "Read AGENTS.md for project rules and workflow"

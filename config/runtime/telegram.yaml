@@ -1,0 +1,7 @@
+rateLimitPerUserPerMinute: 10
+commandAliases:
+  help: [help, h]
+  compare: [compare, comp]
+  devil: [devil, contrarian]
+  pattern: [pattern, chart]
+  trade: [trade, ticket]

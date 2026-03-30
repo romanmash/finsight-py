@@ -1,0 +1,23 @@
+# Local/development artifacts
+node_modules/
+coverage/
+.vscode/
+.idea/
+.obsidian/
+.claude/settings.local.json
+.tmp/
+tmp/
+temp/
+.git/
+
+# Build outputs and logs
+build/
+dist/
+*.log
+
+# Environment and OS noise
+.env
+.env*
+.DS_Store
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,22 @@
+servers:
+  marketData:
+    url: http://market-data-mcp:3001
+    timeoutMs: 5000
+    cache: { quoteTtlSec: 60, fundamentalsTtlSec: 3600, earningsTtlSec: 14400, ratingsTtlSec: 21600 }
+  macroSignals:
+    url: http://macro-signals-mcp:3002
+    timeoutMs: 8000
+    cache: { gdeltTtlSec: 1800, ecoCalendarTtlSec: 14400, indicatorTtlSec: 86400 }
+  news:
+    url: http://news-mcp:3003
+    timeoutMs: 5000
+    cache: { latestTtlSec: 300, sentimentTtlSec: 900 }
+  ragRetrieval:
+    url: http://rag-retrieval-mcp:3004
+    timeoutMs: 3000
+  enterpriseConnector:
+    url: http://enterprise-connector-mcp:3005
+    timeoutMs: 4000
+  traderPlatform:
+    url: http://trader-platform-mcp:3006
+    timeoutMs: 3000

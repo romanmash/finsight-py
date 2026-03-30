@@ -1,0 +1,6 @@
+logLevel: info
+featureFlags:
+  devilsAdvocate: true
+  traderAgent: true
+  screenerAgent: true
+  hotConfigReload: true

@@ -1,0 +1,5 @@
+watchdogScan: { cron: "*/30 * * * *", concurrency: 1 }
+screenerScan: { cron: "0 7 * * 1-5", concurrency: 1 }
+dailyBrief: { cron: "0 6 * * *", concurrency: 1 }
+earningsCheck: { cron: "30 7 * * 1-5", concurrency: 1 }
+ticketExpiry: { cron: "0 * * * *", concurrency: 1 }

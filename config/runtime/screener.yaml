@@ -1,0 +1,3 @@
+sectors: [semiconductors, ETFs, gold, energy]
+minimumSignalScore: 0.6
+topResultsPerRun: 3

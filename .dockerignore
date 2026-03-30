@@ -1,0 +1,60 @@
+# --------------------------------------------------
+# Dependencies, build output, caches
+# --------------------------------------------------
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+.next/
+.pnpm-store/
+
+# --------------------------------------------------
+# VCS, editor, local tooling
+# --------------------------------------------------
+.git/
+.gitignore
+.dockerignore
+.vscode/
+.idea/
+.obsidian/
+.claude/
+.agents/
+.specify/
+
+# --------------------------------------------------
+# Documentation and spec artifacts (not needed at runtime)
+# --------------------------------------------------
+docs/
+specs/
+.tmp/
+
+# --------------------------------------------------
+# Tests and local-only source artifacts
+# --------------------------------------------------
+**/__tests__/
+**/*.test.ts
+**/*.spec.ts
+
+# --------------------------------------------------
+# Logs, temp files, OS noise
+# --------------------------------------------------
+*.log
+*.log*
+*.tmp
+tmp/
+temp/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --------------------------------------------------
+# Secrets and local env files
+# --------------------------------------------------
+.env
+.env*
+
+# --------------------------------------------------
+# Docker self-reference
+# --------------------------------------------------
+Dockerfile*
