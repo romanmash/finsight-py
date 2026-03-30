@@ -1,4 +1,4 @@
-﻿# AGENTS.md
+# AGENTS.md
 
 Instructions for AI coding assistants working on the FinSight AI Hub repository.
 

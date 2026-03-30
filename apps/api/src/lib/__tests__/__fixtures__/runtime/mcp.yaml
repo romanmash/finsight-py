@@ -1,3 +1,9 @@
+providers:
+  marketDataBaseUrl: https://market-data.example.test
+  fmpBaseUrl: https://fmp.example.test
+  gdeltBaseUrl: https://gdelt.example.test
+  alphaVantageBaseUrl: https://alphavantage.example.test
+  newsBaseUrl: https://news.example.test
 servers:
   marketData:
     url: http://market-data-mcp:3001

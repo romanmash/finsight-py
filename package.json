@@ -12,7 +12,16 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "check:secrets": "node scripts/check-no-hardcoded-secrets.mjs"
+    "check:secrets": "node scripts/check-no-hardcoded-secrets.mjs",
+    "mcp:typecheck": "pnpm --filter @finsight/mcp-servers typecheck",
+    "mcp:lint": "pnpm --filter @finsight/mcp-servers lint",
+    "mcp:test": "pnpm --filter @finsight/mcp-servers test",
+    "mcp:dev:market-data": "pnpm --filter @finsight/mcp-servers dev:market-data",
+    "mcp:dev:macro-signals": "pnpm --filter @finsight/mcp-servers dev:macro-signals",
+    "mcp:dev:news": "pnpm --filter @finsight/mcp-servers dev:news",
+    "mcp:dev:rag-retrieval": "pnpm --filter @finsight/mcp-servers dev:rag-retrieval",
+    "mcp:dev:enterprise-connector": "pnpm --filter @finsight/mcp-servers dev:enterprise-connector",
+    "mcp:dev:trader-platform": "pnpm --filter @finsight/mcp-servers dev:trader-platform"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -28,5 +37,3 @@
     "@prisma/client": "^6.19.2"
   }
 }
-
-
