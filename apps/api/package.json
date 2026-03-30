@@ -9,11 +9,16 @@
   },
   "dependencies": {
     "@finsight/shared-types": "workspace:*",
+    "@prisma/client": "^6.19.2",
+    "bullmq": "^5.58.0",
+    "ioredis": "^5.4.1",
     "js-yaml": "^4.1.0",
+    "pg": "^8.13.1",
     "zod": "^3.24.0"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.0",
+    "@types/node": "^20.0.0",
     "typescript": "~5.8.0",
     "vitest": "^3.1.0"
   }

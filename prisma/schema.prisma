@@ -1,0 +1,231 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  passwordHash   String
+  name           String
+  role           String         @default("analyst")
+  telegramHandle String?        @unique
+  telegramChatId BigInt?
+  active         Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  createdBy      String?
+  refreshTokens  RefreshToken[]
+  portfolioItems PortfolioItem[]
+  watchlistItems WatchlistItem[]
+  missions       Mission[]
+  alerts         Alert[]
+  dailyBriefs    DailyBrief[]
+  tradeTickets   TradeTicket[]
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PortfolioItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticker    String
+  quantity  Float
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, ticker])
+  @@index([userId])
+}
+
+model WatchlistItem {
+  id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticker         String
+  name           String
+  sector         String
+  listType       String          @default("interesting")
+  addedAt        DateTime        @default(now())
+  active         Boolean         @default(true)
+  priceSnapshots PriceSnapshot[]
+
+  @@unique([userId, ticker, listType])
+  @@index([userId, active])
+}
+
+model PriceSnapshot {
+  id              String        @id @default(cuid())
+  ticker          String
+  watchlistItemId String
+  watchlistItem   WatchlistItem @relation(fields: [watchlistItemId], references: [id])
+  price           Float
+  changePct       Float
+  volume          BigInt
+  capturedAt      DateTime      @default(now())
+
+  @@index([ticker, capturedAt])
+}
+
+model Mission {
+  id                String            @id @default(cuid())
+  userId            String?
+  user              User?             @relation(fields: [userId], references: [id])
+  type              String
+  status            String
+  trigger           String
+  inputData         Json
+  outputData        Json?
+  tickers           String[]
+  agentRuns         AgentRun[]
+  alerts            Alert[]
+  kbEntries         KbEntry[]
+  kbThesisSnapshots KbThesisSnapshot[]
+  dailyBriefs       DailyBrief[]
+  tradeTickets      TradeTicket[]
+  createdAt         DateTime          @default(now())
+  completedAt       DateTime?
+}
+
+model AgentRun {
+  id               String   @id @default(cuid())
+  missionId        String
+  mission          Mission  @relation(fields: [missionId], references: [id])
+  agentName        String
+  model            String
+  provider         String
+  inputData        Json
+  outputData       Json?
+  toolCalls        Json[]
+  confidence       String?
+  confidenceReason String?
+  durationMs       Int?
+  tokensIn         Int?
+  tokensOut        Int?
+  costUsd          Float?
+  status           String
+  errorMessage     String?
+  createdAt        DateTime @default(now())
+
+  @@index([missionId])
+  @@index([agentName, createdAt])
+  @@index([provider, createdAt])
+}
+
+model KbEntry {
+  id                String                       @id @default(cuid())
+  ticker            String?
+  entryType         String
+  content           String
+  embedding         Unsupported("vector(1536)")?
+  metadata          Json                         @default("{}")
+  contradictionFlag Boolean                      @default(false)
+  contradictionNote String?
+  missionId         String?
+  mission           Mission?                     @relation(fields: [missionId], references: [id])
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+
+  @@index([ticker])
+  @@index([entryType])
+  @@index([createdAt])
+}
+
+model KbThesisSnapshot {
+  id            String   @id @default(cuid())
+  ticker        String
+  thesis        String
+  confidence    String
+  changeType    String
+  changeSummary String?
+  missionId     String?
+  mission       Mission? @relation(fields: [missionId], references: [id])
+  createdAt     DateTime @default(now())
+
+  @@index([ticker, createdAt])
+  @@index([missionId])
+}
+
+model ScreenerRun {
+  id          String   @id @default(cuid())
+  results     Json
+  triggeredBy String
+  createdAt   DateTime @default(now())
+}
+
+model Alert {
+  id           String   @id @default(cuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id])
+  ticker       String?
+  alertType    String
+  severity     String
+  message      String
+  acknowledged Boolean  @default(false)
+  missionId    String?
+  mission      Mission? @relation(fields: [missionId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([userId, acknowledged, createdAt])
+}
+
+model DailyBrief {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  date             String
+  topSignals       Json
+  thesisUpdates    Json
+  upcomingEvents   Json
+  screenerFinds    Json
+  watchlistSummary Json
+  analystConsensus Json
+  pendingTickets   Int      @default(0)
+  rawText          String
+  missionId        String?
+  mission          Mission? @relation(fields: [missionId], references: [id])
+  generatedAt      DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model TradeTicket {
+  id                 String    @id @default(cuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id])
+  ticker             String
+  action             String
+  quantity           Float
+  rationale          String
+  confidence         String
+  basedOnMissions    String[]
+  status             String
+  expiresAt          DateTime
+  approvedBy         String?
+  approvedAt         DateTime?
+  rejectedBy         String?
+  rejectionReason    String?
+  mockExecutionPrice Float?
+  mockExecutedAt     DateTime?
+  missionId          String?
+  mission            Mission?  @relation(fields: [missionId], references: [id])
+  createdAt          DateTime  @default(now())
+
+  @@index([userId, status])
+  @@index([status, expiresAt])
+}

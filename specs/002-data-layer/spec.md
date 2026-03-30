@@ -22,13 +22,13 @@ As a developer, I want a complete Prisma schema with all domain models so that I
 
 **Why P1**: Without the schema, no agent can persist results, no mission can be tracked, and no dashboard data can be served.
 
-**Independent Test**: Run `docker compose up -d postgres`, then `pnpm prisma migrate dev --name init`, then verify all tables exist with `db.user.findMany()`.
+**Independent Test**: Run `docker compose up -d postgres`, then `pnpm prisma migrate dev --name init`, then verify all model tables exist with `db.user.findMany()`.
 
 **Acceptance Scenarios**:
 
-1. **Given** PostgreSQL is running, **When** `pnpm prisma migrate dev --name init` is executed, **Then** all 15 tables are created without error
+1. **Given** PostgreSQL is running, **When** `pnpm prisma migrate dev --name init` is executed, **Then** all 13 models are created without error
 2. **Given** the migration is applied, **When** I run `db.user.create({ data: { email: 'test@test.com', passwordHash: 'hash', name: 'Test' } })`, **Then** a user record is created with `role: 'analyst'` (default) and auto-generated `id`
-3. **Given** pgvector extension is enabled, **When** I insert a `KbEntry` with a 1536-dimensional embedding vector, **Then** cosine similarity search returns relevant results
+3. **Given** pgvector extension is enabled, **When** I insert at least two `KbEntry` embeddings and execute a cosine-similarity query, **Then** the results are ranked by vector distance as expected
 
 ---
 
@@ -38,7 +38,7 @@ As a developer, I want a Docker Compose configuration with all 12 services so th
 
 **Why P1**: The containerized environment is how the system runs in both development and production. Without it, integration testing is impossible.
 
-**Independent Test**: Run `docker compose up -d` and verify all services start with health checks passing.
+**Independent Test**: Run `docker compose config` to validate the full stack definition, then run `docker compose up -d postgres redis` to verify core infrastructure starts with healthy dependencies.
 
 **Acceptance Scenarios**:
 
@@ -46,6 +46,7 @@ As a developer, I want a Docker Compose configuration with all 12 services so th
 2. **Given** all services are defined, **When** `docker compose config` is executed, **Then** it validates with 12 services: `hono-api`, `agent-worker`, `market-data-mcp`, `macro-signals-mcp`, `news-mcp`, `rag-retrieval-mcp`, `enterprise-connector-mcp`, `trader-platform-mcp`, `frontend`, `telegram-bot`, `postgres`, `redis`
 3. **Given** `config/runtime/` directory exists, **When** containers start, **Then** YAML config files are available inside containers at `/app/config/runtime/` (mounted read-only)
 4. **Given** `.env` file exists, **When** containers start, **Then** environment variables from `.env` are injected into all app containers
+5. **Given** health checks are configured, **When** I inspect compose service definitions, **Then** postgres uses `pg_isready`, redis uses `redis-cli ping`, and each MCP service checks `GET /health`
 
 ---
 
@@ -84,10 +85,11 @@ As a developer, I want development-specific Docker Compose overrides so that I c
 
 ### Edge Cases
 
-- What happens when PostgreSQL is not ready when the API starts? → Prisma connection retries (built-in), API logs connection error and retries
-- What happens when Redis is unavailable? → BullMQ queues throw on instantiation; documented in config loader startup check
+- What happens when PostgreSQL is not ready when the API starts? -> Startup dependency checks retry for a bounded interval and then exit non-zero (fail-fast) if the database remains unavailable
+- What happens when Redis is unavailable? → Queue and worker initialization fails fast with clear startup error logs (no silent degraded mode)
 - What if pgvector extension fails to install? → Init script in Docker runs `CREATE EXTENSION IF NOT EXISTS vector;` — fail-fast if extension not available
-- What if two migrations conflict? → Prisma handles migration ordering via timestamps
+- What if two migrations conflict? -> Migration run halts with explicit error; rollback/backout steps must be documented and executed before retry
+- What if `config/runtime` mount is missing or not read-only? -> App containers fail startup validation rather than running with mutable or missing runtime config
 
 ---
 
@@ -95,24 +97,28 @@ As a developer, I want development-specific Docker Compose overrides so that I c
 
 ### Functional Requirements
 
-- **FR-001**: Prisma schema MUST define all 15 models: `User`, `RefreshToken`, `Mission`, `AgentRun`, `PriceSnapshot`, `Alert`, `WatchlistItem`, `KbEntry`, `KbThesisSnapshot`, `ScreenerRun`, `TradeTicket`, `DailyBrief`, `PortfolioItem`, `SystemEvent`, `WatchList`
+- **FR-001**: Prisma schema MUST define all 13 models from CASE.md: `User`, `RefreshToken`, `PortfolioItem`, `WatchlistItem`, `PriceSnapshot`, `Mission`, `AgentRun`, `KbEntry`, `KbThesisSnapshot`, `ScreenerRun`, `Alert`, `DailyBrief`, `TradeTicket`
 - **FR-002**: `User` model MUST include `telegramHandle String? @unique` for Telegram authentication and `telegramChatId BigInt?` for proactive Telegram push
 - **FR-003**: `KbEntry` model MUST include `embedding` field of type `Unsupported("vector(1536)")` for pgvector
 - **FR-004**: `KbThesisSnapshot` MUST have `missionId` field with a `Mission` relation for traceability
-- **FR-005**: All mission-related models MUST have relations back to `Mission` for cascade queries
+- **FR-005**: All mission-related records (`AgentRun`, `Alert`, `KbEntry`, `KbThesisSnapshot`, `DailyBrief`, `TradeTicket`) MUST support mission traceability via a relation or foreign key to `Mission`
 - **FR-006**: `Mission.trigger` MUST accept values: `telegram`, `watchdog`, `scheduled`, `kb_fast_path`, `manual`
 - **FR-007**: Docker Compose MUST define 12 services with health checks on postgres, redis, and all 6 MCP servers
 - **FR-008**: Docker Compose MUST mount `config/runtime/` as read-only (`:ro`) into every app service
-- **FR-009**: Docker Compose MUST use `restart: unless-stopped` for all app containers
+- **FR-009**: Docker Compose MUST use `restart: unless-stopped` for all app containers (`hono-api`, `agent-worker`, 6 MCP services, `frontend`, `telegram-bot`)
 - **FR-010**: PostgreSQL container MUST enable pgvector extension via init script
 - **FR-011**: `lib/db.ts` MUST export a singleton `PrismaClient` instance
 - **FR-012**: `lib/redis.ts` MUST export a singleton Redis connection and `RedisKey` helper object
 - **FR-013**: `lib/queues.ts` MUST define 6 named BullMQ queues: `watchdogScan`, `screenerScan`, `dailyBrief`, `earningsCheck`, `ticketExpiry`, `alertPipeline`
 - **FR-014**: First 5 queues are repeatable (cron from `scheduler.yaml`); `alertPipeline` is standard (push-based)
+- **FR-015**: Healthcheck definitions MUST be explicit: postgres via `pg_isready`, redis via `redis-cli ping`, MCP services via `GET /health`
+- **FR-016**: App containers (`hono-api`, `agent-worker`, 6 MCP services, `frontend`, `telegram-bot`) MUST mount `config/runtime` read-only and use `.env` injection consistently
+- **FR-017**: Migration execution documentation MUST include conflict handling and rollback/backout steps before rerun
+- **FR-018**: Prisma schema MUST include required fields, unique constraints, and indexes for each model as defined by this feature's data model
 
 ### Key Entities
 
-#### Prisma Schema Summary (15 models)
+#### Prisma Schema Summary (13 models)
 
 | Model | Purpose | Key Relations |
 |---|---|---|
@@ -129,8 +135,6 @@ As a developer, I want development-specific Docker Compose overrides so that I c
 | `TradeTicket` | Trade proposal awaiting approval | → User, Mission |
 | `DailyBrief` | Morning briefing content per user | → User, Mission |
 | `PortfolioItem` | User's holdings (ticker + quantity) | → User |
-| `WatchList` | Named watchlist group (e.g. "portfolio", "interesting") | → User, WatchlistItems |
-| `SystemEvent` | Audit log for system-level events (startup, config reload, deploy) | standalone |
 
 #### BullMQ Queue Definitions
 
@@ -140,7 +144,7 @@ As a developer, I want development-specific Docker Compose overrides so that I c
 | `screenerScan` | Repeatable | `scheduler.yaml` cron | Weekday sector scan |
 | `dailyBrief` | Repeatable | `scheduler.yaml` cron | Morning briefing generation |
 | `earningsCheck` | Repeatable | `scheduler.yaml` cron | Earnings calendar check |
-| `ticketExpiry` | Repeatable | Every hour | Expire stale trade tickets |
+| `ticketExpiry` | Repeatable | `scheduler.yaml` cron (hourly) | Expire stale trade tickets |
 | `alertPipeline` | Standard | Push (by Watchdog) | Process alerts through investigation pipeline |
 
 ---
@@ -150,7 +154,7 @@ As a developer, I want development-specific Docker Compose overrides so that I c
 ### Measurable Outcomes
 
 - **SC-001**: `docker compose up -d postgres redis` starts cleanly, both health checks pass
-- **SC-002**: `pnpm prisma migrate dev --name init` creates all 15 tables without error
+- **SC-002**: `pnpm prisma migrate dev --name init` creates schema for all 13 models without error
 - **SC-003**: `db.user.findMany()` returns empty array (schema works)
 - **SC-004**: `redis.ping()` returns `'PONG'`
 - **SC-005**: All 6 BullMQ queues instantiate without error
@@ -190,3 +194,14 @@ As a developer, I want development-specific Docker Compose overrides so that I c
 │   └──────────────┘                                          │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+## Assumptions
+
+- The data-layer schema for this feature follows the canonical Prisma models defined in docs/CASE.md (13 models), and any additional entities are out of scope for feature 002.
+- Docker Compose in this feature provides service definitions and wiring only; application business logic and route behavior are implemented in later features.
+- Queue schedules are sourced from config/runtime/scheduler.yaml created in feature 001, with `ticketExpiry` represented as an hourly cron in that file.
+
+
+
+
+

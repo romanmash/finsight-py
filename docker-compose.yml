@@ -1,0 +1,167 @@
+name: finsight
+
+x-app-defaults: &app-defaults
+  restart: unless-stopped
+  env_file:
+    - .env
+  volumes:
+    - ./config/runtime:/app/config/runtime:ro
+  networks:
+    - finsight
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: finsight
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d finsight"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - finsight
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - finsight
+
+  market-data-mcp:
+    <<: *app-defaults
+    image: hashicorp/http-echo:1.0.0
+    command: ["-listen", ":3001", "-text", "ok"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3001/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  macro-signals-mcp:
+    <<: *app-defaults
+    image: hashicorp/http-echo:1.0.0
+    command: ["-listen", ":3002", "-text", "ok"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3002/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  news-mcp:
+    <<: *app-defaults
+    image: hashicorp/http-echo:1.0.0
+    command: ["-listen", ":3003", "-text", "ok"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3003/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  rag-retrieval-mcp:
+    <<: *app-defaults
+    image: hashicorp/http-echo:1.0.0
+    command: ["-listen", ":3004", "-text", "ok"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3004/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  enterprise-connector-mcp:
+    <<: *app-defaults
+    image: hashicorp/http-echo:1.0.0
+    command: ["-listen", ":3005", "-text", "ok"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3005/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  trader-platform-mcp:
+    <<: *app-defaults
+    image: hashicorp/http-echo:1.0.0
+    command: ["-listen", ":3006", "-text", "ok"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3006/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  hono-api:
+    <<: *app-defaults
+    image: node:20-alpine
+    working_dir: /app
+    command: ["sh", "-c", "sleep infinity"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      market-data-mcp:
+        condition: service_healthy
+      macro-signals-mcp:
+        condition: service_healthy
+      news-mcp:
+        condition: service_healthy
+      rag-retrieval-mcp:
+        condition: service_healthy
+      enterprise-connector-mcp:
+        condition: service_healthy
+      trader-platform-mcp:
+        condition: service_healthy
+
+  agent-worker:
+    <<: *app-defaults
+    image: node:20-alpine
+    working_dir: /app
+    command: ["sh", "-c", "sleep infinity"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    <<: *app-defaults
+    image: nginx:1.27-alpine
+    depends_on:
+      hono-api:
+        condition: service_started
+
+  telegram-bot:
+    <<: *app-defaults
+    image: node:20-alpine
+    working_dir: /app
+    command: ["sh", "-c", "sleep infinity"]
+    depends_on:
+      hono-api:
+        condition: service_started
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  finsight:
+    driver: bridge
