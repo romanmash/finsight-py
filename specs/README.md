@@ -1,7 +1,7 @@
 # FinSight AI Hub — Specs Index
 
 > **Methodology:** GitHub [Spec-Driven Development](https://github.com/github/spec-kit)
-> **Constitution:** [`.specify/constitution.md`](../.specify/constitution.md)
+> **Constitution:** [`.specify/memory/constitution.md`](../.specify/memory/constitution.md)
 > **Source Documents:** [`docs/CASE.md`](../docs/CASE.md) · [`docs/CONTEXT.md`](../docs/CONTEXT.md)
 
 ## Feature Catalogue

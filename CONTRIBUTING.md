@@ -4,7 +4,7 @@
 
 These principles govern all implementation and review decisions:
 
-1. **Constitution is law** — `.specify/constitution.md` defines non-negotiable boundaries. Agent responsibilities, fail-safe defaults, and cost tracking are enforced in every review.
+1. **Constitution is law** — `.specify/memory/constitution.md` defines non-negotiable boundaries. Agent responsibilities, fail-safe defaults, and cost tracking are enforced in every review.
 2. **Spec-driven development** — every feature has a spec (PRD), plan (SDD), and task list in `specs/NNN-feature-name/`. Implementation stays within spec scope.
 3. **Everything-as-Code** — behavioral configuration lives in `config/runtime/*.yaml`. If a value affects agent behavior, it must be configurable without code changes.
 4. **Test-first where practical** — new behavior requires tests. Tests run offline with mocked APIs.
@@ -70,7 +70,7 @@ refactor(api): extract JWT validation into reusable middleware
 
 ## Development Workflow
 
-1. **Read** the constitution: `.specify/constitution.md`
+1. **Read** the constitution: `.specify/memory/constitution.md`
 2. **Read** the feature catalogue: `specs/README.md` — verify all dependency specs are complete (each must have `plan.md` and `tasks.md` with all items checked)
 3. **Read** the feature spec: `specs/NNN-feature-name/spec.md`
 4. **Plan** — if `plan.md` does not yet exist, run `/plan NNN-feature-name` to generate it

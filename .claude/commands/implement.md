@@ -4,7 +4,7 @@ description: "Implement a feature spec — reads the spec.md and plan.md, then i
 
 You are implementing a FinSight AI Hub feature. Follow this exact workflow:
 
-1. Read `.specify/constitution.md` to understand project principles
+1. Read `.specify/memory/constitution.md` to understand project principles
 2. Read the spec: `specs/$ARGUMENTS/spec.md`
 3. Read the plan: `specs/$ARGUMENTS/plan.md`
 4. Read the tasks: `specs/$ARGUMENTS/tasks.md` (if it exists)

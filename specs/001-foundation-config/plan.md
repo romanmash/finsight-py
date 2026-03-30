@@ -2,7 +2,7 @@
 
 **Feature**: `001-foundation-config`
 **Spec**: [`spec.md`](./spec.md)
-**Constitution**: [`.specify/constitution.md`](../../.specify/constitution.md)
+**Constitution**: [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md)
 
 ---
 

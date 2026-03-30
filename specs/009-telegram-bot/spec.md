@@ -3,7 +3,7 @@
 **Feature**: `009-telegram-bot`
 **Created**: 2026-03-28
 **Status**: Draft
-**Constitution**: [`.specify/constitution.md`](../../.specify/constitution.md)
+**Constitution**: [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md)
 **Depends on**: `008-orchestration`
 
 ## Overview

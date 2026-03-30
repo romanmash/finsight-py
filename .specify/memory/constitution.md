@@ -120,4 +120,17 @@ This constitution supersedes informal preferences. All implementation decisions 
 
 Exceptions require explicit documentation in the relevant plan.md with rationale.
 
-**Version**: 1.0 | **Ratified**: 2026-03-28
+## Reference Documents
+
+When implementing any feature, agents MUST read these documents in order before writing any code or plans:
+
+| Document | Purpose | When to read |
+|---|---|---|
+| `specs/README.md` | Feature catalogue, build order, dependency graph | Always — before any spec or plan work |
+| `docs/CONTEXT.md` | Hardware topology, environment constraints, key architectural decisions with rationale | Always — contains constraints that affect every implementation choice |
+| `docs/CASE.md` | Full system specification (2000+ lines) — entities, pipelines, API contracts | When you need full detail on a component not covered by the current spec |
+| `docs/SPECKIT.md` | Detailed TypeScript interfaces per component | When authoring `plan.md` files — has concrete interface definitions |
+| The specific `specs/NNN-feature-name/spec.md` | User stories and acceptance criteria for the current feature | Always during plan and implementation |
+| The specific `specs/NNN-feature-name/plan.md` | Technical design and file list for the current feature | Always during implementation |
+
+**Version**: 1.1 | **Ratified**: 2026-03-28 | **Last Amended**: 2026-03-30

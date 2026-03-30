@@ -4,7 +4,7 @@ description: "Create a plan.md (SDD) for a feature spec"
 
 Create a technical implementation plan (SDD) for the specified feature:
 
-1. Read `.specify/constitution.md` for project principles
+1. Read `.specify/memory/constitution.md` for project principles
 2. Read the spec: `specs/$ARGUMENTS/spec.md`
 3. Read `docs/CASE.md` and `docs/CONTEXT.md` for architectural context
 4. Verify all dependency specs are complete: each must have both `plan.md` and `tasks.md` with all items checked off. Do not write a plan for a spec whose dependencies are unresolved.

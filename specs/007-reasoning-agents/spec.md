@@ -3,7 +3,7 @@
 **Feature**: `007-reasoning-agents`
 **Created**: 2026-03-28
 **Status**: Draft
-**Constitution**: [`.specify/constitution.md`](../../.specify/constitution.md)
+**Constitution**: [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md)
 **Depends on**: `005-agent-infrastructure`, `006-collector-agents`
 
 ## Overview

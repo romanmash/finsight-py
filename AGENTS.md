@@ -10,7 +10,7 @@ FinSight AI Hub is a multi-agent fintech market intelligence platform built with
 
 ## Read Order (mandatory before any implementation)
 
-1. `.specify/constitution.md` — non-negotiable principles and quality gates
+1. `.specify/memory/constitution.md` — non-negotiable principles and quality gates
 2. `specs/README.md` — feature catalogue with build order and dependencies
 3. The specific `specs/NNN-feature-name/spec.md` for your current task
 4. The specific `specs/NNN-feature-name/plan.md` for implementation details
@@ -40,7 +40,7 @@ scripts/                       → deploy.sh, logs.sh
 
 ## Rules (NON-NEGOTIABLE)
 
-1. **Read the constitution first** — `.specify/constitution.md` defines project principles, agent boundaries, and quality gates. Every implementation decision must be justifiable against it.
+1. **Read the constitution first** — `.specify/memory/constitution.md` defines project principles, agent boundaries, and quality gates. Every implementation decision must be justifiable against it.
 2. **Spec scope is strict** — each feature spec lists exactly which files to create. Do NOT implement code from other specs. Do NOT add features not in the current spec.
 3. **Everything-as-Code** — all behavioral configuration lives in `config/runtime/*.yaml`, validated by Zod at startup. No hardcoded model names, thresholds, or schedules in source code.
 4. **TypeScript strict mode** — no `any`, explicit return types on every function, all domain types from `@finsight/shared-types`.
@@ -53,7 +53,7 @@ scripts/                       → deploy.sh, logs.sh
 
 ## Development Workflow
 
-1. **Read** the constitution: `.specify/constitution.md`
+1. **Read** the constitution: `.specify/memory/constitution.md`
 2. **Read** the feature catalogue: `specs/README.md`
 3. **Read** the target spec: `specs/NNN-feature-name/spec.md`
 4. **Read** the implementation plan: `specs/NNN-feature-name/plan.md`
@@ -79,7 +79,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # Dev mode
 
 | File | Purpose | Modify? |
 |---|---|---|
-| `.specify/constitution.md` | Project principles + quality gates | Only with documented rationale |
+| `.specify/memory/constitution.md` | Project principles + quality gates | Only with documented rationale |
 | `specs/NNN-*/spec.md` | Feature PRDs — user stories, acceptance criteria | Reference only during implementation |
 | `specs/NNN-*/plan.md` | Feature SDDs — technical design, file list | Reference only during implementation |
 | `docs/CASE.md` | Full system specification (2000+ lines) | Update if schema/architecture changes |

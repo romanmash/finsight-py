@@ -73,7 +73,7 @@ pnpm -r test          # All tests (offline, no Docker)
 
 | Document | Purpose |
 |---|---|
-| [Constitution](/.specify/constitution.md) | Non-negotiable project principles |
+| [Constitution](/.specify/memory/constitution.md) | Non-negotiable project principles |
 | [Feature Specs](/specs/README.md) | SpecKit feature catalogue |
 | [System Spec](/docs/CASE.md) | Full system specification |
 | [Architecture](/docs/CONTEXT.md) | Decisions + constraints |

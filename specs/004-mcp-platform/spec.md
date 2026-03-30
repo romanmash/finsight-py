@@ -3,7 +3,7 @@
 **Feature**: `004-mcp-platform`
 **Created**: 2026-03-28
 **Status**: Draft
-**Constitution**: [`.specify/constitution.md`](../../.specify/constitution.md)
+**Constitution**: [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md)
 **Depends on**: `001-foundation-config`, `002-data-layer`
 
 ## Overview

@@ -112,7 +112,7 @@ The workflow uses the slash commands configured in `.claude/commands/`:
 **Starter prompt for Claude Code or Codex:**
 
 ```
-Read .specify/constitution.md, docs/CASE.md, and docs/CONTEXT.md.
+Read .specify/memory/constitution.md, docs/CASE.md, and docs/CONTEXT.md.
 Then run /plan 001-foundation-config to create the first implementation plan.
 ```
 
@@ -160,7 +160,7 @@ Admin             ──→ Web Dashboard (read-only polling, 3s interval)
 
 ```
 finsight-ai-hub/
-├── .specify/                ← constitution.md — non-negotiable principles
+├── .specify/memory/         ← constitution.md — non-negotiable principles
 ├── specs/                   ← 11 feature specs (spec.md + plan.md + tasks.md per feature)
 ├── docs/                    ← this folder — full spec, context, references
 ├── config/

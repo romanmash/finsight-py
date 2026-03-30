@@ -4,7 +4,7 @@ description: "Review code changes against the constitution and spec requirements
 
 Review the current changes against FinSight's quality standards:
 
-1. Read `.specify/constitution.md` for project principles
+1. Read `.specify/memory/constitution.md` for project principles
 2. Check the relevant spec: `specs/$ARGUMENTS/spec.md` (if argument provided) or infer from changed files
 3. Verify:
    - [ ] Agent boundaries respected — no agent crosses into another's domain
