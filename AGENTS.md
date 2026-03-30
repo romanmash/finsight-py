@@ -131,6 +131,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # Dev mode
 | ORM | Prisma + pgvector | Type-safe, migrations, vector search |
 | Queue | BullMQ + Redis 7 | Repeatable jobs, retries |
 | AI SDK | Vercel AI SDK (`ai` package) | Multi-provider, tool() bindings |
+| RAG Pipeline | LangChain JS | Document chunking, embedding abstraction, retrieval chains (RAG layer only — not for agent orchestration) |
 | Observability | LangSmith + Pino | LLM traces + structured logs |
 | Bot | Telegraf | Polling-based, mature |
 | Dashboard | React + Vite (vanilla CSS) | Fast build, no framework overhead |

@@ -36,8 +36,8 @@ No public registration. All accounts are created by the admin.
 | Requirement | How FinSight covers it |
 |---|---|
 | OpenAI + Anthropic + multi-model | Manager + Analyst: Claude Sonnet; Researcher + Technician: GPT-4o; Watchdog + Screener + Bookkeeper + Trader: GPT-4o-mini; Reporter: local LM Studio (fallback: GPT-4o-mini); Azure OpenAI: enterprise fallback for Claude tasks |
-| RAG + embeddings + pgvector | Bookkeeper embeds every KB entry into pgvector; rag-retrieval-mcp serves hybrid semantic + BM25 search; `/history` command proves longitudinal memory |
-| Agent workflows — Vercel AI SDK | 9-agent hierarchical team, streaming tool-call steps, parallel Researcher dispatch, confidence-gated routing |
+| RAG + embeddings + pgvector | Bookkeeper embeds every KB entry via LangChain `OpenAIEmbeddings` into pgvector; rag-retrieval-mcp serves hybrid semantic + BM25 search via LangChain retrieval chain; `/history` command proves longitudinal memory |
+| Agent workflows — Vercel AI SDK + LangChain | Vercel AI SDK: 9-agent orchestration, tool() bindings, parallel Researcher dispatch, confidence-gated routing. LangChain: document chunking, embedding abstraction, RAG retrieval chain |
 | MCP servers — pluggable tools | **6 independent Hono MCP servers**; agents register tools at startup from `mcp.yaml`; new data source = new server, zero agent code changes |
 | Internal systems (Graph, SharePoint) | `enterprise-connector-mcp` — SharePoint doc search + Graph email search (realistic mock in PoC; real Graph SDK in production, agent code unchanged) |
 | Event-driven patterns + retries | BullMQ named queues for all scheduled/triggered jobs; retry policy from `agents.yaml` |
@@ -47,6 +47,7 @@ No public registration. All accounts are created by the admin.
 | Prisma + PostgreSQL + pgvector | ORM + relational data + vector similarity search |
 | Docker + AWS + Azure | Docker Compose (local) + Pulumi IaC (AWS ECS Fargate + RDS + ElastiCache) + Azure OpenAI Service |
 | Vercel AI SDK | `generateText` + `tool()` bindings for all agent orchestration; parallel dispatch via `Promise.all`; agent tool-call steps recorded per AgentRun and surfaced in the mission pipeline on the admin dashboard |
+| LangChain JS | RAG pipeline only — `RecursiveCharacterTextSplitter` (chunking), `OpenAIEmbeddings` (embedding abstraction, Azure-swappable via config), custom retrieval chain in `rag-retrieval-mcp`. Never used for agent orchestration. |
 | Auth + multi-user | JWT auth, admin-managed accounts, per-user portfolios and watchlists, per-user brief delivery |
 | Everything-as-Code | YAML runtime config + Zod validation + Pulumi IaC + Prisma migrations + prompts-as-code + seed script |
 

@@ -54,7 +54,8 @@ Cost is computed deterministically from `pricing.yaml` — not estimated, not ap
 ### VII. Simplicity Over Cleverness
 
 - Hono over Express (lighter, faster, better TypeScript)
-- Direct `generateText` over heavy agent frameworks (no LangChain, no CrewAI)
+- Direct `generateText` for agent orchestration — no LangGraph, no CrewAI
+- LangChain used narrowly: document chunking (`RecursiveCharacterTextSplitter`), embedding abstraction (`OpenAIEmbeddings`), and retrieval chains in the RAG layer (`rag-retrieval-mcp`, Bookkeeper). Never for agent orchestration.
 - BullMQ over custom schedulers (battle-tested, Redis-backed)
 - Prisma over raw SQL (type-safe, migration-friendly)
 - No WebSocket complexity — Admin Dashboard polls every 3 seconds
@@ -71,6 +72,7 @@ Cost is computed deterministically from `pricing.yaml` — not estimated, not ap
 | ORM | Prisma + pgvector | Type-safe, migration support, vector search |
 | Queue | BullMQ + Redis 7 | Repeatable jobs, retries, dead letter |
 | AI SDK | Vercel AI SDK | Multi-provider, tool() bindings, streaming |
+| RAG Pipeline | LangChain JS (`@langchain/core`, `@langchain/openai`) | Document chunking, embedding abstraction, retrieval chains — RAG layer only |
 | Observability | LangSmith + Pino | Full LLM trace + structured logging |
 | Bot | Telegraf | Mature polling-based Telegram SDK |
 | IaC | Pulumi (TypeScript) | TypeScript-native, AWS support |

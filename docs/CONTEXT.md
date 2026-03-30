@@ -261,15 +261,24 @@ Three reasons:
 2. **Caching:** Each MCP server has its own Redis cache layer. Quotes are cached for 60 seconds. Fundamentals for 1 hour. This prevents hitting Finnhub's 60 req/min limit during parallel Researcher dispatches.
 3. **Replaceability:** Swapping a data source means writing a new MCP server. The enterprise connector demo is the clearest example — mock today, real Graph SDK tomorrow, zero agent code changes.
 
-### Why Vercel AI SDK instead of LangChain or raw SDK calls
+### Why Vercel AI SDK for agent orchestration, and LangChain for the RAG pipeline
 
-LangChain is heavier than needed for this architecture. The Vercel AI SDK gives:
-- `generateText` with `tool()` bindings — clean, typed
-- Provider-agnostic (Anthropic, OpenAI, Azure all work with the same interface)
+The two frameworks serve different layers and are not mutually exclusive.
+
+**Vercel AI SDK** handles all agent orchestration:
+- `generateText` with `tool()` bindings — clean, typed, provider-agnostic
+- Anthropic, OpenAI, Azure all work with the same interface
 - `streamText` for internal pipeline streaming
-- First-class TypeScript types throughout
+- The `tool()` dispatch pattern makes Manager's routing fully visible in LangSmith traces without custom instrumentation
 
-The `tool()` binding pattern is how Manager dispatches other agents — each dispatch is itself a tool call, which means the full orchestration is visible in LangSmith traces without custom instrumentation.
+**LangChain** handles the RAG document pipeline:
+- `RecursiveCharacterTextSplitter` in Bookkeeper for chunking analyst outputs before embedding
+- `OpenAIEmbeddings` (via `@langchain/openai`) as the embedding abstraction — swappable to Azure or other providers via config without changing Bookkeeper code
+- Retrieval chain internals in `rag-retrieval-mcp` for the hybrid BM25 + cosine search pipeline
+
+**Why not LangGraph for orchestration:** The agent pipeline is already clean with `tool()` dispatch. LangGraph would add stateful graph complexity, extra dependencies, and a new mental model for what is a straightforward sequential-with-branching flow. The position does not require LangGraph specifically.
+
+This split — Vercel AI SDK on the agent/app layer, LangChain on the backend document processing layer — is a standard pattern for production TypeScript AI platforms and demonstrates deliberate framework selection rather than picking one and using it for everything.
 
 ### Why BullMQ instead of cron jobs or setInterval
 

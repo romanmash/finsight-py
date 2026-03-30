@@ -124,7 +124,7 @@ As the system, I want all MCP servers to cache responses in Redis so that repeat
 
 #### RAG Retrieval MCP (port 3004)
 - **FR-013**: MUST implement 3 tools: `search`, `get_current_thesis`, `get_thesis_history`
-- **FR-014**: `search({ query, limit, ticker?, entryType?, since? })` MUST use hybrid search combining cosine similarity and BM25 via `ts_rank`, merged with RRF formula `1/(k + rank)` where `k=60`
+- **FR-014**: `search({ query, limit, ticker?, entryType?, since? })` MUST implement hybrid search via a LangChain retrieval chain combining cosine similarity (pgvector `<=>` operator) and BM25 (PostgreSQL `ts_rank`), results merged with RRF formula `1/(k + rank)` where `k=60` per `rag.yaml`
 - **FR-015**: `get_current_thesis({ ticker })` MUST return the most recent `KbEntry` for a ticker plus its `confidence`, `lastUpdated`, and contradiction flags — or `null` if no entry exists
 - **FR-016**: `get_thesis_history({ ticker, limit? })` MUST return `KbThesisSnapshot` records for a ticker in reverse chronological order
 - **FR-017**: All three tools MUST support filters by ticker, entry type, and date range where applicable

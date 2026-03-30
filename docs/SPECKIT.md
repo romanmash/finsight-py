@@ -1017,7 +1017,7 @@ export async function runBookkeeper(input: BookkeeperInput): Promise<void>
 1. Fetch existing thesis via `ragRetrieval.get_current_thesis`
 2. Branch on `mode === 'devil_advocate'` (see corrected flowchart in CASE.md §10.7)
 3. For contradiction check: use `generateText` with `bookkeeper.contradiction.prompt.ts` system prompt, `response_format: { type: "json_object" }`, parse result
-4. Generate embedding: `openai.embeddings.create({ model: config.rag.embeddingModel, input: analystOutput.thesisUpdate })`
+4. Generate embedding via LangChain `OpenAIEmbeddings`: `new OpenAIEmbeddings({ model: config.rag.embeddingModel }).embedQuery(analystOutput.thesisUpdate)` — never call `openai.embeddings.create` directly
 5. Upsert `KbEntry` + create `KbThesisSnapshot` in a DB transaction
 6. If `contradictionFound && severity === 'high'`: create Alert record
 7. Update `Mission.status = 'complete'`

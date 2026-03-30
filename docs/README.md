@@ -6,7 +6,7 @@
 
 ## What Is This Project?
 
-A private developer is applying for a freelance AI engineer position. The position requires hands-on experience with: multi-provider LLM integration, RAG + pgvector, agent workflows via Vercel AI SDK, MCP server architecture, internal enterprise connectors (Graph/SharePoint), event-driven patterns, LangSmith observability, TypeScript/Node.js, Hono, Prisma, PostgreSQL, Docker, AWS (Pulumi IaC), and Azure.
+A private developer is applying for a freelance AI engineer position. The position requires hands-on experience with: multi-provider LLM integration, RAG + pgvector, agent workflows via Vercel AI SDK and LangChain, MCP server architecture, internal enterprise connectors (Graph/SharePoint), event-driven patterns, LangSmith observability, TypeScript/Node.js, Hono, Prisma, PostgreSQL, Docker, AWS (Pulumi IaC), and Azure.
 
 Instead of a generic demo, the developer is building **FinSight AI Hub** — a real, working fintech market intelligence platform that demonstrates every one of those requirements in a coherent domain. The system is simultaneously a portfolio demo and a tool the developer and a small group of friends will actually use.
 

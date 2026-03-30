@@ -118,7 +118,7 @@ As a user, I want the Trader agent to create trade tickets based on analysis so 
 - **FR-009**: For non-initial entries: MUST snapshot existing thesis as `KbThesisSnapshot` before overwriting
 - **FR-010**: MUST run contradiction check via `generateText` with `bookkeeper.contradiction.prompt.ts` and `response_format: { type: 'json_object' }`
 - **FR-011**: If contradiction severity is `'high'`: MUST create `thesis_contradiction` Alert
-- **FR-012**: MUST generate embedding via `openai.embeddings.create({ model: config.rag.embeddingModel, input: thesis })`
+- **FR-012**: MUST generate embedding via LangChain `OpenAIEmbeddings` (model from `config.rag.embeddingModel`) — never call `openai.embeddings.create` directly; the LangChain abstraction allows swapping to Azure embeddings via config without code changes
 - **FR-013**: MUST upsert `KbEntry` + create `KbThesisSnapshot` in a single Prisma transaction
 - **FR-014**: `changeType` values: `initial`, `update`, `contradiction`, `devil_advocate`
 - **FR-015**: MUST update `Mission.status = 'complete'` after successful write
