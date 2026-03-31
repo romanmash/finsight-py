@@ -7,7 +7,7 @@ export function createScreenerRouter(): Hono<AppEnv> {
   const router = new Hono<AppEnv>();
 
   router.post('/trigger', async (c) => {
-    await screenerScanQueue.add('manual-screener-trigger', { triggeredBy: 'admin-api' });
+    await screenerScanQueue.add('manual-screener-trigger', { triggeredBy: 'manual' });
     return c.json({ queued: true, queue: 'screenerScan' }, 202);
   });
 

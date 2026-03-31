@@ -7,7 +7,7 @@ export function createWatchdogRouter(): Hono<AppEnv> {
   const router = new Hono<AppEnv>();
 
   router.post('/trigger', async (c) => {
-    await watchdogScanQueue.add('manual-watchdog-trigger', { triggeredBy: 'admin-api' });
+    await watchdogScanQueue.add('manual-watchdog-trigger', { triggeredBy: 'manual' });
     return c.json({ queued: true, queue: 'watchdogScan' }, 202);
   });
 

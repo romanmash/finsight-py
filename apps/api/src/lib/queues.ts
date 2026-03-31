@@ -4,12 +4,56 @@ import { getConfig } from './config.js';
 import { getBullMqConnectionOptions } from './redis.js';
 
 const connection = getBullMqConnectionOptions();
+const DEFAULT_QUEUE_ATTEMPTS = 1;
+const DEFAULT_QUEUE_BACKOFF_MS = 1000;
 
-export const watchdogScanQueue = new Queue('watchdogScan', { connection });
-export const screenerScanQueue = new Queue('screenerScan', { connection });
-export const dailyBriefQueue = new Queue('dailyBrief', { connection });
-export const earningsCheckQueue = new Queue('earningsCheck', { connection });
-export const ticketExpiryQueue = new Queue('ticketExpiry', { connection });
+function resolveSchedulerRetryConfig(jobName: keyof ReturnType<typeof getConfig>['scheduler']): {
+  attempts: number;
+  backoffMs: number;
+} {
+  try {
+    const schedulerConfig = getConfig().scheduler[jobName];
+    return {
+      // BullMQ attempts is total tries (1 initial attempt + configured retries).
+      attempts: schedulerConfig.retryAttempts + 1,
+      backoffMs: schedulerConfig.retryBackoffMs
+    };
+  } catch {
+    return {
+      attempts: DEFAULT_QUEUE_ATTEMPTS,
+      backoffMs: DEFAULT_QUEUE_BACKOFF_MS
+    };
+  }
+}
+
+function queueOptions(jobName: keyof ReturnType<typeof getConfig>['scheduler']): {
+  connection: ReturnType<typeof getBullMqConnectionOptions>;
+  defaultJobOptions: {
+    attempts: number;
+    backoff: { type: 'fixed'; delay: number };
+    removeOnComplete: number;
+  };
+} {
+  const retryConfig = resolveSchedulerRetryConfig(jobName);
+
+  return {
+    connection,
+    defaultJobOptions: {
+      attempts: retryConfig.attempts,
+      backoff: {
+        type: 'fixed',
+        delay: retryConfig.backoffMs
+      },
+      removeOnComplete: 100
+    }
+  };
+}
+
+export const watchdogScanQueue = new Queue('watchdogScan', queueOptions('watchdogScan'));
+export const screenerScanQueue = new Queue('screenerScan', queueOptions('screenerScan'));
+export const dailyBriefQueue = new Queue('dailyBrief', queueOptions('dailyBrief'));
+export const earningsCheckQueue = new Queue('earningsCheck', queueOptions('earningsCheck'));
+export const ticketExpiryQueue = new Queue('ticketExpiry', queueOptions('ticketExpiry'));
 export const alertPipelineQueue = new Queue('alertPipeline', { connection });
 
 export const repeatableQueues = {
@@ -41,3 +85,4 @@ export async function registerRepeatableQueueSchedules(): Promise<void> {
     })
   ]);
 }
+

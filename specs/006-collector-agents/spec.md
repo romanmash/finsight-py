@@ -1,114 +1,111 @@
 # Feature Specification: Collector Agents
 
 **Feature**: `006-collector-agents`
-**Created**: 2026-03-28
+**Created**: 2026-03-31
 **Status**: Draft
 **Constitution**: [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md)
 **Depends on**: `004-mcp-platform`, `005-agent-infrastructure`
 
 ## Overview
 
-Implement the four data-collection agents: Watchdog (periodic price/news scanning), Screener (sector scanning beyond watchlist), Researcher (comprehensive data gathering for missions), and Technician (technical analysis from OHLCV data). Also implement the BullMQ scheduler and worker infrastructure. These agents collect and compute — they do **not** synthesise or interpret.
+Deliver the collector-agent layer that gathers market and context data for downstream reasoning agents. This feature explicitly covers Watchdog (monitoring), Screener (discovery scans), Researcher (mission data collection), Technician (technical signal collection), and scheduled execution support for collector runs.
 
-**Why this feature exists:** Collector agents feed data into the reasoning pipeline. Without Watchdog, the system can't detect market events. Without Researcher, the Analyst has no data to synthesise. Without Technician, pattern analysis requests can't be fulfilled. Without Screener, the system only watches known tickers.
+**Why this feature exists:** Reasoning agents cannot produce reliable outputs without structured, timely inputs. Collector agents create those inputs while preserving strict role boundaries (collect only, no synthesis).
 
 ---
 
 ## User Scenarios & Testing
 
-### User Story 1 — Watchdog Scanning (Priority: P1)
+### User Story 1 (US1) — Proactive Watchlist Monitoring (Priority: P1)
 
-As the system, I want automated periodic scanning of all watched tickers for price changes, volume spikes, news events, and earnings proximity so that alerts are generated proactively.
+As the platform, I want periodic monitoring of tracked instruments so that meaningful market events are detected and surfaced without manual polling.
 
-**Why P1**: Watchdog is the only agent that runs without human intervention. It creates the alerts that drive the `alert_investigation` pipeline — the system's proactive intelligence.
+**Why this priority**: Proactive alerting is the entry point for investigation workflows and a core platform behavior.
 
-**Independent Test**: Seed 3 watchlist tickers, run `runWatchdog()`, verify PriceSnapshot records are written and an alert is created for any ticker exceeding the threshold.
+**Independent Test**: Execute one monitoring cycle with representative watchlist data and verify snapshots are recorded and alerts are created only when thresholds are exceeded.
 
 **Acceptance Scenarios**:
 
-1. **Given** 3 active watchlist items (NVDA, AAPL, GLD), **When** `runWatchdog()` completes, **Then** a `PriceSnapshot` record is created for each ticker
-2. **Given** NVDA price changed by 5% since last snapshot and threshold is 3%, **When** `runWatchdog()` completes, **Then** a `price_spike` Alert is created and pushed to `alertPipelineQueue`
-3. **Given** NVDA price changed by 1% and threshold is 3%, **When** `runWatchdog()` completes, **Then** NO alert is created (within normal range)
-4. **Given** NVDA has earnings in 2 days, **When** `runWatchdog()` checks earnings, **Then** an `earnings_approaching` Alert is created
-5. **Given** Watchdog starts, **Then** it sets Redis state to `active` with current task. On completion, it sets state to `idle` with summary. On error, it sets state to `error`.
+1. **Given** active watchlist instruments exist, **When** a monitoring cycle completes, **Then** each instrument receives a new snapshot record
+2. **Given** an instrument crosses configured movement thresholds, **When** monitoring completes, **Then** an alert is created with the appropriate signal type
+3. **Given** an instrument remains within configured thresholds, **When** monitoring completes, **Then** no alert is created for threshold-based signals
+4. **Given** operational status tracking is enabled, **When** monitoring starts/completes/fails, **Then** agent operational state is updated consistently
 
 ---
 
-### User Story 2 — Screener Scanning (Priority: P2)
+### User Story 2 (US2) — Mission Research Data Collection (Priority: P1)
 
-As the system, I want periodic sector scanning to discover interesting tickers beyond the user's watchlist so that the platform surfaces opportunities the user hasn't thought of.
+As the reasoning layer, I want comprehensive data collection for a mission target so that synthesis agents can operate on complete, structured evidence.
 
-**Why P2**: Proactive discovery is a differentiator but the core pipeline works without it. Screener enriches the daily brief.
+**Why this priority**: Most mission flows depend on high-quality collected inputs before any reasoning can occur.
 
-**Independent Test**: Run `runScreener()` with mocked MCP tools, verify a `ScreenerRun` record is persisted with scored results.
+**Independent Test**: Execute one research collection request with focus prompts and verify structured output completeness and validation conformity.
 
 **Acceptance Scenarios**:
 
-1. **Given** a scheduled Screener run, **When** `runScreener()` completes, **Then** a `ScreenerRun` record is created with `triggeredBy: 'scheduled'` and results JSON
-2. **Given** a manual trigger via `POST /api/screener/trigger`, **When** `runScreener()` completes, **Then** `triggeredBy` is `'manual'`
-3. **Given** sector scan returns 5 signals, **When** results are persisted, **Then** each result has `ticker`, `sector`, `reason`, `signalScore`, and `topHeadline`
+1. **Given** a mission research request, **When** collection completes, **Then** the response contains all required data sections in valid structure
+2. **Given** required upstream data sources partially fail, **When** collection completes, **Then** output still returns with explicit gaps and confidence impact
+3. **Given** malformed output is produced internally, **When** validation runs, **Then** the request fails in a recoverable way instead of returning invalid payloads
+4. **Given** collector role boundaries, **When** research output is generated, **Then** it contains gathered facts only and no thesis/conclusion content
 
 ---
 
-### User Story 3 — Researcher Data Gathering (Priority: P1)
+### User Story 3 (US3) — Technical Signal Collection (Priority: P1)
 
-As the Analyst agent, I want comprehensive research data for a ticker so that I can synthesise it into an investment thesis.
+As the platform, I want technical signals and pattern-oriented context collected from recent market data so that technical investigations are grounded in consistent indicators.
 
-**Why P1**: Researcher is dispatched by Manager for every `operator_query`, `alert_investigation`, `comparison`, `devil_advocate`, and `earnings_prebrief` mission. It's the most frequently called agent.
+**Why this priority**: Pattern and technical workflows are core user-visible capabilities and require deterministic signal collection.
 
-**Independent Test**: Call `runResearcher({ ticker: 'NVDA', focusQuestions: ['recent news', 'fundamentals'] })` with mocked MCP tools, verify the output is a valid `ResearchOutput`.
+**Independent Test**: Run a technical collection request for a ticker and period window; verify indicator ranges, signal classifications, and output structure.
 
 **Acceptance Scenarios**:
 
-1. **Given** a research request for NVDA with focus questions, **When** `runResearcher()` completes, **Then** it returns a valid `ResearchOutput` with all required fields populated
-2. **Given** the Researcher uses `generateText` with tool bindings from `McpToolSets.all`, **Then** the model calls appropriate MCP tools based on focus questions (verified by tool call history)
-3. **Given** the model returns malformed JSON, **When** output validation fails, **Then** the function throws (letting BullMQ retry)
-4. **Given** `maxSteps: 10` is configured, **Then** the Researcher can make up to 10 sequential tool calls per execution
-5. **Given** a research request, **Then** Researcher produces ONLY data — no analysis, no conclusions, no recommendations (enforced by system prompt)
+1. **Given** sufficient recent market candles, **When** technical collection runs, **Then** standard indicators are computed within valid ranges
+2. **Given** computed indicator values, **When** output is produced, **Then** trend, levels, pattern summary, and confidence are all present
+3. **Given** limited market history, **When** technical collection runs, **Then** output is returned with downgraded confidence and explicit limitations
 
 ---
 
-### User Story 4 — Technical Analysis (Priority: P1)
+### User Story 4 (US4) — Market Discovery Scans (Priority: P2)
 
-As the system, I want RSI, MACD, Bollinger Bands, and pattern analysis from OHLCV data so that pattern requests and full investigations include technical signals.
+As the platform, I want scheduled and on-demand discovery scans beyond user watchlists so that additional opportunities can be surfaced.
 
-**Why P1**: `/pattern NVDA 3w` is a primary demo command. Without Technician, it returns nothing.
+**Why this priority**: Discovery improves value but is secondary to baseline monitoring and mission collection.
 
-**Independent Test**: Call `runTechnician({ ticker: 'NVDA', periodWeeks: 3 })` with mocked OHLCV data, verify RSI is between 0-100 and all indicator fields are present.
+**Independent Test**: Run both scheduled and manual scan triggers; verify results persistence and consistent scoring fields.
 
 **Acceptance Scenarios**:
 
-1. **Given** 21 daily candles for NVDA, **When** `runTechnician()` computes indicators, **Then** RSI is between 0 and 100
-2. **Given** computed indicators, **When** `generateText` interprets them, **Then** it returns a `TechnicianOutput` with `trend`, `keyLevels`, `indicators`, `patterns`, `summary`, `confidence`
-3. **Given** MACD computation, **Then** signal is one of: `bullish_crossover`, `bearish_crossover`, `neutral`
-4. **Given** Bollinger Bands computation, **Then** position is one of: `upper`, `middle`, `lower`, `outside_upper`, `outside_lower`
-5. **Given** technical indicators are computed using `technicalindicators` npm package (pure math), **Then** no LLM call is made for the math portion — only for natural language interpretation
+1. **Given** a scheduled discovery run, **When** it completes, **Then** results are persisted with scheduled trigger attribution
+2. **Given** a manual discovery trigger, **When** it completes, **Then** results are persisted with manual trigger attribution
+3. **Given** ranked discoveries are produced, **When** results are stored, **Then** each result includes instrument, context, score, and supporting headline/evidence
 
 ---
 
-### User Story 5 — BullMQ Scheduler & Workers (Priority: P1)
+### User Story 5 (US5) — Scheduled Execution Reliability (Priority: P1)
 
-As the system, I want repeatable BullMQ jobs for Watchdog, Screener, Daily Brief, and Earnings Check so that they run on the configured cron schedule.
+As an operator, I want collector jobs to run on configured schedules with retries and duplicate-free registration so that periodic intelligence remains reliable.
 
-**Why P1**: Without the scheduler, no periodic agent runs. The demo requires Watchdog to run every 30 minutes and Daily Brief at 06:00.
+**Why this priority**: Without dependable scheduling, proactive collection and briefs degrade quickly.
 
-**Independent Test**: Call `initScheduler(config)`, verify all repeatable jobs are registered with correct cron expressions from `scheduler.yaml`.
+**Independent Test**: Initialize scheduler twice and verify jobs are registered once, execute on schedule, and retry on transient failures.
 
 **Acceptance Scenarios**:
 
-1. **Given** `scheduler.yaml` defines Watchdog cron as `*/30 * * * *`, **When** `initScheduler()` runs, **Then** a repeatable job is registered with that cron expression
-2. **Given** `initScheduler()` is called twice (restart), **Then** BullMQ deduplicates repeatable jobs (idempotent)
-3. **Given** a Watchdog scan job fires, **When** `watchdog-worker.ts` processes it, **Then** it calls `runWatchdog()` and records the result
-4. **Given** a job fails, **Then** BullMQ retries with backoff per queue configuration
+1. **Given** configured schedules exist, **When** scheduler initializes, **Then** all required periodic jobs are registered from configuration
+2. **Given** scheduler initialization is invoked repeatedly, **When** registration runs, **Then** duplicate periodic jobs are not created
+3. **Given** a collector job fails transiently, **When** execution framework retries, **Then** retry policy is applied and failure is observable
 
 ---
 
 ### Edge Cases
 
-- What if Watchdog scan takes longer than the scan interval? → BullMQ handles this — next job waits until current one completes
-- What if Researcher gets no useful data from MCP tools? → Returns `ResearchOutput` with empty/minimal fields, `confidence: 'low'`
-- What if OHLCV data has fewer candles than expected? → Technician computes with available data, logs warning, may set `confidence: 'low'`
-- What if all Watchdog tickers return errors from market-data-mcp? → Watchdog completes with `alertsCreated: 0`, `snapshotsWritten: 0`, logs warnings
+- What happens when a monitoring run takes longer than its interval? -> Overlapping execution is prevented or safely queued to avoid duplicate side effects
+- What happens when upstream data sources are partially unavailable? -> Collector outputs remain validation-conformant with explicit missing-data markers
+- What happens when all monitored instruments fail data retrieval? -> Run completes with zero signals and structured warnings rather than hard crash
+- What happens when technical history is insufficient for one or more indicators? -> Output still returns with reduced confidence and indicator-specific gaps
+- What happens when schedules are changed at runtime? -> Next scheduling refresh applies new cadence without duplicate registrations
+- What happens when a discovery run returns no qualifying candidates? -> Run is persisted with empty ranked results and explicit `no_candidates` reason metadata
 
 ---
 
@@ -116,44 +113,44 @@ As the system, I want repeatable BullMQ jobs for Watchdog, Screener, Daily Brief
 
 ### Functional Requirements
 
-#### Agent State Protocol (applies to ALL agents)
-- **FR-001**: Every agent MUST write Redis state before execution: `{ state: 'active', currentTask, currentMissionId, startedAt }`
-- **FR-002**: Every agent MUST write Redis state after completion: `{ state: 'idle', lastActiveAt, lastActivitySummary }`
-- **FR-003**: Every agent MUST write Redis state on error: `{ state: 'error', errorMessage }`
-- **FR-004**: Redis state keys MUST use `RedisKey.agentState(agentName)` with 10-minute TTL
+- **FR-001**: System MUST provide the following collector agents in scope: Watchdog, Screener, Researcher, and Technician
+- **FR-002**: System MUST enforce collector boundary behavior: collectors gather/compute data but do not produce investment theses or recommendations
+- **FR-003**: System MUST persist monitoring snapshots for all active monitored instruments on each completed monitoring cycle
+- **FR-004**: System MUST create alerts only when configured detection thresholds or event criteria are satisfied, where threshold/event configuration is sourced from `config/runtime/*.yaml` and owned by runtime config (not source code constants)
+- **FR-005**: System MUST classify alerts into approved signal categories and include minimum downstream context fields: `instrument`, `signalType`, `triggerValue`, `thresholdValueOrEvent`, `snapshotTimestamp`, and `evidenceSummary`
+- **FR-006**: System MUST persist discovery scan outputs with trigger source attribution (scheduled vs manual)
+- **FR-007**: System MUST provide mission research outputs in a validated, structured format suitable for downstream reasoning agents
+- **FR-008**: System MUST fail safely on malformed collector outputs by surfacing recoverable failures rather than returning invalid payloads
+- **FR-009**: System MUST collect technical indicators and pattern context with deterministic indicator range validation using explicit rules: RSI in `[0,100]`; stochastic values in `[0,100]`; bounded probability/confidence fields in `[0,1]`; non-negative volume/volatility metrics
+- **FR-010**: System MUST return usable technical output even with partial input data. Minimum required sections are `trend`, `levels`, `patterns`, `confidence`, and `limitations`; missing indicators MUST be represented explicitly with reason codes
+- **FR-011**: System MUST register periodic collector jobs from runtime configuration and execute them on configured cadence
+- **FR-012**: System MUST keep scheduler registration duplicate-free across restarts/re-initialization
+- **FR-013**: System MUST apply retry behavior for transient collector job failures and expose failure outcomes in logs/state
+- **FR-014**: System MUST maintain operational state visibility for each collector agent (`active`, `idle`, `error`) with current/last activity context
+- **FR-015**: System MUST keep all behavior-critical thresholds, cadences, and limits configuration-driven (no hardcoded behavior values)
+- **FR-016**: System MUST support offline testability with mocked upstream dependencies for collector workflows
+- **FR-017**: System MUST record screener trigger provenance on each run as one of `scheduled` or `manual`, and treat unknown trigger values as validation errors
+- **FR-018**: System MUST enforce requirement-ID traceability in downstream planning artifacts so each P1 user story (`US1`, `US2`, `US3`, `US5`) maps to at least one task reference and at least one validation task
 
-#### Watchdog
-- **FR-005**: MUST fetch all active WatchlistItems across all users
-- **FR-006**: MUST batch-call `get_multiple_quotes` for all tickers (single MCP request)
-- **FR-007**: MUST compare prices against latest PriceSnapshot per ticker
-- **FR-008**: MUST check earnings proximity via `get_earnings` per ticker
-- **FR-009**: MUST fetch news via `get_ticker_news` for flagged tickers only
-- **FR-010**: MUST write PriceSnapshot for every ticker on every scan
-- **FR-011**: MUST create Alert and push to `alertPipelineQueue` for each detected signal
-- **FR-012**: Alert types: `price_spike`, `volume_spike`, `news_event`, `earnings_approaching`, `pattern_signal`
+### Operational Definitions
 
-#### Screener
-- **FR-013**: MUST persist results as `ScreenerRun` with `triggeredBy` field
-- **FR-014**: MUST score signals with `signalScore` field
-- **FR-015**: MUST include `topHeadline` for each find
+- **Collector boundary**: Agent output is restricted to gathered facts, computed signals, and explicit metadata; no narrative thesis/recommendation content.
+- **Monitoring cycle**: One complete pass over all active monitored instruments, including snapshot persistence and event evaluation.
+- **Discovery run**: One complete scan outside watchlist scope producing ranked candidates with supporting evidence fields.
+- **Recoverable failure**: A failure mode that (a) persists a structured error record with failure class and retryability, (b) does not emit malformed payloads, and (c) permits safe reprocessing without manual data repair.
+- **Configured thresholds/events**: Numeric cutoffs and event predicates defined in runtime YAML config (`config/runtime/*.yaml`), loaded through validated config schema ownership at startup.
+- **Sufficient investigation context**: Alert payload containing the FR-005 minimum fields plus source collector and correlation/run identifiers.
+- **Usable technical output**: Output that includes all FR-010 required sections, even when some indicators are unavailable.
+- **Meaningful market event**: A threshold breach or configured event predicate match that satisfies FR-004 and results in an alert candidate.
 
-#### Researcher
-- **FR-016**: MUST use `generateText` with `McpToolSets.all` tool bindings
-- **FR-017**: MUST set `maxSteps: 10` to allow multiple sequential tool calls
-- **FR-018**: MUST validate output against `ResearchOutput` type — throw on malformed JSON
-- **FR-019**: System prompt MUST instruct: collect data only, no analysis, no conclusions
-- **FR-020**: MUST include existing KB context via `ragRetrieval.search()` in output
+### Key Entities
 
-#### Technician
-- **FR-021**: MUST fetch OHLCV via `mcpTools.marketData.get_ohlcv` for `periodWeeks × 7` days
-- **FR-022**: MUST compute RSI, MACD, Bollinger Bands, SMA using `technicalindicators` npm package (pure math, no LLM)
-- **FR-023**: MUST pass computed values to `generateText` for natural language interpretation only
-- **FR-024**: MUST return typed `TechnicianOutput` with all required fields
-
-#### Scheduler & Workers
-- **FR-025**: `initScheduler()` MUST register all repeatable BullMQ jobs from `scheduler.yaml` cron expressions
-- **FR-026**: `initScheduler()` MUST be idempotent (safe to call on restart)
-- **FR-027**: Workers MUST handle job errors gracefully (log + let BullMQ retry)
+- **CollectorOperationalState**: Agent runtime status record containing state, current task context, last activity timestamp, and error summary when applicable
+- **MonitoringSnapshot**: Time-stamped market snapshot for a monitored instrument used for threshold/event comparisons
+- **CollectorAlert**: Event record created when monitoring criteria are met, with type, severity context, and downstream investigation payload
+- **DiscoveryRunResult**: Persisted output of a market discovery execution with trigger source and ranked candidates
+- **ResearchCollectionOutput**: Structured mission collection payload containing gathered evidence and declared data gaps
+- **TechnicalCollectionOutput**: Structured technical signal payload containing indicator values, pattern context, and confidence/limitations
 
 ---
 
@@ -161,10 +158,28 @@ As the system, I want repeatable BullMQ jobs for Watchdog, Screener, Daily Brief
 
 ### Measurable Outcomes
 
-- **SC-001**: `runWatchdog()` writes PriceSnapshot records for every active ticker
-- **SC-002**: `runWatchdog()` creates Alert when price change exceeds threshold
-- **SC-003**: `runWatchdog()` does NOT create alert when change is within threshold
-- **SC-004**: `runResearcher({ ticker: 'NVDA', focusQuestions: ['recent news'] })` returns valid `ResearchOutput`
-- **SC-005**: `runTechnician({ ticker: 'NVDA', periodWeeks: 3 })` returns `TechnicianOutput` with RSI in 0-100
-- **SC-006**: All repeatable BullMQ jobs register with correct cron expressions
-- **SC-007**: All agent state Redis writes follow the protocol
+- **SC-001**: 100% of active monitored instruments receive snapshots in each successful monitoring cycle
+- **SC-002**: Threshold/event alerts are generated in 100% of threshold-breach test scenarios and 0% of within-threshold scenarios
+- **SC-003**: Discovery runs persist outputs with trigger attribution and required result fields in 100% of test runs
+- **SC-004**: Mission research collection returns validation-conformant structured payloads in 100% of healthy and partial-failure test scenarios
+- **SC-005**: Technical collection outputs pass indicator-range and required-field validation in 100% of test scenarios
+- **SC-006**: Scheduler initialization remains duplicate-free across repeated startup tests with no duplicate periodic registrations
+- **SC-007**: Collector operational-state transitions (`active` -> `idle` or `error`) are emitted for 100% of collector executions
+- **SC-008**: Offline test execution for collector workflows performs no external network calls and passes using mocks only
+- **SC-009**: 100% of generated tasks for P1 stories include explicit requirement-ID references to `FR-*` and user-story IDs (`US1`, `US2`, `US3`, `US5`)
+
+## 007/008 Compatibility Guardrails
+
+- **CG-001**: 007 and 008 MUST consume 006 output contracts by field name and type exactly as defined in `apps/api/src/types/collectors.ts` and `contracts/collector-agents-contracts.md`.
+- **CG-002**: Collector implementation style (deterministic orchestration vs model-assisted collection) is an internal 006 concern; downstream features MUST depend on contracts and boundaries, not internal execution style.
+- **CG-003**: Screener evidence field for downstream consumers is `supportingHeadline`.
+- **CG-004**: Technician confidence is numeric in `[0,1]` and MUST NOT be treated as enum text by downstream consumers.
+- **CG-005**: Any future contract-breaking change in 006 requires synchronized spec/task updates across 006, 007, and 008 before implementation.
+## Assumptions
+
+- Feature `004-mcp-platform` provides stable tool contracts for all required market/news/retrieval inputs
+- Feature `005-agent-infrastructure` provides stable collector access to tool registries, provider routing, and operational state conventions
+- Collector outputs are consumed by downstream reasoning/orchestration features (007/008), which handle synthesis and user-facing conclusions
+- Threshold values, schedules, and retry policies are defined in runtime configuration and may vary by environment
+- Full optimization of signal quality/ranking algorithms is out of scope for this feature; this feature establishes reliable collection behavior
+

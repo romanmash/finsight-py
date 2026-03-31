@@ -7,6 +7,10 @@ export const appConfigSchema = z.object({
     traderAgent: z.boolean(),
     screenerAgent: z.boolean(),
     hotConfigReload: z.boolean()
+  }).strict(),
+  collector: z.object({
+    stateTtlSeconds: z.number().int().positive(),
+    researcherMaxToolSteps: z.number().int().positive()
   }).strict()
 }).strict();
 

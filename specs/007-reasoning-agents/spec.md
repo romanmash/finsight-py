@@ -139,6 +139,13 @@ As a user, I want the Trader agent to create trade tickets based on analysis so 
 
 ---
 
+## 006 Compatibility Requirements
+
+- **CFR-006-001**: 007 MUST consume collector payloads from 006 by contract shape (field names and value types) as defined in `specs/006-collector-agents/contracts/collector-agents-contracts.md`.
+- **CFR-006-002**: 007 MUST treat `TechnicalCollectionOutput.confidence` as numeric `[0,1]` and must not interpret it as enum text.
+- **CFR-006-003**: 007 consumers of discovery evidence MUST use `supportingHeadline` (not `topHeadline`).
+- **CFR-006-004**: 007 MUST depend on collector contracts and boundaries, not on 006 internal execution style (deterministic vs model-assisted collection).
+- **CFR-006-005**: Any collector contract-breaking change requires synchronized updates across 006/007/008 specs and tasks before implementation.
 ## Success Criteria
 
 ### Measurable Outcomes
@@ -152,3 +159,4 @@ As a user, I want the Trader agent to create trade tickets based on analysis so 
 - **SC-007**: `runBookkeeper` does NOT create alert when no contradiction
 - **SC-008**: `runTrader` creates `TradeTicket` with `pending_approval` status
 - **SC-009**: All unit tests pass with mocked LLM clients
+

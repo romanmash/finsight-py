@@ -23,22 +23,22 @@ vi.mock('bullmq', () => ({
 
 interface SchedulerFixture {
   scheduler: {
-    watchdogScan: { cron: string; concurrency: number };
-    screenerScan: { cron: string; concurrency: number };
-    dailyBrief: { cron: string; concurrency: number };
-    earningsCheck: { cron: string; concurrency: number };
-    ticketExpiry: { cron: string; concurrency: number };
+    watchdogScan: { cron: string; concurrency: number; retryAttempts: number; retryBackoffMs: number };
+    screenerScan: { cron: string; concurrency: number; retryAttempts: number; retryBackoffMs: number };
+    dailyBrief: { cron: string; concurrency: number; retryAttempts: number; retryBackoffMs: number };
+    earningsCheck: { cron: string; concurrency: number; retryAttempts: number; retryBackoffMs: number };
+    ticketExpiry: { cron: string; concurrency: number; retryAttempts: number; retryBackoffMs: number };
   };
 }
 
 vi.mock('../config.js', (): { getConfig: () => SchedulerFixture } => ({
   getConfig: (): SchedulerFixture => ({
     scheduler: {
-      watchdogScan: { cron: '*/30 * * * *', concurrency: 1 },
-      screenerScan: { cron: '0 7 * * 1-5', concurrency: 1 },
-      dailyBrief: { cron: '0 6 * * *', concurrency: 1 },
-      earningsCheck: { cron: '30 7 * * 1-5', concurrency: 1 },
-      ticketExpiry: { cron: '0 * * * *', concurrency: 1 }
+      watchdogScan: { cron: '*/30 * * * *', concurrency: 1, retryAttempts: 3, retryBackoffMs: 5000 },
+      screenerScan: { cron: '0 7 * * 1-5', concurrency: 1, retryAttempts: 3, retryBackoffMs: 5000 },
+      dailyBrief: { cron: '0 6 * * *', concurrency: 1, retryAttempts: 2, retryBackoffMs: 5000 },
+      earningsCheck: { cron: '30 7 * * 1-5', concurrency: 1, retryAttempts: 3, retryBackoffMs: 5000 },
+      ticketExpiry: { cron: '0 * * * *', concurrency: 1, retryAttempts: 2, retryBackoffMs: 3000 }
     }
   })
 }));

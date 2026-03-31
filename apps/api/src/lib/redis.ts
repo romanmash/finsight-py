@@ -6,9 +6,15 @@ interface GlobalRedisCache {
   redis?: Redis;
 }
 
+const TEST_REDIS_FALLBACK_URL = 'redis://127.0.0.1:6379/0';
+
 function getRedisUrl(): string {
   const url = process.env.REDIS_URL;
   if (url === undefined || url.length === 0) {
+    if (process.env.NODE_ENV === 'test' || process.env.VITEST !== undefined) {
+      return TEST_REDIS_FALLBACK_URL;
+    }
+
     throw new Error('REDIS_URL is required');
   }
 
@@ -68,4 +74,3 @@ export function getBullMqConnectionOptions(): BullMqConnectionOptions {
 
   return options;
 }
-

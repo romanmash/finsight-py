@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 const jobSchema = z.object({
   cron: z.string().min(1),
-  concurrency: z.number().int().positive()
+  concurrency: z.number().int().positive(),
+  retryAttempts: z.number().int().nonnegative(),
+  retryBackoffMs: z.number().int().nonnegative()
 }).strict();
 
 export const schedulerConfigSchema = z.object({

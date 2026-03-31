@@ -4,6 +4,8 @@ import { createApp } from './app.js';
 import { initConfig } from './lib/config.js';
 import { initMcpInfrastructure } from './mcp/index.js';
 import { initializeLocalProviderHealthMonitor } from './providers/lmstudio-health.js';
+import { initScheduler } from './scheduler/init-scheduler.js';
+import { initCollectorWorkers } from './workers/init-workers.js';
 
 function getPort(): number {
   const value = process.env.PORT;
@@ -18,6 +20,10 @@ function getPort(): number {
 await initConfig();
 await initMcpInfrastructure();
 await initializeLocalProviderHealthMonitor();
+await initScheduler();
+
+// Keep references in process scope so workers remain active for queue consumption.
+const collectorWorkers = initCollectorWorkers();
 
 const app = createApp();
 const port = getPort();
@@ -27,4 +33,4 @@ serve({
   port
 });
 
-console.log(`API server listening on port ${String(port)}`);
+console.log(`API server listening on port ${String(port)} with ${String(Object.keys(collectorWorkers).length)} collector workers`);

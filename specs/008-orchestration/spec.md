@@ -176,6 +176,14 @@ As a developer reviewing a mission, I want a LangSmith trace link for every miss
 
 ---
 
+## 006 Compatibility Requirements
+
+- **CFR-006-001**: 008 MUST orchestrate 006 collectors using published contract shapes from `specs/006-collector-agents/contracts/collector-agents-contracts.md`.
+- **CFR-006-002**: 008 MUST enforce Screener trigger provenance as `scheduled|manual` and reject unknown trigger values.
+- **CFR-006-003**: 008 MUST preserve 006 alert-context minimum fields when forwarding alert-investigation missions.
+- **CFR-006-004**: 008 MUST treat `TechnicalCollectionOutput.confidence` as numeric `[0,1]` in routing/threshold logic.
+- **CFR-006-005**: 008 MUST not assume 006 internal implementation style; orchestration depends only on 006 contracts and state transitions.
+- **CFR-006-006**: Any collector contract-breaking change requires synchronized updates across 006/007/008 specs and tasks before implementation.
 ## Success Criteria
 
 ### Measurable Outcomes
@@ -187,3 +195,4 @@ As a developer reviewing a mission, I want a LangSmith trace link for every miss
 - **SC-005**: Mission status updates to `complete` after full pipeline
 - **SC-006**: AgentRun records are created for each step with correct `costUsd` values
 - **SC-007**: Full E2E test: `operator_query` → mission complete → KB entry created
+

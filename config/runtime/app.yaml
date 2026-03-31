@@ -4,3 +4,6 @@ featureFlags:
   traderAgent: true
   screenerAgent: true
   hotConfigReload: true
+collector:
+  stateTtlSeconds: 600
+  researcherMaxToolSteps: 10
