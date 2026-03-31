@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "finsight-ai-hub",
   "private": true,
   "engines": {
@@ -24,7 +24,11 @@
     "mcp:dev:trader-platform": "pnpm --filter @finsight/mcp-servers dev:trader-platform",
     "telegram:typecheck": "pnpm --filter @finsight/telegram-bot typecheck",
     "telegram:test": "pnpm --filter @finsight/telegram-bot test",
-    "telegram:dev": "pnpm --filter @finsight/telegram-bot dev"
+    "telegram:dev": "pnpm --filter @finsight/telegram-bot dev",
+    "dashboard:typecheck": "pnpm --filter @finsight/dashboard typecheck",
+    "dashboard:test": "pnpm --filter @finsight/dashboard test",
+    "dashboard:dev": "pnpm --filter @finsight/dashboard dev",
+    "dashboard:build": "pnpm --filter @finsight/dashboard build"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

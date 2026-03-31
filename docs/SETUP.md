@@ -16,7 +16,7 @@ Any other needed software or frameworks can be easily installed on any local mac
 ### Software
 - Windows 11 Pro x64
 - Node.js 20 LTS (v20.x)
-- pnpm 9
+- pnpm 10
 - LM Studio
 - Podman Desktop (Docker-compatible socket — `docker` CLI proxies to Podman)
 - WSL (Ubuntu)
@@ -56,3 +56,24 @@ Required environment variables:
 - `TELEGRAM_API_ACCESS_TOKEN`
 - `REDIS_URL`
 - `API_BASE_URL` (optional, defaults to `http://api:3000`)
+
+## Admin Dashboard (Feature 010) Local Run
+
+From repository root:
+
+```bash
+pnpm install
+pnpm --filter @finsight/dashboard typecheck
+pnpm --filter @finsight/dashboard dev
+```
+
+Optional environment variables:
+
+- `VITE_API_BASE_URL` (defaults to empty string, same-origin)
+
+Validation:
+
+```bash
+pnpm --filter @finsight/dashboard lint
+pnpm --filter @finsight/dashboard test -- --pool=threads
+```

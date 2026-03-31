@@ -1,178 +1,195 @@
-# Feature Specification: Admin Dashboard
+# Feature Specification: Admin Dashboard Mission Control
 
-**Feature**: `010-admin-dashboard`
+**Feature Branch**: `010-admin-dashboard`
 **Created**: 2026-03-28
 **Status**: Draft
-**Constitution**: [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md)
-**Depends on**: `003-api-auth`, `008-orchestration`
+**Input**: User description: "Manual draft for admin dashboard feature; canonicalize and preserve important implementation decisions"
 
-## Overview
+## User Scenarios & Testing *(mandatory)*
 
-Implement the React SPA admin dashboard ("Mission Control") as a Vite-powered frontend. The dashboard matches `docs/dashboard-reference.html` exactly and provides real-time visibility into all 9 agents, active missions with pipeline visualization, system health, spend tracking, and admin tools. The dashboard polls `GET /api/admin/status` every 3 seconds — no WebSockets.
+### User Story 1 - Admin Access and Session Continuity (Priority: P1)
 
-**Why this feature exists:** The admin dashboard is the "wow factor" of the demo. It visualizes all 9 agents working in real-time, showing tool calls spinning, pipeline steps progressing, and costs accruing. A potential employer reviewing a screen recording of this dashboard instantly understands the system's sophistication.
+As an administrator, I want to sign in and stay authenticated during normal use so that I can continuously monitor and control the platform.
 
----
+**Why this priority**: Without secure access and stable session behavior, the dashboard cannot be used safely.
 
-## User Scenarios & Testing
-
-### User Story 1 — Login & Auth (Priority: P1)
-
-As an admin, I want to log in to the dashboard and have my session persist so that I can monitor the system without re-authenticating.
-
-**Why P1**: Dashboard is useless without auth. JWT management is required for all API calls.
-
-**Independent Test**: Open the dashboard, verify login page appears. Enter valid admin credentials, verify redirect to dashboard. Close and reopen the tab, verify session persists via refresh token.
+**Independent Test**: Start unauthenticated, verify sign-in is required, then sign in with valid admin credentials and verify continued access until session expiration conditions occur.
 
 **Acceptance Scenarios**:
 
-1. **Given** no JWT in memory, **When** the dashboard loads, **Then** the login page is displayed
-2. **Given** valid admin credentials, **When** I submit the login form, **Then** the dashboard loads with all 9 agent cards
-3. **Given** a valid session, **When** the access token is about to expire (< 1 minute), **Then** the client automatically refreshes it using the httpOnly refresh cookie
-4. **Given** the refresh token is expired, **When** the client tries to refresh, **Then** the user is redirected to login
-5. **JWT stored in memory only** (NOT localStorage) — per constitution security constraints
+1. **Given** an unauthenticated user opens the dashboard, **When** the page loads, **Then** the user is shown a sign-in flow before any admin data is displayed.
+2. **Given** valid administrator credentials are submitted, **When** authentication succeeds, **Then** the dashboard loads and admin data becomes visible.
+3. **Given** an active admin session, **When** token renewal succeeds, **Then** dashboard usage continues without manual re-authentication.
+4. **Given** session renewal fails or authorization is revoked, **When** the next protected request is evaluated, **Then** access is cleared and the user is returned to sign-in.
 
 ---
 
-### User Story 2 — Agent Floor (Priority: P1)
+### User Story 2 - Live Agent and Mission Visibility (Priority: P1)
 
-As an admin, I want to see all 9 agents with their current state, model, and cost so that I know exactly what's happening across the platform at a glance.
+As an administrator, I want a real-time view of all agents and the active mission pipeline so that I can understand current system behavior and progression.
 
-**Why P1**: The agent floor is 25% of the dashboard layout and the most visually distinctive element.
+**Why this priority**: Mission and agent visibility is the primary operational purpose of the dashboard.
 
-**Independent Test**: Run a mission, verify the active agent's card shows green border, current task, and updating token count.
+**Independent Test**: Trigger a mission and verify agent activity states, mission metadata, and pipeline-step transitions are reflected in the dashboard refresh cycle.
 
 **Acceptance Scenarios**:
 
-1. **Given** all 9 agents, **When** the dashboard loads, **Then** each agent displays: name, model, provider, state dot, current task, today's cost
-2. **Given** an agent is `active`, **Then** its card has a green left border (2.5px) and light green background (`#f7fffc`)
-3. **Given** an agent is `queued`, **Then** its card has an amber left border and light amber background (`#fffdf7`)
-4. **Given** an agent is `idle`, **Then** its card has no border accent and default background
-5. **Given** an agent is `error`, **Then** its card has a red left border and light red background
-6. **Agent cards update every 3 seconds** as status polling refreshes
+1. **Given** the dashboard is active, **When** status data is refreshed, **Then** all agents display current state, assigned activity, and current run context.
+2. **Given** an active mission exists, **When** mission details are rendered, **Then** mission type, trigger, elapsed time, and ordered pipeline steps are visible.
+3. **Given** a pipeline step is running, **When** associated tool calls are shown, **Then** running, completed, and pending tool call states are distinguishable.
+4. **Given** no active mission exists, **When** the mission panel renders, **Then** an explicit no-active-mission state is displayed.
 
 ---
 
-### User Story 3 — Active Mission Pipeline (Priority: P1)
+### User Story 3 - Operational Health and Spend Oversight (Priority: P1)
 
-As an admin, I want to see the active mission's pipeline with step progression and tool call spinners so that I can watch the system work in real-time.
+As an administrator, I want service health, queue pressure, knowledge-base indicators, and daily spend in one place so that I can assess platform risk and cost quickly.
 
-**Why P1**: The pipeline visualization is the centerpiece of the demo — it shows the agentic architecture in motion.
+**Why this priority**: Operational readiness and budget awareness are required for safe day-to-day operations.
 
-**Independent Test**: Trigger a comparison mission, watch the pipeline show: Manager (done) → Researcher×2 (active with tool spinners) → Analyst (pending) → Bookkeeper (pending) → Reporter (pending).
+**Independent Test**: Provide healthy and degraded status snapshots and verify that service health, queue backlog, knowledge signals, and spend breakdown are accurately represented.
 
 **Acceptance Scenarios**:
 
-1. **Given** no active mission, **When** the dashboard loads, **Then** the mission panel shows "No active mission"
-2. **Given** an active mission, **When** displayed, **Then** it shows: type, tickers, trigger, elapsed time, and a vertical pipeline
-3. **Given** a pipeline step with state `done`, **Then** its node is a solid green circle and label is dimmed
-4. **Given** a pipeline step with state `running`, **Then** its node has a pulsing green ring (`box-shadow: 0 0 0 2.5px var(--green-ring)`) and it expands to show tool calls
-5. **Given** a tool call with state `running`, **Then** it shows a CSS spinner (border-top-color transparent, 0.8s rotation)
-6. **Given** a tool call with state `done`, **Then** it shows a filled green dot
-7. **Given** a tool call with state `pending`, **Then** it shows an empty grey dot
+1. **Given** service-status data is available, **When** health indicators are shown, **Then** each monitored subsystem is represented with clear healthy/degraded state.
+2. **Given** queue backlog exists, **When** queue metrics are displayed, **Then** non-zero backlog is visibly highlighted.
+3. **Given** daily spend data is returned, **When** the spend panel updates, **Then** total spend, provider breakdown, and budget utilization are shown.
+4. **Given** local-inference provider usage has zero billed cost, **When** costs are displayed, **Then** those values are shown as zero-cost entries without inflating budget usage.
 
 ---
 
-### User Story 4 — System Health & Stats (Priority: P1)
+### User Story 4 - Admin Control Actions (Priority: P2)
 
-As an admin, I want to see system health, KB stats, queue depths, and model routing status so that I can verify the platform is operating correctly.
+As an administrator, I want to run approved operational actions from the dashboard so that I can perform common interventions quickly.
 
-**Why P1**: Health monitoring is essential for the demo — green dots across the health panel proves the entire stack is running.
+**Why this priority**: Actions improve operational efficiency but are secondary to visibility and monitoring.
 
-**Independent Test**: Verify health panel shows green dots for all 10 services (postgres, redis, 6 MCP servers, LM Studio, Telegram).
+**Independent Test**: Execute each exposed admin action and verify deterministic success/failure feedback is shown to the admin.
 
 **Acceptance Scenarios**:
 
-1. **Given** all services are healthy, **Then** the health grid shows green dots for all 10 services
-2. **Given** a service health check fails, **Then** its dot turns red and service name shows in error state
-3. **Given** KB has entries, **Then** the stats panel shows: entry count, contradictions, tickers tracked, last write time
-4. **Given** BullMQ has pending jobs, **Then** queue depth is displayed with amber styling if > 0
+1. **Given** configuration reload is triggered, **When** the action succeeds, **Then** the dashboard confirms completion with a summary of applied changes.
+2. **Given** a manual screener trigger is requested, **When** the request is accepted, **Then** a confirmation message indicates enqueue success.
+3. **Given** a manual watchdog trigger is requested, **When** the request is accepted, **Then** a confirmation message indicates enqueue success.
+4. **Given** an action fails, **When** the failure response is received, **Then** the dashboard displays actionable error feedback without breaking the rest of the interface.
 
 ---
 
-### User Story 5 — Spend Tracking (Priority: P1)
+### User Story 5 - Resilient Polling Behavior (Priority: P2)
 
-As an admin, I want to see today's spend broken down by provider with a budget bar so that I can monitor cost in real-time.
+As an administrator, I want the dashboard to degrade gracefully during transient connectivity issues so that monitoring remains trustworthy.
 
-**Why P1**: Cost visibility is a key demo talking point — it shows the system's multi-provider economics.
+**Why this priority**: Availability interruptions are expected in real systems; graceful handling is required for operational confidence.
 
-**Independent Test**: After running a mission, verify the spend panel shows correct per-provider breakdown and budget percentage.
+**Independent Test**: Simulate temporary status-endpoint failures and tab visibility changes, then verify last-known data behavior, reconnect signaling, and polling pause/resume.
 
 **Acceptance Scenarios**:
 
-1. **Given** today's spend data, **Then** the panel shows total, per-provider breakdown (Anthropic, OpenAI, Azure, LM Studio), and daily budget
-2. **Given** LM Studio costs, **Then** they show as $0.000 with green styling (free local inference)
-3. **Given** spend is 17% of budget, **Then** the budget bar fills to 17% width
-
----
-
-### User Story 6 — Admin Tools (Priority: P2)
-
-As an admin, I want action buttons for user management, config reload, and manual triggers so that I can control the system from the dashboard.
-
-**Why P2**: Admin tools are convenience features — the same actions can be done via curl.
-
-**Acceptance Scenarios**:
-
-1. **Given** "Reload config" is clicked, **When** `POST /admin/config/reload` succeeds, **Then** a toast shows the changed config keys
-2. **Given** "Trigger Screener" is clicked, **When** `POST /api/screener/trigger` succeeds, **Then** a toast confirms "Screener scan enqueued"
-3. **Given** "Trigger Watchdog" is clicked, **When** `POST /api/watchdog/trigger` succeeds, **Then** a toast confirms "Watchdog scan enqueued"
-
----
+1. **Given** status refresh temporarily fails, **When** retries continue, **Then** the dashboard retains last-known values and clearly indicates degraded connectivity.
+2. **Given** the dashboard tab becomes non-visible, **When** visibility changes, **Then** active polling is paused.
+3. **Given** the dashboard tab becomes visible again, **When** visibility is restored, **Then** polling resumes automatically.
+4. **Given** concurrent mission activity exceeds single-panel capacity, **When** mission data is refreshed, **Then** active and historical mission context remain comprehensible without data loss.
 
 ### Edge Cases
 
-- What if polling returns an error? → Show last-known data with "⚠ Connection lost" indicator
-- What if the tab is hidden (minimized)? → Stop polling (visibilitychange event), resume when visible
-- What if two missions run concurrently? → `activeMission` shows the most recent. Mission log shows both.
-- What if no missions have ever run? → Mission log is empty, active mission is null, agents show idle
+- Authentication succeeds but authorization is insufficient for admin endpoints.
+- Status payload is partial (some subsystems report, others time out).
+- Polling recovers after multiple consecutive failures.
+- Mission transitions from running to completed between two refresh cycles.
+- No historical missions exist yet.
+- One or more monitored services are intentionally offline.
 
----
-
-## Requirements
+## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: React SPA built with Vite, no CSS framework (vanilla CSS matching `dashboard-reference.html` exactly)
-- **FR-002**: 4-column CSS grid layout: `280px 1fr 200px 180px`
-- **FR-003**: `useAdminStatus` hook MUST poll `GET /api/admin/status` every 3000ms
-- **FR-004**: Polling MUST stop when tab is not visible (visibilitychange event) and resume on focus
-- **FR-005**: On 401 response: MUST clear auth context and redirect to login
-- **FR-006**: AgentCard MUST render 3-zone grid: `84px 1fr auto` with left border accent
-- **FR-007**: PipelineView MUST render vertical step list with done/active/pending states
-- **FR-008**: ToolCallList MUST render CSS spinners for running tools
-- **FR-009**: Auth context MUST store JWT in memory only (NOT localStorage)
-- **FR-010**: Refresh token handling MUST use httpOnly cookies
-- **FR-011**: Access token MUST be refreshed automatically 1 minute before expiry
-- **FR-012**: Mission log MUST show last 10 completed/failed missions with LangSmith links
+- **FR-001**: The system MUST restrict dashboard access to authenticated administrators before protected data is rendered.
+- **FR-002**: The system MUST support session continuity behavior that renews authorization before normal expiry and cleanly revokes UI access when renewal fails.
+- **FR-003**: The system MUST provide a dashboard status view that includes all 9 agents with their current operational state.
+- **FR-004**: The system MUST provide an active mission panel with mission metadata and ordered pipeline progression.
+- **FR-005**: The system MUST represent per-step and per-tool execution states in the mission pipeline as distinct visual states.
+- **FR-006**: The system MUST refresh dashboard status every 3000ms while the dashboard tab is visible.
+- **FR-007**: The system MUST pause background refresh while the dashboard is not visible and resume refresh when visibility returns.
+- **FR-008**: The system MUST preserve and display last-known status data during temporary connectivity loss, while showing a degraded-connection indicator in the dashboard header with warning severity and last-success timestamp.
+- **FR-009**: The system MUST provide a health panel covering core platform dependencies required for end-to-end operation.
+- **FR-010**: The system MUST display operational metrics including queue backlog and knowledge-base summary indicators.
+- **FR-011**: The system MUST display daily spend totals, provider-level spend breakdown, and budget utilization.
+- **FR-012**: The system MUST expose approved admin control actions for configuration reload and manual operational triggers.
+- **FR-013**: The system MUST provide deterministic user feedback classes for each admin action (`success`, `retriable_error`, `terminal_error`) and include structured details when available (`changed[]` for reload and enqueue confirmation identifiers for trigger actions).
+- **FR-014**: The system MUST present recent mission history with minimum metadata fields: mission id, mission type, status, trigger source, start time, completion time (if complete), duration, and trace URL when available.
+- **FR-015**: The system MUST preserve visual consistency with the approved dashboard reference design for layout, state semantics, and hierarchy.
+- **FR-016**: The system MUST treat partial status payloads deterministically: missing subsystem values render as `unknown` without crashing the page and do not erase other valid sections.
+- **FR-017**: The system MUST define explicit empty states for both `no active mission` and `no recent missions`.
+- **FR-018**: The system MUST treat action endpoint timeout differently from immediate API failure by showing timeout-specific retry guidance while preserving dashboard operability.
+- **FR-019**: The system MUST use server-provided expiry context for session-renewal decisions and tolerate browser clock skew without premature logout.
+- **FR-020**: Degraded status polling MUST NOT disable admin actions; control actions remain available unless the action endpoint itself fails.
+- **FR-021**: Mission pipeline tool-call states are sourced from backend status payloads; the dashboard MUST NOT infer synthetic running/done states not present in payload.
+- **FR-022**: If one or more agent entries are missing or malformed, the dashboard MUST still render all 9 slots and mark affected entries as unavailable/error with explicit operator-visible state.
+- **FR-023**: Every dashboard-triggered request to protected endpoints MUST re-validate admin authorization and apply session-clear redirect behavior on 401/403.
+- **FR-024**: The dashboard MUST satisfy baseline accessibility for keyboard navigation, visible focus states, and semantic status/action announcements.
+- **FR-025**: The dashboard MUST keep access credentials in memory only and MUST NOT log tokens, cookies, or raw credential payloads.
+- **FR-026**: Polling and action failures MUST be captured in dashboard-side diagnostics with redacted, operator-safe error metadata.
+- **FR-027**: Under normal conditions, dashboard UI updates for received snapshots MUST complete within 500ms and keep polling overhead within a bounded single-request cadence.
 
----
+### Key Entities *(include if feature involves data)*
 
-## Visual Specification
+- **Admin Session Context**: Authentication and authorization state used to gate dashboard access and protected requests.
+- **Dashboard Status Snapshot**: Aggregated status payload used to render agents, missions, health, metrics, and spend.
+- **Agent Status Card**: Per-agent monitoring item containing identity, state, current activity, and daily cost context.
+- **Mission Pipeline Step**: Ordered mission-execution unit containing step state and optional tool-call status set.
+- **Health Indicator**: Service-level availability record representing healthy/degraded state for monitored dependencies.
+- **Spend Summary**: Daily cost model containing total spend, provider breakdown, and budget-progress context.
+- **Admin Action Request**: Operator-initiated command (reload/trigger) and its resulting acknowledgment outcome.
 
-The complete visual specification is defined in [`docs/dashboard-reference.html`](../../docs/dashboard-reference.html). Key design tokens:
+## Success Criteria *(mandatory)*
 
-| Token | Value | Usage |
-|---|---|---|
-| `--green` | `#1D9E75` | Active state, health ok |
-| `--green-bg` | `#E1F5EE` | Active pill background |
-| `--green-ring` | `#9FE1CB` | Active pipeline node ring |
-| `--amber` | `#EF9F27` | Queued state, warnings |
-| `--red` | `#E24B4A` | Error state |
-| `--blue` | `#185FA5` | Spend values, links |
-| Active card bg | `#f7fffc` | Agent card active |
-| Queued card bg | `#fffdf7` | Agent card queued |
-| Border accent | `2.5px solid` | Agent card left border |
+### Measurable Outcomes
 
----
+- **SC-001**: 100% of unauthenticated dashboard visits are gated behind sign-in before protected data is shown.
+- **SC-002**: At least 95% of successful admin sign-ins transition to usable dashboard state within 3 seconds under normal load.
+- **SC-003**: In controlled mission tests sampled over at least 100 state transitions, dashboard refresh reflects agent or mission-state changes within one 3000ms refresh interval in at least 95% of observed transitions.
+- **SC-004**: In degraded-connectivity tests, the dashboard retains last-known status and presents a degraded-connection indicator in 100% of refresh failures.
+- **SC-005**: In visibility-change tests, polling pauses when hidden and resumes when visible in 100% of observed tab transitions.
+- **SC-006**: 100% of approved admin control actions return explicit success or failure feedback to the operator.
+- **SC-007**: In spend-validation tests, displayed total spend and provider breakdown match source status data with absolute variance <= $0.01 per field after rounding to display precision.
+- **SC-008**: 100% of dashboards render all 9 agent slots and core health indicators when status data is available.
+- **SC-009**: In timeout/failure action tests, 100% of failures are classified into retriable vs terminal feedback classes with non-empty operator guidance text.
+- **SC-010**: In partial-payload tests, dashboard continues rendering unaffected sections in 100% of samples while marking missing sections as `unknown` or unavailable.
 
-## Success Criteria
+## Assumptions
 
-- **SC-001**: Login page appears when no JWT in memory
-- **SC-002**: After login, dashboard loads with 9 agent cards
-- **SC-003**: Agent cards update every 3 seconds
-- **SC-004**: Active agent shows green border and green background
-- **SC-005**: Active mission pipeline shows tool call spinner for running tools
-- **SC-006**: Spend panel shows correct per-provider breakdown
-- **SC-007**: "Trigger Screener" button works and shows feedback
-- **SC-008**: "Reload Config" button works and shows changed keys
+- Existing authentication and role-protection contracts from prior features remain authoritative and are reused by this feature.
+- A single authoritative status endpoint is available for dashboard polling and already aggregates relevant subsystem data.
+- The dashboard feature targets operational desktop usage first; broader responsive UX enhancements can follow in later scope.
+- Visual reference artifacts provided by product/architecture are treated as canonical for state semantics and layout intent.
+- The status endpoint remains backward compatible for documented 010 fields across dependent features.
+
+## Dependencies
+
+- **Feature 003 (`api-auth`)**: admin authentication, refresh behavior, and role protection contracts.
+- **Feature 008 (`orchestration`)**: mission/pipeline status semantics and agent runtime state feed.
+- **Feature 009 (`telegram-bot`)**: optional downstream source of mission-trigger context surfaced in mission metadata.
+
+## Operational Definitions
+
+- **Near-real-time**: exactly one refresh request every 3000ms while visible.
+- **Degraded connection indicator**: warning-level header signal with last successful snapshot timestamp and non-blocking status text.
+- **Deterministic action feedback**: normalized outcome classes (`success`, `retriable_error`, `terminal_error`) with stable operator-facing wording.
+- **Visual consistency**: adherence to reference layout zones, state color semantics, component hierarchy, and mission pipeline behavior from `docs/dashboard-reference.html`.
+
+## Out of Scope
+
+- Building new backend monitoring domains beyond the established status and admin-action contracts.
+- Replacing polling with real-time push transport.
+- End-user (non-admin) dashboard experiences.
+- User-management CRUD surfaces in dashboard UI (deferred to a later feature).
+- Historical analytics beyond the recent mission window required for operational monitoring.
+
+## Preserved Implementation Details
+
+Important implementation decisions from the original manual draft are intentionally preserved outside the canonical spec in:
+
+- [manual-spec-original.md](./manual-spec-original.md) - immutable snapshot of the original manual spec text.
+- [decisions.md](./decisions.md) - explicit preserved implementation decisions and UI/behavior detail handoff for planning.
+
+These preserved details MUST be reflected during planning and tasks generation unless a documented rationale approves deviation.
