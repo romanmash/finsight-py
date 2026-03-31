@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "finsight-ai-hub",
   "private": true,
   "engines": {
@@ -21,7 +21,10 @@
     "mcp:dev:news": "pnpm --filter @finsight/mcp-servers dev:news",
     "mcp:dev:rag-retrieval": "pnpm --filter @finsight/mcp-servers dev:rag-retrieval",
     "mcp:dev:enterprise-connector": "pnpm --filter @finsight/mcp-servers dev:enterprise-connector",
-    "mcp:dev:trader-platform": "pnpm --filter @finsight/mcp-servers dev:trader-platform"
+    "mcp:dev:trader-platform": "pnpm --filter @finsight/mcp-servers dev:trader-platform",
+    "telegram:typecheck": "pnpm --filter @finsight/telegram-bot typecheck",
+    "telegram:test": "pnpm --filter @finsight/telegram-bot test",
+    "telegram:dev": "pnpm --filter @finsight/telegram-bot dev"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

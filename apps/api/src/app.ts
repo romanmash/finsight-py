@@ -18,6 +18,7 @@ import { createScreenerRouter } from './routes/screener.js';
 import { createTicketsRouter } from './routes/tickets.js';
 import { createWatchdogRouter } from './routes/watchdog.js';
 import { createWatchlistRouter } from './routes/watchlist.js';
+import { createTelegramInternalRouter } from './routes/telegram-internal.js';
 import type { AppEnv } from './types/hono-context.js';
 
 export function createApp(): Hono<AppEnv> {
@@ -69,6 +70,7 @@ export function createApp(): Hono<AppEnv> {
   app.route('/api/watchlist', createWatchlistRouter());
   app.route('/api/alerts', createAlertsRouter());
   app.route('/api/tickets', createTicketsRouter());
+  app.route('/api/telegram-internal', createTelegramInternalRouter());
   app.get('/api/admin/status', adminStatusHandler);
 
   app.onError((error, c) => toErrorResponse(c, error));

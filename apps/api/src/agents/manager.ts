@@ -9,6 +9,7 @@ import { runTrader } from './trader.js';
 import { getConfig } from '../lib/config.js';
 import { db } from '../lib/db.js';
 import { logger } from '../lib/logger.js';
+import { dispatchTelegramInternalPush } from '../lib/telegram-internal.js';
 import type { RunAnalystInput, TraderAction } from '../types/reasoning.js';
 import { KB_EMBEDDING_VECTOR_LENGTH } from '../types/reasoning.js';
 import type { ManagerInput, ManagerOutput, MissionTypeValue } from '../types/orchestration.js';
@@ -103,6 +104,16 @@ function resolveTradeParams(context: Record<string, unknown>): TradeParams | nul
   }
 
   return { action: actionRaw, quantity: quantityRaw };
+}
+
+function resolveTelegramPushSourceType(missionType: MissionTypeValue): 'alert' | 'daily_brief' | 'system' {
+  if (missionType === MissionType.ALERT_INVESTIGATION) {
+    return 'alert';
+  }
+  if (missionType === MissionType.DAILY_BRIEF) {
+    return 'daily_brief';
+  }
+  return 'system';
 }
 
 function extractUsage(value: unknown): { usage: UsageMetrics | undefined; outputData: Record<string, unknown> } {
@@ -221,6 +232,20 @@ export async function runManager(input: ManagerInput, deps: ManagerDependencies 
   const resolvedTraceUrl = process.env.LANGSMITH_API_KEY !== undefined
     ? `https://smith.langchain.com/projects/${process.env.LANGSMITH_PROJECT ?? 'default'}/runs/${missionId}`
     : undefined;
+  const reporterDependencies = {
+    formatPrimary: async (value: { payload: unknown }): Promise<string> => JSON.stringify(value.payload),
+    formatFallback: async (value: { payload: unknown }): Promise<string> => JSON.stringify(value.payload),
+    sendTelegram: async (userId: string, message: string): Promise<void> => {
+      await dispatchTelegramInternalPush({
+        userId,
+        message,
+        sourceType: resolveTelegramPushSourceType(missionType),
+        missionId,
+        correlationId: missionId
+      });
+    },
+    persistDailyBrief: async (): Promise<null> => null
+  };
 
   try {
     const fastPathCandidate = ticker === null ? null : await fetchFastPathCandidate(ticker);
@@ -260,12 +285,7 @@ export async function runManager(input: ManagerInput, deps: ManagerDependencies 
             missionType,
             payload: reporterPayload
           },
-          {
-            formatPrimary: async (value) => JSON.stringify(value.payload),
-            formatFallback: async (value) => JSON.stringify(value.payload),
-            sendTelegram: async () => {},
-            persistDailyBrief: async () => null
-          }
+          reporterDependencies
         )
       );
 
@@ -394,12 +414,7 @@ export async function runManager(input: ManagerInput, deps: ManagerDependencies 
             missionType,
             payload: reporterPayload
           },
-          {
-            formatPrimary: async (value) => JSON.stringify(value.payload),
-            formatFallback: async (value) => JSON.stringify(value.payload),
-            sendTelegram: async () => {},
-            persistDailyBrief: async () => null
-          }
+          reporterDependencies
         )
       );
 
@@ -563,12 +578,7 @@ export async function runManager(input: ManagerInput, deps: ManagerDependencies 
           missionType,
           payload: reporterPayload
         },
-        {
-          formatPrimary: async (value) => JSON.stringify(value.payload),
-          formatFallback: async (value) => JSON.stringify(value.payload),
-          sendTelegram: async () => {},
-          persistDailyBrief: async () => null
-        }
+        reporterDependencies
       )
     );
 

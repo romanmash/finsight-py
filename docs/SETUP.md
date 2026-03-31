@@ -39,3 +39,20 @@ Any other needed software or frameworks can be easily installed on any local mac
 ## Wi-Fi Router
 - Gigabit Ethernet
 - OpenVPN server (Developer Laptop can get access to local network from outside home-office)
+## Telegram Bot (Feature 009) Local Run
+
+From repository root:
+
+```bash
+pnpm install
+pnpm --filter @finsight/telegram-bot typecheck
+pnpm --filter @finsight/telegram-bot dev
+```
+
+Required environment variables:
+
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_INTERNAL_TOKEN`
+- `TELEGRAM_API_ACCESS_TOKEN`
+- `REDIS_URL`
+- `API_BASE_URL` (optional, defaults to `http://api:3000`)

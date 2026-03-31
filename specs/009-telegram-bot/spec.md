@@ -1,163 +1,194 @@
-# Feature Specification: Telegram Bot
+# Feature Specification: Telegram Bot Experience
 
-**Feature**: `009-telegram-bot`
+**Feature Branch**: `009-telegram-bot`
 **Created**: 2026-03-28
 **Status**: Draft
-**Constitution**: [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md)
-**Depends on**: `008-orchestration`
+**Input**: User description: "Manual draft for Telegram bot feature; canonicalize and preserve important implementation decisions"
 
-## Overview
+## User Scenarios & Testing *(mandatory)*
 
-Implement the Telegram bot container using Telegraf (polling mode). The bot handles all 16 user commands, authenticates users by matching Telegram handles against the database, enforces rate limiting, formats responses with the label system, and supports proactive push notifications from Reporter and Watchdog.
+### User Story 1 - Secure Access via Telegram Identity (Priority: P1)
 
-**Why this feature exists:** Telegram is the primary user interface for end-users (operators and analysts). All missions are initiated via Telegram commands, all results are delivered to Telegram, and all trade approvals happen through Telegram. The admin dashboard is secondary — Telegram is where the user lives.
+As a registered user, I want only authorized Telegram accounts to interact with the assistant so that platform actions and analysis requests are protected from unauthorized use.
 
----
+**Why this priority**: Unauthorized access can trigger costly operations and expose sensitive workflow data.
 
-## User Scenarios & Testing
-
-### User Story 1 — User Authentication & Access Control (Priority: P1)
-
-As the system, I want Telegram users authenticated by their handle so that only registered users can interact with the platform.
-
-**Why P1**: Without auth, anyone who finds the bot could trigger expensive API calls. Security is non-negotiable.
-
-**Independent Test**: Send a message from an unknown Telegram handle, verify the bot responds with "⛔ Access denied." and does no further processing.
+**Independent Test**: Send messages from unregistered, inactive, and active accounts and verify access outcomes without requiring other stories.
 
 **Acceptance Scenarios**:
 
-1. **Given** a message from an unknown Telegram handle, **When** the handler processes it, **Then** it replies "⛔ Access denied." and stops
-2. **Given** a message from a known handle but `active: false`, **When** the handler processes it, **Then** it replies "⛔ Access denied."
-3. **Given** a message from a known, active user, **When** the handler processes it, **Then** it looks up the user and proceeds with the command
-4. **Given** a user's first-ever message, **When** the handler processes it, **Then** it stores the `telegramChatId` from the message context on the User record (needed for proactive push)
+1. **Given** a Telegram sender identity that is not mapped to an active user, **When** the sender submits any command, **Then** the system denies access with a clear rejection message and does not execute the request.
+2. **Given** a Telegram sender identity mapped to an active user, **When** the sender submits a command, **Then** the system processes the request.
+3. **Given** an active user contacts the bot for the first time from a chat, **When** the message is received, **Then** the system records the chat destination needed for future proactive notifications.
 
 ---
 
-### User Story 2 — Command Processing (Priority: P1)
+### User Story 2 - Command-Driven Mission Operations (Priority: P1)
 
-As a Telegram user, I want to issue commands and receive formatted responses so that I can get market intelligence without leaving Telegram.
+As a Telegram user, I want command-based interaction for analysis, watchlist, alerts, portfolio, and ticket actions so that I can complete key workflows from Telegram.
 
-**Why P1**: This is the primary UX. Every demo interaction happens through these commands.
+**Why this priority**: Telegram is the primary end-user interface; command handling is the core product surface.
 
-**Independent Test**: Send `/pattern NVDA 3w` to the bot, verify the correct API endpoint is called and a formatted response is delivered.
+**Independent Test**: Execute each supported command once and verify the expected business action and user-facing response type.
 
 **Acceptance Scenarios**:
 
-1. **Given** `/help`, **Then** bot replies with all 16 commands and descriptions
-2. **Given** `/brief`, **Then** bot calls `GET /api/briefs/latest` and formats the response
-3. **Given** `/pattern NVDA 3w`, **Then** bot calls `POST /api/chat { message: '/pattern NVDA 3w' }` and delivers Technician output
-4. **Given** `/compare NVDA AMD`, **Then** bot calls `POST /api/chat { message: '/compare NVDA AMD' }` and delivers comparison table
-5. **Given** `/devil NVDA`, **Then** bot calls `POST /api/chat { message: '/devil NVDA' }` and delivers devil's advocate analysis
-6. **Given** `/thesis NVDA`, **Then** bot calls `GET /api/kb/thesis/NVDA` and delivers current thesis
-7. **Given** `/history NVDA`, **Then** bot calls `GET /api/kb/history/NVDA` and delivers formatted snapshot list
-8. **Given** `/trade NVDA buy 10`, **Then** bot calls `POST /api/chat { message: '/trade NVDA buy 10' }` and delivers ticket creation confirmation
-9. **Given** `/approve TICKET_ID`, **Then** bot calls `POST /api/tickets/:id/approve` and confirms execution
-10. **Given** `/reject TICKET_ID`, **Then** bot calls `POST /api/tickets/:id/reject` and confirms rejection
-11. **Given** any free-text message (not a command), **Then** bot calls `POST /api/chat { message }` as an operator query
+1. **Given** a user issues `/help`, **When** the bot responds, **Then** all supported commands are shown with concise usage guidance.
+2. **Given** a user issues an analysis command (`/brief`, `/pattern`, `/compare`, `/devil`, `/thesis`, `/history`), **When** the request is handled, **Then** the corresponding analysis or knowledge output is returned in human-readable form.
+3. **Given** a user issues action commands (`/trade`, `/approve`, `/reject`, `/alert`, `/ack`, `/watchlist`, `/add`, `/portfolio`), **When** the request is handled, **Then** the user receives clear confirmation or error feedback.
+4. **Given** a user sends free text that is not a command, **When** the bot handles it, **Then** the message is processed as a general operator query.
 
 ---
 
-### User Story 3 — Rate Limiting (Priority: P1)
+### User Story 3 - Fair Usage Through Rate Limits (Priority: P1)
 
-As the system, I want per-user rate limiting so that no single user can overwhelm the platform with requests.
+As a platform operator, I want per-user Telegram request throttling so that a single user cannot exhaust shared capacity or budget.
 
-**Why P1**: LLM calls are expensive. An unthrottled user could burn through the daily budget in minutes.
+**Why this priority**: Throughput and cost control are required for reliable multi-user service.
 
-**Independent Test**: Send requests exceeding the rate limit, verify the bot responds with "⏱ Rate limit exceeded. Please wait."
+**Independent Test**: Submit requests above the configured user limit within one time window and verify throttling behavior and recovery after cooldown.
 
 **Acceptance Scenarios**:
 
-1. **Given** rate limit is 5 requests per minute, **When** user sends request #6, **Then** bot replies "⏱ Rate limit exceeded. Please wait."
-2. **Given** user was rate-limited, **When** 60 seconds pass, **Then** user can send requests again
-3. **Rate limit is Redis-backed** — survives bot restarts
+1. **Given** a user exceeds the configured request limit within the active time window, **When** another request is submitted, **Then** the bot returns a throttle response and does not execute the request.
+2. **Given** a throttled user waits until the window resets, **When** a new request is sent, **Then** requests are accepted again.
+3. **Given** the bot process restarts, **When** rate-limit state is checked, **Then** enforcement behavior remains consistent with configured persistence expectations.
 
 ---
 
-### User Story 4 — Message Formatting (Priority: P1)
+### User Story 4 - Readable and Consistent Message Formatting (Priority: P1)
 
-As a Telegram user, I want nicely formatted responses with mission-type labels so that I can quickly understand what type of analysis I'm seeing.
+As a Telegram user, I want responses to be clearly labeled and formatted so that I can quickly interpret output type and actionability.
 
-**Why P1**: Raw JSON is useless. The label system and formatting make the output professional.
+**Why this priority**: Response clarity directly affects decision speed and trust.
 
-**Independent Test**: Verify the formatter applies correct labels and handles messages over 4096 characters.
+**Independent Test**: Validate formatting outputs across mission categories and long responses without relying on proactive notifications.
 
 **Acceptance Scenarios**:
 
-1. **Given** an operator_query response, **When** formatter runs, **Then** the message is prefixed with the appropriate label (📊, 🔍, ⚔️, etc.)
-2. **Given** a message exceeding 4096 characters, **When** formatter runs, **Then** it splits into multiple messages at word boundaries
-3. **Given** a `/history` response with 4 snapshots, **When** formatter runs, **Then** each snapshot shows date, confidence, change type, and summary
+1. **Given** a mission response is produced, **When** the formatter runs, **Then** the message includes the correct mission label and readable structure.
+2. **Given** a response exceeds Telegram maximum message length, **When** delivery occurs, **Then** the output is chunked into ordered, readable parts without truncating semantic content.
+3. **Given** historical thesis output is requested, **When** formatting completes, **Then** each history item includes timestamp and change context.
 
 ---
 
-### User Story 5 — Proactive Push Notifications (Priority: P1)
+### User Story 5 - Proactive Notification Delivery (Priority: P1)
 
-As a Telegram user, I want to receive alerts and daily briefs without issuing a command so that I'm notified of important market events automatically.
+As a Telegram user, I want important alerts and scheduled updates delivered proactively so that I receive critical intelligence without manually polling.
 
-**Why P1**: Proactive intelligence (alerts, daily brief) is a key differentiator. The system doesn't just respond — it reaches out.
+**Why this priority**: Proactive delivery is a key differentiator and core user promise.
 
-**Independent Test**: Trigger a Watchdog alert for a user, verify a push message arrives in their Telegram chat.
+**Independent Test**: Trigger an alert and a scheduled brief for a user with known chat destination and verify both are delivered successfully.
 
 **Acceptance Scenarios**:
 
-1. **Given** Watchdog creates a `price_spike` alert for a user, **When** Reporter delivers it, **Then** `pushToUser(userId, message)` sends the alert to the user's Telegram chat
-2. **Given** daily brief worker runs at 06:00, **When** Reporter delivers it, **Then** each active user receives their brief as a push message
-3. **Given** `pushToUser` is called, **Then** it looks up `user.telegramChatId` from the database and calls `bot.telegram.sendMessage(chatId, message)`
-4. **Given** `telegramChatId` is null (user never messaged the bot), **Then** push fails silently with a warning log
-
----
+1. **Given** a system alert event is generated for a user, **When** notification delivery is triggered, **Then** the user receives a push message in their mapped Telegram chat.
+2. **Given** a scheduled brief event is generated, **When** delivery runs, **Then** each eligible user receives their brief proactively.
+3. **Given** a user has no stored chat destination, **When** proactive delivery is attempted, **Then** the attempt is skipped safely and logged for observability.
 
 ### Edge Cases
 
-- What if the bot token is invalid? → Bot fails to start, process exits with clear error
-- What if a command has wrong arguments (e.g., `/pattern NVDA`)? → Bot replies with usage hint
-- What if the API is unreachable from the bot container? → Bot replies "⚠️ Service temporarily unavailable" and logs the error
-- What if multiple messages arrive simultaneously? → Telegraf handles them sequentially (polling mode)
+- Invalid or expired bot credentials at startup.
+- Commands with missing or malformed arguments.
+- Commands with unsupported argument variants or unknown aliases.
+- Temporary upstream service unavailability during command handling.
+- Telegram transport failures during send operations.
+- Burst traffic from one user while others continue normal operation.
+- Duplicate notifications for the same event window.
+- User profile changes (deactivation or handle change) between command issue and execution.
+- Sender metadata missing one or more expected Telegram attributes.
+- Recovery after transient upstream or transport outage once dependency health is restored.
 
----
-
-## Requirements
+## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: MUST use Telegraf polling mode (no webhooks required)
-- **FR-002**: MUST authenticate users by matching `ctx.from.username` against `User.telegramHandle`
-- **FR-003**: MUST store `telegramChatId` on first contact from a user
-- **FR-004**: MUST implement all 16 commands with correct API mapping (see table below)
-- **FR-005**: MUST implement Redis-backed rate limiting with configurable limit from `telegram.yaml`
-- **FR-006**: MUST implement `pushToUser(userId, message)` for proactive delivery
-- **FR-007**: MUST split messages exceeding 4096 characters at word boundaries
-- **FR-008**: MUST apply output labels based on mission type
-- **FR-009**: MUST implement graceful shutdown on SIGTERM
-- **FR-010**: Free-text messages (non-commands) MUST be treated as `operator_query`
+- **FR-001**: The system MUST enforce authorization for all inbound Telegram messages (commands and free-text) by resolving sender identity to an active internal user before any downstream action.
+- **FR-002**: The system MUST persist a user chat destination on first successful contact, where first successful contact means the first authorized inbound message from a mapped active user that reaches handled outcome `success`.
+- **FR-003**: The system MUST support the following user commands with defined behavior: `/help`, `/brief`, `/pattern`, `/compare`, `/devil`, `/thesis`, `/history`, `/screener show last`, `/trade`, `/approve`, `/reject`, `/alert`, `/ack`, `/watchlist`, `/add`, `/portfolio`.
+- **FR-004**: The system MUST treat non-command free-text input as a general operator query.
+- **FR-005**: The system MUST enforce configurable per-user rate limits backed by shared persistent runtime state so policy remains consistent across process restarts and multi-instance operation.
+- **FR-006**: The system MUST provide human-readable response formatting with mission-type labeling, where readable means the first line contains a mission label and message body preserves list/newline structure.
+- **FR-007**: The system MUST split over-length responses into ordered chunks that preserve readability.
+- **FR-008**: The system MUST support proactive delivery of alert-driven and scheduled brief notifications for users that are active and have known chat destinations.
+- **FR-009**: The system MUST provide deterministic user feedback for successful and failed command execution, with fixed response classes: `success`, `validation_error`, `unauthorized`, `throttled`, `temporarily_unavailable`, `internal_failure`.
+- **FR-010**: The system MUST provide graceful shutdown behavior that stops accepting new updates and allows in-flight handlers to finish within a configurable grace period before process exit.
+- **FR-011**: The system MUST log denied access, throttling, delivery failures, and skipped proactive notifications with minimum context fields `eventType`, `userId?`, `telegramHandle?`, `chatId?`, `command?`, `reasonCode`, and `correlationId`.
+- **FR-012**: The system MUST allow operational configuration of bot behavior (including rate-limit policy and command behavior toggles) without source-code changes.
+- **FR-013**: The system MUST preserve manual response semantics for critical guardrails: unauthorized access returns `⛔ Access denied.` and throttle events return `⏱ Rate limit exceeded. Please wait.`.
+- **FR-014**: The system MUST require minimal sender attributes `from.id`, `chat.id`, and either `from.username` or an equivalent mapped identity token; requests missing required sender attributes MUST return deterministic `validation_error` handling and no downstream action.
+- **FR-015**: The system MUST fail startup for invalid/expired bot credentials, invalid runtime configuration, or unavailable mandatory dependencies required for safe command processing.
+- **FR-016**: The system MUST enforce command argument contracts and return deterministic usage guidance when argument shape/cardinality is invalid.
+- **FR-017**: The system MUST enforce duplicate-notification protection for proactive delivery attempts by honoring event correlation/idempotency keys from upstream workflows.
+- **FR-018**: The system MUST meet interactive responsiveness target p95 <= 3 seconds for authorization + throttle decision + initial user-visible acknowledgment under controlled load.
+- **FR-019**: The system MUST protect Telegram identity and chat-destination data by excluding raw secrets from logs and avoiding storage of unnecessary personal metadata.
 
-### Command → API Mapping
+### Command Argument Contract
 
-| Command | API Call | Response |
+The following argument rules are normative and must be validated before downstream dispatch:
+
+| Command | Argument Rule | Invalid-Argument Outcome |
 |---|---|---|
-| `/brief` | `GET /api/briefs/latest` | Formatted daily brief |
-| `/pattern TICKER Nw` | `POST /api/chat` | Technical analysis |
-| `/compare T1 T2` | `POST /api/chat` | Comparison table |
-| `/devil TICKER` | `POST /api/chat` | Devil's advocate analysis |
-| `/thesis TICKER` | `GET /api/kb/thesis/:ticker` | Current thesis |
-| `/history TICKER` | `GET /api/kb/history/:ticker` | Thesis snapshots |
-| `/screener show last` | `GET /api/screener/last` | Last screener results |
-| `/trade TICKER buy\|sell QTY` | `POST /api/chat` | Trade ticket creation |
-| `/approve TICKET_ID` | `POST /api/tickets/:id/approve` | Approval confirmation |
-| `/reject TICKET_ID` | `POST /api/tickets/:id/reject` | Rejection confirmation |
-| `/alert` | `GET /api/alerts` | Pending alerts |
-| `/ack ALERT_ID` | `POST /api/alerts/:id/ack` | Acknowledgment |
-| `/watchlist` | `GET /api/watchlist` | Current watchlist |
-| `/add TICKER type` | `POST /api/watchlist` | Add to watchlist |
-| `/portfolio` | `GET /api/portfolio` | Current holdings |
-| `/help` | (static) | All commands + descriptions |
+| `/help` | no args | `validation_error` + usage |
+| `/brief` | no args | `validation_error` + usage |
+| `/pattern TICKER Nw` | exactly 2 args (`TICKER`, period token like `2w`) | `validation_error` + usage |
+| `/compare T1 T2` | exactly 2 ticker args | `validation_error` + usage |
+| `/devil TICKER` | exactly 1 ticker arg | `validation_error` + usage |
+| `/thesis TICKER` | exactly 1 ticker arg | `validation_error` + usage |
+| `/history TICKER` | exactly 1 ticker arg | `validation_error` + usage |
+| `/screener show last` | exact phrase (no alias) | `validation_error` + usage |
+| `/trade TICKER buy|sell QTY` | exactly 3 args; `QTY` positive numeric | `validation_error` + usage |
+| `/approve TICKET_ID` | exactly 1 ticket id | `validation_error` + usage |
+| `/reject TICKET_ID [reason]` | at least 1 arg (`reason` optional tail text) | `validation_error` + usage |
+| `/alert` | no args | `validation_error` + usage |
+| `/ack ALERT_ID` | exactly 1 alert id | `validation_error` + usage |
+| `/watchlist` | no args | `validation_error` + usage |
+| `/add TICKER type` | exactly 2 args | `validation_error` + usage |
+| `/portfolio` | no args | `validation_error` + usage |
 
----
+### Key Entities *(include if feature involves data)*
 
-## Success Criteria
+- **Telegram User Identity Link**: Mapping between Telegram sender identity and internal user account, including active status and mapped chat destination.
+- **Command Request**: A parsed user instruction containing command intent, arguments, issuing user context, and execution outcome.
+- **Rate Limit State**: Per-user usage counters and window metadata used to determine whether requests are allowed.
+- **Formatted Bot Message**: User-facing response payload including mission label, body content, and optional chunk index metadata.
+- **Proactive Notification Job**: Delivery request generated by internal events (alerts/briefs) targeting one or more users.
 
-- **SC-001**: Unknown Telegram handle receives "⛔ Access denied."
-- **SC-002**: `/help` returns all 16 commands
-- **SC-003**: `/pattern NVDA 3w` dispatches Technician and returns formatted TA summary
-- **SC-004**: Rate limit returns throttle message after exceeding limit
-- **SC-005**: `/history NVDA` after seed returns 4 snapshots including contradiction entry
-- **SC-006**: Proactive push delivers alert to correct Telegram chat
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: 100% of requests from unauthorized or inactive Telegram identities are rejected without executing protected actions.
+- **SC-002**: 100% of supported commands return either a successful result or a deterministic user-facing error within one interaction cycle.
+- **SC-003**: In throttling tests, requests above configured per-user limits are blocked with correct throttle messaging, and normal service resumes after window reset.
+- **SC-004**: 100% of responses that exceed Telegram size limits are delivered as ordered chunks with no semantic truncation.
+- **SC-005**: At least 99% of proactive notifications for users with valid chat destinations are delivered successfully in controlled test runs.
+- **SC-006**: 100% of proactive delivery attempts for users without chat destination are skipped safely and logged.
+- **SC-007**: In command-path validation, unauthorized access and throttling responses match preserved guardrail semantics exactly.
+- **SC-008**: In controlled load tests, p95 latency for authorization + throttling decision + first acknowledgment remains <= 3 seconds.
+- **SC-009**: 100% of denial/throttle/push-failure log events include required observability context fields from FR-011.
+- **SC-010**: 100% of malformed command and missing-sender-attribute cases return deterministic `validation_error` feedback without downstream execution.
+
+## Assumptions
+
+- The feature depends on completed 008 orchestration contracts, including `/api/chat`, `/api/briefs/latest`, `/api/screener/summary`, watchlist/portfolio/ticket routes, and API auth behavior.
+- End users interact through Telegram as their primary interface, while admin dashboard flows remain out of scope for this feature.
+- Command-to-backend action mappings and strict argument semantics are preserved from the original manual draft and documented in `decisions.md` for planning continuity.
+- Detailed implementation choices (framework, transport mode, route-level integration specifics) are intentionally deferred to planning and implementation artifacts.
+- Optional argument handling is limited to documented contracts in this spec; undocumented aliases or shorthand are out of scope for 009.
+
+## Out of Scope
+
+- Admin dashboard UX, admin moderation tooling, and dashboard-driven Telegram control flows.
+- In-chat account onboarding, self-registration, or credential bootstrap.
+- Webhook-mode bot delivery and ingress/TLS infrastructure changes.
+
+## Preserved Implementation Details
+
+To avoid losing critical operational details from the original manual draft, the following artifacts are normative inputs for planning/implementation:
+
+- [decisions.md](./decisions.md) - explicit preserved decisions, exact message semantics, and command intent mapping.
+- [contracts/telegram-bot-contracts.md](./contracts/telegram-bot-contracts.md) - explicit command -> API mapping (including `/screener show last` compatibility note).
+- [manual-spec-original.md](./manual-spec-original.md) - immutable snapshot of the original manual `spec.md` before canonical rewrite.
+
+These preserved details MUST be reflected in `plan.md`, `tasks.md`, and implementation unless a documented rationale approves deviation.
