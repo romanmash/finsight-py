@@ -7,10 +7,17 @@ import { requestIdMiddleware } from './middleware/request-id.js';
 import { roleGuard } from './middleware/role-guard.js';
 import { toErrorResponse } from './lib/errors.js';
 import { createAdminRouter, adminStatusHandler } from './routes/admin.js';
+import { createAlertsRouter } from './routes/alerts.js';
 import { createAuthRouter } from './routes/auth.js';
 import { createBriefsRouter } from './routes/briefs.js';
+import { createChatRouter } from './routes/chat.js';
+import { createKbRouter } from './routes/kb.js';
+import { createMissionsRouter } from './routes/missions.js';
+import { createPortfolioRouter } from './routes/portfolio.js';
 import { createScreenerRouter } from './routes/screener.js';
+import { createTicketsRouter } from './routes/tickets.js';
 import { createWatchdogRouter } from './routes/watchdog.js';
+import { createWatchlistRouter } from './routes/watchlist.js';
 import type { AppEnv } from './types/hono-context.js';
 
 export function createApp(): Hono<AppEnv> {
@@ -37,9 +44,17 @@ export function createApp(): Hono<AppEnv> {
   app.use('/api/watchdog/*', authMiddleware());
   app.use('/api/watchdog/*', roleGuard('admin'));
 
-  app.use('/api/screener/*', authMiddleware());
-  app.use('/api/screener/*', roleGuard('admin'));
+  app.use('/api/screener/trigger', authMiddleware());
+  app.use('/api/screener/trigger', roleGuard('admin'));
 
+  app.use('/api/chat/*', authMiddleware());
+  app.use('/api/missions/*', authMiddleware());
+  app.use('/api/kb/*', authMiddleware());
+  app.use('/api/portfolio/*', authMiddleware());
+  app.use('/api/watchlist/*', authMiddleware());
+  app.use('/api/alerts/*', authMiddleware());
+  app.use('/api/tickets/*', authMiddleware());
+  app.use('/api/screener/*', authMiddleware());
   app.use('/api/briefs/*', authMiddleware());
 
   app.route('/auth', createAuthRouter());
@@ -47,6 +62,13 @@ export function createApp(): Hono<AppEnv> {
   app.route('/api/watchdog', createWatchdogRouter());
   app.route('/api/screener', createScreenerRouter());
   app.route('/api/briefs', createBriefsRouter());
+  app.route('/api/chat', createChatRouter());
+  app.route('/api/missions', createMissionsRouter());
+  app.route('/api/kb', createKbRouter());
+  app.route('/api/portfolio', createPortfolioRouter());
+  app.route('/api/watchlist', createWatchlistRouter());
+  app.route('/api/alerts', createAlertsRouter());
+  app.route('/api/tickets', createTicketsRouter());
   app.get('/api/admin/status', adminStatusHandler);
 
   app.onError((error, c) => toErrorResponse(c, error));

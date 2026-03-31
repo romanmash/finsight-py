@@ -18,6 +18,13 @@ export type WatchdogAlertType = z.infer<typeof watchdogAlertTypeSchema>;
 export const screenerTriggerSchema = z.enum(['scheduled', 'manual']);
 export type ScreenerTrigger = z.infer<typeof screenerTriggerSchema>;
 
+export const llmUsageSchema = z.object({
+  tokensIn: z.number().int().nonnegative(),
+  tokensOut: z.number().int().nonnegative(),
+  costUsd: z.number().nonnegative()
+}).strict();
+export type LlmUsage = z.infer<typeof llmUsageSchema>;
+
 export interface CollectorStatePayload {
   state: CollectorState;
   currentTask?: string;
@@ -72,6 +79,7 @@ export interface ResearchCollectionOutput {
   kbContext: Array<Record<string, unknown>>;
   confidence: 'low' | 'medium' | 'high';
   gaps: string[];
+  _usage?: LlmUsage | undefined;
 }
 
 export interface TechnicalCollectionOutput {
@@ -93,6 +101,7 @@ export interface TechnicalCollectionOutput {
   confidence: number;
   limitations: string[];
   summary: string;
+  _usage?: LlmUsage | undefined;
 }
 
 export const researchCollectionOutputSchema = z.object({
@@ -104,7 +113,8 @@ export const researchCollectionOutputSchema = z.object({
   fundamentalsSummary: z.record(z.string(), z.unknown()),
   kbContext: z.array(z.record(z.string(), z.unknown())),
   confidence: z.enum(['low', 'medium', 'high']),
-  gaps: z.array(z.string())
+  gaps: z.array(z.string()),
+  _usage: llmUsageSchema.optional()
 }).strict();
 
 export const technicalCollectionOutputSchema = z.object({
@@ -125,7 +135,8 @@ export const technicalCollectionOutputSchema = z.object({
   }).strict(),
   confidence: z.number().min(0).max(1),
   limitations: z.array(z.string()),
-  summary: z.string().min(1)
+  summary: z.string().min(1),
+  _usage: llmUsageSchema.optional()
 }).strict();
 
 export type ResearchCollectionOutputValidated = z.infer<typeof researchCollectionOutputSchema>;

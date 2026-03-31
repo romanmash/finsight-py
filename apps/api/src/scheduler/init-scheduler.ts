@@ -18,7 +18,8 @@ export async function initScheduler(): Promise<SchedulerInitResult> {
     'screenerScan',
     'dailyBrief',
     'earningsCheck',
-    'ticketExpiry'
+    'ticketExpiry',
+    'alertPipeline'
   ].filter((jobName) => {
     const key = jobName as keyof typeof schedulerConfig;
     return schedulerConfig[key] !== undefined;

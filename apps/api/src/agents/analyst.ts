@@ -19,6 +19,26 @@ function summarizeResearch(research: ResearchCollectionOutput): string {
   return `${research.ticker}: ${String(factCount)} facts, ${String(gapCount)} gaps`;
 }
 
+function estimateTokens(value: unknown): number {
+  const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+  return Math.max(1, Math.ceil(serialized.length / 4));
+}
+
+function withEstimatedUsage(output: AnalystOutput, input: RunAnalystInput): AnalystOutput {
+  if (output._usage !== undefined) {
+    return output;
+  }
+
+  return {
+    ...output,
+    _usage: {
+      tokensIn: estimateTokens(input),
+      tokensOut: estimateTokens(output.thesisUpdate),
+      costUsd: 0
+    }
+  };
+}
+
 function defaultSynthesis(input: RunAnalystInput): AnalystOutput {
   const portfolioNote =
     input.portfolioContext !== undefined && input.portfolioContext.quantity > 0
@@ -74,7 +94,7 @@ function defaultSynthesis(input: RunAnalystInput): AnalystOutput {
 }
 
 export function buildTestSynthesizer(): AnalystDependencies['synthesize'] {
-  return async (input: RunAnalystInput): Promise<AnalystOutput> => defaultSynthesis(input);
+  return async (input: RunAnalystInput): Promise<AnalystOutput> => withEstimatedUsage(defaultSynthesis(input), input);
 }
 
 function defaultDependencies(): AnalystDependencies {
@@ -97,14 +117,15 @@ export async function runAnalyst(input: RunAnalystInput, deps: AnalystDependenci
   }
 
   const output = await validateWithSingleRetry(async () => deps.synthesize(parsedInput), analystOutputSchema);
+  const normalized = withEstimatedUsage(output, parsedInput);
 
-  if (parsedInput.mode === 'comparison' && output.comparisonTable === undefined) {
+  if (parsedInput.mode === 'comparison' && normalized.comparisonTable === undefined) {
     throw new Error('comparison mode output must include comparisonTable');
   }
 
-  if (parsedInput.mode === 'devil_advocate' && output.contradictions.length === 0) {
+  if (parsedInput.mode === 'devil_advocate' && normalized.contradictions.length === 0) {
     throw new Error('devil_advocate mode output must include at least one contradiction');
   }
 
-  return output;
+  return normalized;
 }

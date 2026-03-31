@@ -54,7 +54,7 @@ export const screenerScanQueue = new Queue('screenerScan', queueOptions('screene
 export const dailyBriefQueue = new Queue('dailyBrief', queueOptions('dailyBrief'));
 export const earningsCheckQueue = new Queue('earningsCheck', queueOptions('earningsCheck'));
 export const ticketExpiryQueue = new Queue('ticketExpiry', queueOptions('ticketExpiry'));
-export const alertPipelineQueue = new Queue('alertPipeline', { connection });
+export const alertPipelineQueue = new Queue('alertPipeline', queueOptions('alertPipeline'));
 
 export const repeatableQueues = {
   watchdogScan: watchdogScanQueue,
@@ -85,4 +85,3 @@ export async function registerRepeatableQueueSchedules(): Promise<void> {
     })
   ]);
 }
-

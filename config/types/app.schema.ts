@@ -11,7 +11,9 @@ export const appConfigSchema = z.object({
   collector: z.object({
     stateTtlSeconds: z.number().int().positive(),
     researcherMaxToolSteps: z.number().int().positive()
-  }).strict()
+  }).strict(),
+  kbFastPathFreshnessHours: z.number().int().positive(),
+  patternDefaultPeriodWeeks: z.number().int().positive()
 }).strict();
 
 export type AppRuntimeConfig = z.infer<typeof appConfigSchema>;

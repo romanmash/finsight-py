@@ -7,3 +7,5 @@ featureFlags:
 collector:
   stateTtlSeconds: 600
   researcherMaxToolSteps: 10
+kbFastPathFreshnessHours: 24
+patternDefaultPeriodWeeks: 3

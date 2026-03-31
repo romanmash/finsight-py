@@ -26,8 +26,9 @@ function resolveLabel(missionType: string): string {
   return MISSION_LABELS[missionType] ?? '📌 Mission Output';
 }
 
-function renderStructuredPayload(payload: Record<string, unknown>): string {
-  return JSON.stringify(payload, null, 2);
+function estimateTokens(value: unknown): number {
+  const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+  return Math.max(1, Math.ceil(serialized.length / 4));
 }
 
 function defaultDependencies(): ReporterDependencies {
@@ -109,7 +110,11 @@ export async function runReporter(input: RunReporterInput, deps: ReporterDepende
     messageCount: chunks.length,
     label,
     persistedDailyBriefId: persistedDailyBriefId ?? undefined,
-    failedChunkCount
+    failedChunkCount,
+    _usage: {
+      tokensIn: estimateTokens(parsed.payload),
+      tokensOut: estimateTokens(messageText),
+      costUsd: 0
+    }
   });
 }
-

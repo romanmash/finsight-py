@@ -1,6 +1,5 @@
-import type { Worker } from 'bullmq';
-
 import { logger } from '../lib/logger.js';
+import { createAlertPipelineWorker } from './alert-pipeline-worker.js';
 import { createBriefWorker } from './brief-worker.js';
 import { createEarningsWorker } from './earnings-worker.js';
 import { createScreenerWorker } from './screener-worker.js';
@@ -8,17 +7,19 @@ import { createTicketExpiryWorker } from './ticket-expiry-worker.js';
 import { createWatchdogWorker } from './watchdog-worker.js';
 
 export interface CollectorWorkers {
-  watchdog: Worker<Record<string, unknown>>;
-  screener: Worker<Record<string, unknown>>;
-  dailyBrief: Worker<Record<string, unknown>>;
-  earningsCheck: Worker<Record<string, unknown>>;
-  ticketExpiry: Worker<Record<string, unknown>>;
+  watchdog: ReturnType<typeof createWatchdogWorker>;
+  screener: ReturnType<typeof createScreenerWorker>;
+  alertPipeline: ReturnType<typeof createAlertPipelineWorker>;
+  dailyBrief: ReturnType<typeof createBriefWorker>;
+  earningsCheck: ReturnType<typeof createEarningsWorker>;
+  ticketExpiry: ReturnType<typeof createTicketExpiryWorker>;
 }
 
 export function initCollectorWorkers(): CollectorWorkers {
   const workers: CollectorWorkers = {
     watchdog: createWatchdogWorker(),
     screener: createScreenerWorker(),
+    alertPipeline: createAlertPipelineWorker(),
     dailyBrief: createBriefWorker(),
     earningsCheck: createEarningsWorker(),
     ticketExpiry: createTicketExpiryWorker()
@@ -26,7 +27,7 @@ export function initCollectorWorkers(): CollectorWorkers {
 
   logger.info(
     {
-      queues: ['watchdogScan', 'screenerScan', 'dailyBrief', 'earningsCheck', 'ticketExpiry']
+      queues: ['watchdogScan', 'screenerScan', 'alertPipeline', 'dailyBrief', 'earningsCheck', 'ticketExpiry']
     },
     'Collector workers initialized'
   );
