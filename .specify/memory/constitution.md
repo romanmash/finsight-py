@@ -1,64 +1,137 @@
+<!--
+SYNC IMPACT REPORT
+==================
+Version change: 1.1 → 2.0.0 (MAJOR — complete technology stack and project purpose replacement)
+
+Modified principles:
+  I.   Everything-as-Code          → unchanged in intent; Zod → Pydantic v2, pnpm → uv
+  II.  Agent Boundaries            → unchanged; agent count corrected 9 → 7
+  III. MCP Server Independence     → updated: 6 Hono servers → 3 FastMCP servers
+  IV.  Cost Observability          → updated: field names camelCase → snake_case (Python)
+  V.   Fail-Safe Defaults          → updated: Node/Zod refs → Python/Pydantic refs
+  VI.  Test-First Where Practical  → updated: msw → respx, Vitest → pytest
+  VII. Simplicity Over Cleverness  → rewritten: LangGraph replaces Vercel AI SDK;
+                                     FastAPI replaces Hono; Celery replaces BullMQ
+
+Added sections:   none
+Removed sections: none (project purpose section rewritten in-place)
+
+Templates requiring updates:
+  ✅ .specify/templates/plan-template.md      — technology-agnostic, no changes needed
+  ✅ .specify/templates/spec-template.md      — technology-agnostic, no changes needed
+  ✅ .specify/templates/tasks-template.md     — technology-agnostic, no changes needed
+  ✅ .specify/templates/agent-file-template.md — populated by update-agent-context.ps1, no manual edit needed
+  ⚠  AGENTS.md                               — must be rewritten for Python stack (pending)
+  ⚠  docs/CONTEXT.md                         — references TypeScript position context; update pending
+  ⚠  specs/README.md                         — feature catalogue needs Python feature list (pending)
+
+Follow-up TODOs:
+  - Update AGENTS.md technology stack table and commands section for Python
+  - Update docs/CONTEXT.md to remove TypeScript position framing
+  - Create Python specs 001-011 via /speckit.specify
+-->
+
 # FinSight AI Hub — Constitution
+
+## Project Purpose
+
+FinSight AI Hub is a **personal Python-first market intelligence hub** running on a dedicated Linux
+laptop. It has two genuine, equally weighted purposes:
+
+1. **Deep Python learning platform** — every architectural decision MUST use enterprise-grade Python
+   tooling that appears in real AI engineering job descriptions (LangGraph, FastAPI, SQLAlchemy,
+   Celery, OpenBB, LangChain, Pydantic, Dash).
+2. **Real personal tool** — the developer and friends actively use it for market monitoring,
+   research, and decision support.
+
+This is not a portfolio demo. It is not targeting any specific job application. Architectural
+decisions are justified by learning value and real-world utility — not by external requirements.
 
 ## Core Principles
 
 ### I. Everything-as-Code
 
-All behavioral configuration — models, thresholds, prompts, schedules, scoring weights — lives in version-controlled files (`config/runtime/*.yaml`), validated by Zod schemas at startup. Secrets live **only** in `.env` (never committed). If a parameter affects agent behavior, it MUST be configurable without code changes.
+All behavioral configuration — models, thresholds, prompts, schedules, scoring weights — lives in
+version-controlled YAML files (`config/runtime/*.yaml`), validated by Pydantic v2 Settings at
+startup. Secrets live **only** in `.env` (never committed). If a parameter affects agent behavior,
+it MUST be configurable without code changes.
 
 ### II. Agent Boundaries (NON-NEGOTIABLE)
 
-Each of the 9 agents has a **sole responsibility** that does not overlap with any other agent's domain. Violations create debugging nightmares and break observability.
+Each of the 7 agents has a **sole responsibility** that does not overlap with any other agent's
+domain. Violations create debugging nightmares and break observability.
 
 | Rule | Description |
 |---|---|
 | No cross-synthesis | Researcher collects data — it never interprets. Analyst interprets — it never fetches. |
 | Single KB writer | Only Bookkeeper writes to the Knowledge Base (pgvector). All other agents read via `rag-retrieval-mcp`. |
-| No autonomous trades | Trader creates tickets — it NEVER executes. Only explicit human approval (via Telegram `/approve`) triggers execution. |
-| Reporter formats only | Reporter never analyses. It receives structured output and formats it for Telegram delivery. |
-| Manager never reasons about content | Manager classifies intent and routes. It does not generate investment analysis. |
+| No autonomous trades | No trade execution of any kind in MVP. Decision support only. |
+| Reporter formats only | Reporter never analyses. It receives structured output and formats it for Telegram or Dashboard delivery. |
+| Manager never reasons about content | Manager classifies intent, routes to specialists, and composes results. It does not generate investment analysis. |
+| Pattern Specialist stays technical | Pattern Specialist examines price/volume/technical behavior only. It does not produce investment advice. |
+
+**The 7 agents**: Manager, Watchdog, Researcher, Analyst, Pattern Specialist, Bookkeeper/Librarian,
+Reporter.
 
 ### III. MCP Server Independence
 
-Each of the 6 MCP servers is a self-contained Hono microservice with:
+Each of the 3 MCP servers is a self-contained FastMCP microservice with:
 - Its own health endpoint (`GET /health`)
-- Its own tool manifest (`GET /mcp/tools`)
-- Its own invocation endpoint (`POST /mcp/invoke`)
+- Its own tool manifest (FastMCP auto-generated)
 - Its own cache layer (Redis-backed, TTLs from `mcp.yaml`)
 - No direct imports from agents or API code
 
-MCP servers expose tools. Agents consume them via the MCP Client. This boundary is **strict** — no shortcuts.
+**The 3 MCP servers**:
+- `market-data-mcp` — stocks, ETFs, fundamentals, options (OpenBB Platform SDK backed)
+- `news-macro-mcp` — news, sentiment, GDELT macro signals (Finnhub + GDELT backed)
+- `rag-retrieval-mcp` — pgvector semantic search, document retrieval (LangChain Python backed)
+
+MCP servers expose tools. Agents consume them via the MCP client. This boundary is **strict** —
+no shortcuts.
 
 ### IV. Cost Observability
 
-Every LLM call MUST record `tokensIn`, `tokensOut`, `costUsd`, `provider`, `model`, `durationMs` in an `AgentRun` record linked to its `Mission`. The system must always be able to answer: "How much did this mission cost? Which provider? How many tokens?"
+Every LLM call MUST record `tokens_in`, `tokens_out`, `cost_usd`, `provider`, `model`,
+`duration_ms` in an `AgentRun` record linked to its `Mission`. The system must always be able to
+answer: "How much did this mission cost? Which provider? How many tokens?"
 
 Cost is computed deterministically from `pricing.yaml` — not estimated, not approximated.
 
 ### V. Fail-Safe Defaults
 
-- Config validation failure → `process.exit(1)` with descriptive Zod error (never start with invalid config)
+- Config validation failure → `sys.exit(1)` with descriptive Pydantic error path (never start
+  with invalid config)
 - MCP server unreachable at startup → fail-fast (never start with missing tools)
-- Agent returns malformed JSON → retry once, then fail the mission (never silently swallow bad output)
-- Unknown model in `pricing.yaml` → cost = $0 with warning log (never block on missing pricing)
-- LM Studio unavailable → fallback to cloud provider per `agents.yaml` (never let local model unavailability block agents)
+- Agent returns malformed output → retry once, then fail the mission (never silently swallow bad
+  output)
+- Unknown model in `pricing.yaml` → cost = $0.00 with warning log (never block on missing pricing)
+- LM Studio unavailable → fallback to cloud provider per `agents.yaml` (never let local model
+  unavailability block agents)
 
 ### VI. Test-First Where Practical
 
-- Unit tests for all agent output validation (typed output schemas)
+- Unit tests for all agent output validation (typed Pydantic output schemas)
 - Unit tests for config loading, pricing computation, and threshold logic
-- Integration tests for DB writes (Bookkeeper KB pipeline, trade ticket lifecycle)
-- Mocked external APIs (Finnhub, FMP, GDELT, Alpha Vantage) via `msw` — tests run without network
-- E2E test for the full mission pipeline (operator_query: chat → mission complete → KB entry created)
+- Integration tests for DB writes (Bookkeeper KB pipeline)
+- Mocked external APIs (Finnhub, GDELT, Alpha Vantage, OpenBB) via `respx` — tests MUST pass
+  without network access, without Docker, without a running database
+- E2E test for the full mission pipeline (operator query → mission complete → KB entry created)
+
+All tests run with `pytest`. Async tests use `pytest-asyncio`.
 
 ### VII. Simplicity Over Cleverness
 
-- Hono over Express (lighter, faster, better TypeScript)
-- Direct `generateText` for agent orchestration — no LangGraph, no CrewAI
-- LangChain used narrowly: document chunking (`RecursiveCharacterTextSplitter`), embedding abstraction (`OpenAIEmbeddings`), and retrieval chains in the RAG layer (`rag-retrieval-mcp`, Bookkeeper). Never for agent orchestration.
-- BullMQ over custom schedulers (battle-tested, Redis-backed)
-- Prisma over raw SQL (type-safe, migration-friendly)
-- No WebSocket complexity — Admin Dashboard polls every 3 seconds
+- **FastAPI** over Flask/Django (async-native, auto OpenAPI docs, best DX for AI APIs)
+- **LangGraph** for agent orchestration — explicit supervisor graph, stateful, inspectable.
+  Never use ad-hoc prompt chaining or unstructured loops.
+- **LangChain Python** used narrowly: document chunking (`RecursiveCharacterTextSplitter`),
+  embedding abstraction (`OpenAIEmbeddings`), retrieval chains. Never for agent orchestration —
+  that is LangGraph's job.
+- **Celery + Redis** over custom schedulers (battle-tested, enterprise-standard, appears in every
+  Python job description)
+- **SQLAlchemy 2.x async** over raw SQL or active-record ORMs (type-safe, migration-friendly
+  via Alembic)
+- No WebSocket complexity — Dash dashboard polls, Telegram bot uses long-polling
 - No streaming to Telegram — wait for full completion, then deliver
 
 ## Architectural Constraints
@@ -67,72 +140,98 @@ Cost is computed deterministically from `pricing.yaml` — not estimated, not ap
 
 | Layer | Technology | Rationale |
 |---|---|---|
-| Runtime | Node.js 20 LTS, TypeScript 5.x strict | Position requirement, type safety |
-| API Framework | Hono | Lightweight, Web Standards, excellent DX |
-| ORM | Prisma + pgvector | Type-safe, migration support, vector search |
-| Queue | BullMQ + Redis 7 | Repeatable jobs, retries, dead letter |
-| AI SDK | Vercel AI SDK | Multi-provider, tool() bindings, streaming |
-| RAG Pipeline | LangChain JS (`@langchain/core`, `@langchain/openai`) | Document chunking, embedding abstraction, retrieval chains — RAG layer only |
-| Observability | LangSmith + Pino | Full LLM trace + structured logging |
-| Bot | Telegraf | Mature polling-based Telegram SDK |
-| IaC | Pulumi (TypeScript) | TypeScript-native, AWS support |
-| Container | Docker (prod), Podman (dev) | OCI-compatible, same compose files |
+| Runtime | Python 3.13 + mypy strict | Learning goal; enterprise standard for AI engineering |
+| API Framework | FastAPI | Async-native, auto OpenAPI, dominant in Python API job descriptions |
+| ORM | SQLAlchemy 2.x async + Alembic + pgvector | Type-safe, async, industry-standard migrations + vector search |
+| Queue | Celery + Redis 7 | Enterprise standard Python queue; ubiquitous in job descriptions |
+| Agent Orchestration | LangGraph Python | Stateful graphs, supervisor pattern, production-grade multi-agent |
+| Finance Data | OpenBB Platform SDK | Unified Python API for stocks, ETFs, fundamentals, options, news |
+| RAG Pipeline | LangChain Python + pgvector | Primary LangChain runtime; document chunking + retrieval chains |
+| Observability | LangSmith (Python) + structlog | Full LLM trace + structured JSON logs |
+| Bot | python-telegram-bot v20 async | Mature async SDK; voice messages → Whisper API transcription |
+| Dashboard | Dash (Plotly) | Enterprise-standard Python dashboard; touchscreen-ready ops console |
+| IaC | Pulumi Python | TypeScript-free IaC; Python-native |
+| Container | Docker (prod server), Podman (dev laptop) | OCI-compatible, same compose files |
+| Config Validation | Pydantic v2 Settings + YAML | Industry standard Python config; startup validation |
+| Monorepo | uv workspaces | Modern Python dependency management; replaces pnpm |
+| Testing | pytest + respx + pytest-asyncio | Universal Python test stack |
 
 ### Deployment Topology
 
-- **Dev Laptop (Windows/Podman):** Development, testing, LM Studio
-- **Linux Server (Ubuntu/Docker):** Production deployment via `scripts/deploy.sh` (rsync + ssh)
-- **12 containers** total: API, agent-worker, 6 MCP servers, frontend, telegram-bot, postgres, redis
+- **Dev Laptop (Windows 11 / Podman):** Development, testing, LM Studio (local model inference)
+- **Linux Server (Ubuntu 24.04 / Docker):** Always-on production stack + operator dashboard display
+- **Deploy path:** `scripts/deploy.sh` — rsync source + SSH into server + `docker compose up -d`
+- **~10 containers** total: API, agent-worker, Celery beat, 3 MCP servers, Dash dashboard,
+  telegram-bot, postgres, redis
 
 ### Security Constraints
 
-- JWT access tokens stored in memory only (NOT localStorage)
+- JWT access tokens stored in memory only (NOT browser storage)
 - Refresh tokens in httpOnly cookies
-- All admin routes behind `roleGuard('admin')` middleware
-- Telegram users authenticated by matching `telegramHandle` against DB
+- All admin routes behind `require_role("admin")` dependency
+- Telegram users authenticated by matching `telegram_handle` against DB
 - Config mounted read-only (`:ro`) in Docker containers
 - `.env` never committed, never baked into images
+- No trade execution of any kind — operator decision support only
 
 ## Development Workflow
 
 ### Spec-Driven Development
 
 Every feature follows the SpecKit lifecycle:
-1. **Spec** (spec.md) — User stories, acceptance scenarios, requirements
-2. **Plan** (plan.md) — Technical design, file list, key decisions
-3. **Tasks** (tasks.md) — Actionable implementation checklist
+1. **Spec** (`spec.md`) — User stories, acceptance scenarios, requirements
+2. **Plan** (`plan.md`) — Technical design, file list, key decisions
+3. **Tasks** (`tasks.md`) — Actionable implementation checklist
 
 No implementation begins without a reviewed spec. No plan is written without a finalized spec.
 
 ### Build Sequence
 
-Features are implemented in strict dependency order. Each feature's spec is self-contained — it includes all context needed for implementation without requiring the reader to have read all preceding specs.
+Features are implemented in strict dependency order. Each feature's spec is self-contained — it
+includes all context needed for implementation without requiring the reader to have read all
+preceding specs.
 
 ### Code Quality Gates
 
-- `pnpm -r typecheck` — zero errors (strict TypeScript, no `any`)
-- `pnpm -r lint` — zero warnings (ESLint flat config)
-- `pnpm -r test` — all tests pass
-- Every function has explicit return types
-- Every interface has JSDoc describing its purpose
+- `uv run mypy --strict` — zero errors (strict Python type checking, no untyped `Any`)
+- `uv run ruff check` — zero warnings (Python linter)
+- `uv run pytest` — all tests pass (offline, no Docker required)
+- Every function has explicit return type annotations
+- Every public class/function has a docstring describing its purpose
+- No hardcoded model names, thresholds, or API keys in source code
 
 ## Governance
 
-This constitution supersedes informal preferences. All implementation decisions must be justifiable against these principles. If a spec violates the constitution, the spec must be amended — not the constitution.
+This constitution supersedes informal preferences. All implementation decisions must be justifiable
+against these principles. If a spec violates the constitution, the spec must be amended — not the
+constitution.
 
-Exceptions require explicit documentation in the relevant plan.md with rationale.
+Exceptions require explicit documentation in the relevant `plan.md` with rationale.
+
+### Amendment Procedure
+
+1. Propose the change with rationale in a PR description
+2. Identify which principles are affected and whether the bump is MAJOR/MINOR/PATCH
+3. Update `CONSTITUTION_VERSION` and `LAST_AMENDED_DATE`
+4. Propagate to AGENTS.md, specs/README.md, and any affected plan.md files
+
+### Versioning Policy
+
+- **MAJOR**: Backward incompatible — stack replacement, principle removal, agent team changes
+- **MINOR**: New principle or section added; material guidance expansion
+- **PATCH**: Clarifications, wording, typo fixes
 
 ## Reference Documents
 
-When implementing any feature, agents MUST read these documents in order before writing any code or plans:
+When implementing any feature, agents MUST read these documents in order before writing any code
+or plans:
 
 | Document | Purpose | When to read |
 |---|---|---|
 | `specs/README.md` | Feature catalogue, build order, dependency graph | Always — before any spec or plan work |
-| `docs/CONTEXT.md` | Hardware topology, environment constraints, key architectural decisions with rationale | Always — contains constraints that affect every implementation choice |
-| `docs/CASE.md` | Full system specification (2000+ lines) — entities, pipelines, API contracts | When you need full detail on a component not covered by the current spec |
-| `docs/SPECKIT.md` | Detailed TypeScript interfaces per component | When authoring `plan.md` files — has concrete interface definitions |
+| `docs/STACK.md` | Technology stack decisions with full rationale for every choice | Always — explains *why* each technology was chosen and what was rejected |
+| `docs/CONTEXT.md` | Hardware topology, environment constraints, key architectural decisions | Always — contains constraints affecting every implementation choice |
 | The specific `specs/NNN-feature-name/spec.md` | User stories and acceptance criteria for the current feature | Always during plan and implementation |
 | The specific `specs/NNN-feature-name/plan.md` | Technical design and file list for the current feature | Always during implementation |
 
-**Version**: 1.1 | **Ratified**: 2026-03-28 | **Last Amended**: 2026-03-30
+**Version**: 2.0.0 | **Ratified**: 2026-03-28 | **Last Amended**: 2026-04-02

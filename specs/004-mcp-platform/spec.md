@@ -1,183 +1,182 @@
 # Feature Specification: MCP Platform
 
-**Feature**: `004-mcp-platform`
-**Created**: 2026-03-30
+**Feature Branch**: `004-mcp-platform`
+**Created**: 2026-04-02
 **Status**: Draft
-**Constitution**: [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md)
-**Depends on**: `001-foundation-config`, `002-data-layer`
 
-## Overview
+## User Scenarios & Testing *(mandatory)*
 
-Build the MCP platform foundation for FinSight by introducing a reusable MCP server factory and delivering 6 independent MCP tool servers used by agents for market, macro, news, retrieval, enterprise, and trading workflows.
+### User Story 1 — Agent Fetches Market Data via a Tool Call (Priority: P1)
 
-**Why this feature exists:** Agent boundaries require agents to consume tools through MCP servers instead of calling external systems directly. This enables independent testing, explicit validation boundaries, consistent error handling, and configuration-driven behavior.
+An agent running inside the system needs current price and fundamental data for a watched asset.
+It calls a named tool provided by the market data server. The tool fetches the data from the
+configured finance data source, caches the result, and returns structured data to the agent. The
+agent does not know which external data source was used — it only calls the tool by name.
 
----
+**Why this priority**: All collector agents depend on market data tools. Without this server,
+no finance data flows into the agent team.
 
-## User Scenarios & Testing
-
-### User Story 1 — Reusable MCP Server Factory (Priority: P1)
-
-As a developer, I want a reusable MCP server factory so that every MCP server follows one consistent contract for health, tool discovery, invocation, validation, and error responses.
-
-**Why P1**: All six MCP servers depend on this shared foundation; inconsistency here multiplies defects across the platform.
-
-**Independent Test**: Create a minimal server from a one-tool registry and verify health, manifest, successful invocation, invalid-input handling, unknown-tool handling, duplicate-tool registration rejection, and structured error behavior.
+**Independent Test**: Call the market data tool with a valid asset symbol, receive structured
+price and fundamental data, call it again immediately and verify the cached result is returned
+without a new external fetch.
 
 **Acceptance Scenarios**:
 
-1. **Given** a tool registry, **When** a server is created, **Then** it exposes `GET /health`, `GET /mcp/tools`, and `POST /mcp/invoke`
-2. **Given** a running server, **When** `GET /health` is called, **Then** it returns a healthy status payload with uptime metadata
-3. **Given** valid invocation input, **When** `POST /mcp/invoke` is called, **Then** it returns `{ output, durationMs }`
-4. **Given** invalid invocation input, **When** `POST /mcp/invoke` is called, **Then** it returns `400` with schema-validation details
-5. **Given** an unknown tool name, **When** `POST /mcp/invoke` is called, **Then** it returns `404` with deterministic error payload
-6. **Given** duplicate tool names in one registry, **When** server initialization occurs, **Then** initialization fails with deterministic configuration error
+1. **Given** a valid asset symbol, **When** the market data tool is called, **Then** the response
+   contains structured price and fundamental data for that asset.
+2. **Given** a tool response that was just fetched, **When** the same tool is called again within
+   the cache TTL, **Then** the cached result is returned without contacting the external source.
+3. **Given** an invalid or unknown asset symbol, **When** the market data tool is called, **Then**
+   a structured error is returned rather than an unhandled exception.
 
 ---
 
-### User Story 2 — Market Data MCP Coverage (Priority: P1)
+### User Story 2 — Agent Retrieves News and Macro Signals (Priority: P1)
 
-As a collector agent, I want market-data tools for quote, OHLCV, fundamentals, earnings, analyst ratings, and targets so that I can gather structured financial context for missions.
+An agent needs recent news articles and macro-economic signals relevant to a watched theme or
+asset. It calls named tools on the news and macro server. The server fetches from configured
+sources, normalises the format, and returns structured results. The agent receives a consistent
+response shape regardless of which news source contributed the data.
 
-**Why P1**: This is a high-frequency dependency for mission collection and screening paths.
+**Why this priority**: News and macro context is required by multiple agents (Researcher,
+Watchdog, Analyst). Without this server, the agent team is blind to world events.
 
-**Independent Test**: Start market-data MCP and call each tool with valid/invalid inputs, verifying deterministic schema-compliant outputs and fallback behavior.
+**Independent Test**: Call the news tool with a topic or asset filter, receive structured news
+items with source, headline, and timestamp fields, call the macro signal tool and receive
+structured macro indicators.
 
 **Acceptance Scenarios**:
 
-1. **Given** market-data MCP is running, **When** quote and OHLCV tools are invoked, **Then** responses match expected output schemas
-2. **Given** primary data-provider failure, **When** a fallback-supported tool is invoked, **Then** fallback provider is attempted and result is returned when available
-3. **Given** repeated identical requests inside configured TTL, **When** tool invocation occurs, **Then** cached output is returned
-4. **Given** batch quote input for multiple tickers, **When** batch quote tool is invoked, **Then** all requested tickers return in one response payload
+1. **Given** a topic filter, **When** the news tool is called, **Then** the response contains a
+   list of news items each with a source identifier, headline, published timestamp, and relevance
+   score.
+2. **Given** a request for macro signals, **When** the macro tool is called, **Then** structured
+   indicators (market sentiment, volatility regime, geopolitical risk index) are returned.
+3. **Given** a news tool call, **When** the external source is unavailable, **Then** a graceful
+   error is returned with a clear description rather than propagating an internal exception.
 
 ---
 
-### User Story 3 — Remaining MCP Server Set (Priority: P1)
+### User Story 3 — Agent Retrieves Semantically Relevant Knowledge (Priority: P1)
 
-As the platform, I want macro-signals, news, RAG-retrieval, enterprise-connector, and trader-platform MCP servers so that every downstream agent has required tool access through MCP boundaries.
+An agent needs to retrieve past research notes, analyst conclusions, or curated facts relevant
+to its current task. It calls the RAG retrieval tool with a natural-language query. The server
+performs a semantic search over the knowledge base and returns the most relevant entries ranked
+by similarity. The agent receives structured results with the text content and provenance metadata.
 
-**Why P1**: Platform mission completeness requires all MCP domains, not only market data.
+**Why this priority**: The shared knowledge base with semantic retrieval is central to the
+system's ability to accumulate and apply compound intelligence. All reasoning agents depend on it.
 
-**Independent Test**: Run each server independently and verify tool manifest, invocation contract, and schema-valid responses for each exposed tool.
+**Independent Test**: Pre-populate the knowledge base with a set of entries, call the retrieval
+tool with a relevant query, verify results are returned ranked by semantic closeness, call with
+an unrelated query and verify low-relevance or empty results.
 
 **Acceptance Scenarios**:
 
-1. **Given** each MCP server is started, **When** health and tools endpoints are called, **Then** each returns valid service metadata and manifest entries
-2. **Given** retrieval tool invocation with query filters, **When** search is called, **Then** ranked knowledge results are returned or an empty list when no matches exist
-3. **Given** enterprise connector mock mode, **When** document/email tools are called, **Then** realistic mock artifacts are returned
-4. **Given** trader platform mock mode, **When** ticket lifecycle tools are called, **Then** ticket creation/read/update actions succeed with deterministic response shapes
+1. **Given** knowledge entries stored in the base, **When** the retrieval tool is called with a
+   relevant query, **Then** the top results are semantically related to the query and returned
+   with text and provenance metadata.
+2. **Given** a retrieval query with metadata filters (source agent, date range), **When** the tool
+   is called, **Then** only entries matching the filter criteria are returned.
+3. **Given** an empty knowledge base, **When** a retrieval query is made, **Then** an empty result
+   set is returned rather than an error.
 
 ---
 
-### User Story 4 — Cache, Resilience, and Degraded Behavior (Priority: P2)
+### User Story 4 — MCP Server Fails Fast if Required Source Is Unavailable at Startup (Priority: P2)
 
-As an operator, I want MCP tool calls to remain reliable under dependency issues so that mission processing degrades safely instead of failing unpredictably.
+When the system starts, each MCP server verifies that its required data sources and backing
+services are reachable. If a critical dependency is unavailable, the server refuses to start and
+emits a clear error. Other servers that are healthy continue to start normally.
 
-**Why P2**: Correctness must hold without cache and under partial outages.
+**Why this priority**: Silent startup with broken dependencies causes cascading failures inside
+agent workflows. Fail-fast at startup is safer and easier to debug.
 
-**Independent Test**: Simulate Redis and upstream-provider outages; verify deterministic degraded behavior, bounded retries/timeouts, and no unhandled exceptions.
+**Independent Test**: Start the MCP platform with one server's backing service intentionally
+unreachable, verify that server emits a startup error, and verify the other servers start
+successfully.
 
 **Acceptance Scenarios**:
 
-1. **Given** Redis is unavailable, **When** a cache-backed tool is invoked, **Then** the tool bypasses cache and still attempts source retrieval
-2. **Given** upstream timeout or malformed upstream payload, **When** tool invocation occurs, **Then** structured error payload is returned without process crash
-3. **Given** cache TTL expires, **When** a repeated request is made, **Then** fresh source retrieval occurs
-4. **Given** temporary dependency outage recovery, **When** dependencies become healthy again, **Then** subsequent invocations return to non-degraded normal behavior
+1. **Given** a required backing service is unreachable, **When** the MCP server starts, **Then**
+   the server emits a descriptive error and refuses to accept tool calls.
+2. **Given** all required backing services are available, **When** the MCP platform starts,
+   **Then** all three servers report healthy and are ready to handle tool calls.
 
 ---
 
 ### Edge Cases
 
-- What happens when an MCP tool is invoked with extra/unexpected input fields? -> Input validation rejects request with deterministic `400` error payload
-- What happens when a provider secret is missing? -> Server starts, but dependent tool invocation returns explicit configuration error
-- What happens when upstream response shape drifts? -> Output validation fails and returns structured tool error
-- What happens when retrieval is called before KB has data? -> Empty results are returned (not treated as failure)
-- What happens when trader execution path is called without explicit human approval context? -> Invocation is rejected with authorization error
-- What happens when concurrent invocations target the same expensive upstream call? -> Cache key strategy and request handling remain deterministic and do not produce inconsistent outputs
+- What happens when a tool call exceeds the configured timeout for the external data source?
+- How does the cache behave when the backing service returns partial data for a cached key?
+- What if the knowledge base returns more results than the configured page size limit?
+- How are concurrent tool calls for the same cache key handled to prevent thundering herd?
+- What if an agent sends a malformed tool call (missing required parameters)?
 
----
-
-## Requirements
+## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-#### Shared MCP Factory
-- **FR-001**: System MUST provide a reusable MCP server factory that exposes `GET /health`, `GET /mcp/tools`, and `POST /mcp/invoke`
-- **FR-002**: System MUST validate invocation input against each tool input schema before handler execution
-- **FR-003**: System MUST validate handler output against each tool output schema before returning response
-- **FR-004**: System MUST return deterministic structured responses for success and failure cases
-- **FR-005**: System MUST prevent unhandled exceptions from escaping MCP route handlers
-- **FR-006**: System MUST reject duplicate tool names within one server registry during initialization
-
-#### Market Data MCP
-- **FR-007**: System MUST expose market-data tools for quote, OHLCV, fundamentals, earnings, multi-quote batch, analyst ratings, and price targets
-- **FR-008**: System MUST support provider fallback for configured market-data tools when primary provider fails
-- **FR-009**: System MUST support single-invocation multi-ticker quote retrieval
-
-#### Macro Signals MCP
-- **FR-010**: System MUST expose macro-signal tools for geopolitical risk, economic calendar, indicators, and sector macro context
-- **FR-011**: System MUST return deterministic error payloads for upstream macro-provider timeout/failure
-
-#### News MCP
-- **FR-012**: System MUST expose news tools for ticker news, broad search, sentiment summary, sentiment shifts, and sector movers
-
-#### RAG Retrieval MCP
-- **FR-013**: System MUST expose retrieval tools for search, current thesis, and thesis history
-- **FR-014**: System MUST support query filters (ticker, entry type, date range) where applicable
-- **FR-015**: System MUST remain read-only for retrieval operations
-- **FR-016**: System MUST apply configuration-driven hybrid ranking behavior (no hardcoded retrieval weights)
-
-#### Enterprise Connector MCP
-- **FR-017**: System MUST expose enterprise document and email search tools
-- **FR-018**: System MUST provide realistic mock datasets for local/offline execution
-
-#### Trader Platform MCP
-- **FR-019**: System MUST expose ticket lifecycle tools for create/read/place/cancel flows
-- **FR-020**: System MUST run in mock-first mode for order placement behavior in this feature scope
-- **FR-021**: System MUST require explicit human-approval context before any non-mock trade execution path is allowed
-
-#### Caching, Configuration, and Safety
-- **FR-022**: System MUST support Redis-backed caching for configured tools with TTL values from runtime configuration
-- **FR-023**: System MUST continue correctness without Redis cache availability (cache bypass behavior)
-- **FR-024**: System MUST keep MCP server configuration values externalized in runtime YAML (no hardcoded behavior-critical values)
-- **FR-025**: System MUST keep secrets externalized in environment variables and never embedded in source or runtime YAML
-- **FR-026**: System MUST support fully offline test execution through mocks/stubs without network dependency
-- **FR-027**: System MUST apply upstream timeout and retry limits from runtime configuration, not hardcoded values
-- **FR-028**: System MUST produce invocation logs with request correlation and minimum fields: requestId, server, tool, status, durationMs, and error code when failed
-- **FR-029**: System MUST define deterministic degraded-to-normal recovery behavior when dependencies become healthy after outage
-- **FR-030**: System MUST provide deterministic behavior under concurrent invocations for identical inputs (consistent output envelope and cache-key semantics)
+- **FR-001**: The system MUST provide three independent tool servers: one for market data
+  (stocks, ETFs, fundamentals, options), one for news and macro signals, and one for knowledge
+  base retrieval.
+- **FR-002**: Each tool server MUST expose a discoverable list of available tools so that agents
+  can enumerate what capabilities are available.
+- **FR-003**: Each tool server MUST expose a health endpoint reporting its own readiness
+  independently of the other servers.
+- **FR-004**: All tool servers MUST cache responses from external sources with configurable
+  time-to-live values settable without code changes.
+- **FR-005**: Tool servers MUST return structured, typed responses with a consistent envelope
+  format (data, error, metadata) regardless of which underlying source provided the data.
+- **FR-006**: The market data server MUST provide tools for: current price, historical OHLCV,
+  fundamental data, ETF holdings, and options chain for a given asset symbol.
+- **FR-007**: The news and macro server MUST provide tools for: recent news by topic or symbol,
+  macro sentiment indicators, and geopolitical risk signals.
+- **FR-008**: The RAG retrieval server MUST provide tools for: semantic similarity search over
+  the knowledge base and filtered retrieval by metadata (source agent, date range, entity).
+- **FR-009**: Each tool server MUST be independently deployable and MUST NOT import code from
+  agents, the API app, or other tool servers.
+- **FR-010**: All tool server behaviour MUST be testable offline using mocked external sources
+  without running the actual data provider APIs.
 
 ### Key Entities
 
-- **McpToolDefinition**: Declarative contract for one tool, including name, description, input schema, output schema, and handler behavior
-- **McpInvokeRequest**: Tool invocation payload containing target tool name and typed input object
-- **McpInvokeResult**: Invocation response envelope containing output (success path) or structured error metadata (failure path), plus execution duration
-- **McpServerManifest**: Server-level descriptor containing tool list and metadata exposed by `/mcp/tools`
-- **CachePolicy**: Per-tool TTL and cache-key strategy loaded from runtime configuration
+- **Tool**: A named, typed operation exposed by a server. Has a name, input schema, output
+  schema, and cache policy. Consumed by agents via the MCP client.
+- **ToolResponse**: The standardised envelope returned by every tool call. Contains a typed data
+  payload, an optional error descriptor, and call metadata (source, latency, cache hit flag).
+- **CacheEntry**: A stored tool response keyed by tool name and input parameters hash, with an
+  expiry timestamp.
+- **ToolServer**: One of the three independent servers (market-data, news-macro, rag-retrieval).
+  Has its own health state, tool registry, and cache namespace.
 
----
-
-## Success Criteria
+## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: All 6 MCP servers return successful health responses under normal local runtime conditions
-- **SC-002**: All 6 MCP servers publish valid tool manifests with complete tool metadata
-- **SC-003**: Invalid invocation input is rejected with deterministic validation errors for all servers
-- **SC-004**: Repeated identical requests inside configured TTL demonstrate cache-hit behavior for configured cache-enabled tools
-- **SC-005**: Under Redis outage, cache-backed tools continue to return deterministic responses via cache-bypass behavior
-- **SC-006**: Retrieval server returns non-empty ranked results with deterministic ordering for identical query + dataset, and returns empty results when no data exists
-- **SC-007**: Trader ticket lifecycle works end-to-end in mock mode with deterministic response schema
-- **SC-008**: MCP test suite executes successfully in offline local mode using mocks/stubs for external providers
-- **SC-009**: Upstream timeout/retry behavior follows configured bounds and returns deterministic timeout/error envelopes
-
----
+- **SC-001**: A cached tool response is returned in under 20 milliseconds after the initial fetch.
+- **SC-002**: An uncached market data tool call completes and returns structured data in under
+  3 seconds under normal network conditions.
+- **SC-003**: A knowledge retrieval tool call across 10,000 entries returns ranked results in
+  under 500 milliseconds.
+- **SC-004**: All three tool servers report healthy on their health endpoints within 5 seconds of
+  the platform starting with all backing services available.
+- **SC-005**: 100% of tool server tests pass offline without network access, verified in the test
+  suite.
+- **SC-006**: A malformed or invalid tool call returns a structured error response within 100
+  milliseconds without raising an unhandled exception.
 
 ## Assumptions
 
-- Feature 001 configuration/runtime-loading behavior is available and provides validated YAML values at startup
-- Feature 002 data-layer entities and KB persistence exist and are readable by retrieval tools
-- Each MCP server remains independently deployable and independently health-checkable
-- Agent implementations consume MCP tools through MCP client abstractions rather than direct provider calls
-- Non-mock broker execution remains out of scope for this feature except explicit approval-gated contract behavior
-- Required provider secrets are supplied via `.env` in applicable environments; missing secrets produce explicit invocation errors, not process crashes
+- The three tool servers are deployed as separate processes in Docker containers; they communicate
+  with external data sources over the network and with the shared cache via Redis.
+- Tool cache TTLs are defined per-tool in YAML configuration; they have sensible defaults (e.g.,
+  60 seconds for prices, 5 minutes for news, 1 hour for fundamentals).
+- The market data server uses OpenBB Platform as its primary data source; fallback providers may
+  be configured in YAML if the primary is unavailable.
+- The RAG retrieval server reads from the same pgvector database written by the Bookkeeper agent;
+  it never writes to the knowledge base.
+- Authentication between agents and tool servers is handled via a shared internal secret
+  configured in `.env`; these servers are not exposed to the public internet.
+- Offline tests mock all external HTTP calls; the test suite does not require OpenBB, Finnhub,
+  GDELT, or any other live API.

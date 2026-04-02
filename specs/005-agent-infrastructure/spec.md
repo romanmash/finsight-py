@@ -1,150 +1,179 @@
 # Feature Specification: Agent Infrastructure
 
-**Feature**: `005-agent-infrastructure`
-**Created**: 2026-03-31
+**Feature Branch**: `005-agent-infrastructure`
+**Created**: 2026-04-02
 **Status**: Draft
-**Constitution**: [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md)
-**Depends on**: `003-api-auth`, `004-mcp-platform`
 
-## Overview
+## User Scenarios & Testing *(mandatory)*
 
-Build the shared agent infrastructure layer that enables all agents to consistently access approved MCP tools and approved language-model providers through one centralized runtime policy.
+### User Story 1 — An Agent Executes a Task and Its Run Is Recorded with Full Observability (Priority: P1)
 
-**Why this feature exists:** Agent workflows depend on two platform capabilities: reliable tool availability and reliable model selection. Without this layer, agents cannot run consistently, cannot enforce fallback behavior, and cannot provide deterministic mission outcomes.
+A developer triggers an agent to perform a task. The agent runs, calls tools via the MCP client,
+produces a typed output, and completes. Every LLM call made during the run is recorded: which
+model was used, how many tokens were consumed, the cost in USD, and how long it took. The entire
+run is traceable in the observability platform from input to output.
 
----
+**Why this priority**: Observability and cost tracking are mandatory from the first agent. Without
+this infrastructure, all nine subsequent agent features are untrackable and undebuggable.
 
-## User Scenarios & Testing
-
-### User Story 1 — Unified Tool Availability for Agents (Priority: P1)
-
-As the platform, I want all active MCP tool sets registered and available through one unified agent-facing interface so that agent workflows can execute required actions without server-specific wiring.
-
-**Why this priority**: Mission execution is blocked if agents cannot discover and call required tools.
-
-**Independent Test**: Initialize the tool-access layer against all configured MCP servers and verify each server's expected tool set is available and invocable through the shared interface.
+**Independent Test**: Run a simple agent task, verify an AgentRun record is created in the
+database with correct token counts and cost, and verify the run appears in the LLM trace viewer.
 
 **Acceptance Scenarios**:
 
-1. **Given** all configured MCP servers are healthy, **When** tool initialization runs, **Then** each server's tools are available through the shared registry
-2. **Given** a required MCP server is unreachable at initialization, **When** startup validation runs, **Then** initialization fails fast with a clear server-specific error
-3. **Given** an agent requires cross-domain tools, **When** it requests the unified tool set, **Then** it receives one merged registry containing all approved tools
-4. **Given** a runtime tool invocation error, **When** the call completes, **Then** the caller receives a structured error result without unhandled exceptions
+1. **Given** an agent is triggered with an input, **When** the agent completes its task, **Then**
+   an AgentRun record is stored with tokens consumed, cost in USD, model used, provider, and
+   duration.
+2. **Given** an agent makes multiple LLM calls during a task, **When** the run completes, **Then**
+   each call is individually recorded and the AgentRun totals reflect the sum of all calls.
+3. **Given** an agent run, **When** viewed in the trace viewer, **Then** the full call sequence
+   is visible as a linked trace from input through all intermediate steps to output.
 
 ---
 
-### User Story 2 — Deterministic Model Routing with Fallback (Priority: P1)
+### User Story 2 — An Agent Calls a Tool via the MCP Client and Receives a Typed Response (Priority: P1)
 
-As an agent runtime, I want model-provider selection resolved from runtime policy with deterministic fallback behavior so that mission execution remains reliable under provider outages.
+An agent needs data from one of the three tool servers. It calls the tool by name through the
+shared MCP client. The client routes the call to the correct server, handles errors, and returns
+the response as a typed object the agent can use directly. The agent does not manage server
+addresses, serialisation, or retries.
 
-**Why this priority**: Agents cannot produce outputs without model resolution, and non-deterministic fallback behavior creates inconsistent mission quality.
+**Why this priority**: All collector and reasoning agents depend on tool access via the MCP
+client. Without this abstraction, every agent would duplicate connection and error-handling logic.
 
-**Independent Test**: Resolve providers for multiple agent profiles under healthy and degraded conditions and verify policy-compliant primary/fallback outcomes.
+**Independent Test**: Call a tool through the MCP client with valid parameters, receive a typed
+response, call with invalid parameters, and verify a structured error is returned.
 
 **Acceptance Scenarios**:
 
-1. **Given** an agent with a configured primary provider, **When** provider resolution runs and the primary is available, **Then** the primary provider is selected with configured generation settings
-2. **Given** an agent whose primary provider is unavailable and fallback is configured, **When** provider resolution runs, **Then** the fallback provider is selected deterministically
-3. **Given** an unavailable primary with no configured fallback, **When** provider resolution runs, **Then** resolution fails with a clear actionable error
-4. **Given** a mission mode override for generation behavior, **When** provider resolution runs, **Then** override values are applied within allowed policy bounds
+1. **Given** the MCP client configured with server addresses, **When** a tool call is made by
+   name, **Then** the response is returned as a typed object matching the tool's output schema.
+2. **Given** a tool call with invalid parameters, **When** routed through the MCP client, **Then**
+   a structured validation error is returned without an unhandled exception.
+3. **Given** a tool server is unreachable, **When** a tool call is attempted, **Then** the MCP
+   client returns a connection error after the configured timeout rather than blocking indefinitely.
 
 ---
 
-### User Story 3 — Local-Provider Health Awareness (Priority: P2)
+### User Story 3 — Agent Output Is Validated Against a Typed Schema Before Being Used (Priority: P1)
 
-As an operator, I want periodic local-provider health checks so that the router can use local inference when available and fall back quickly when unavailable.
+An agent produces output in a structured format. Before that output is accepted and passed to
+the next step in the workflow, it is validated against the agent's declared output schema. If the
+output is malformed, the run is retried once. If the second attempt also fails, the mission is
+marked as failed with a descriptive error — the malformed output is never silently accepted.
 
-**Why this priority**: This improves cost/performance but is not required for baseline cloud-provider functionality.
+**Why this priority**: Type-safe agent outputs prevent downstream corruption. This guarantee must
+be built into the infrastructure so all agents benefit automatically.
 
-**Independent Test**: Execute health checks with local provider available and unavailable; verify state transitions and resulting routing decisions.
+**Independent Test**: Configure an agent to produce an intentionally malformed output, verify the
+retry is triggered, configure both attempts to fail, and verify the mission is marked failed with
+a clear error message.
 
 **Acceptance Scenarios**:
 
-1. **Given** local provider is reachable and has at least one usable model, **When** health probing runs, **Then** local provider state is marked available
-2. **Given** local provider is unreachable or returns unusable model metadata, **When** health probing runs, **Then** local provider state is marked unavailable without crashing the runtime
-3. **Given** runtime is active, **When** periodic checks execute, **Then** health state is refreshed at configured intervals and routing decisions reflect current state
+1. **Given** an agent returns a valid, schema-conforming output, **When** validation runs, **Then**
+   the output is accepted and the run is marked successful.
+2. **Given** an agent returns a malformed output on the first attempt, **When** validation fails,
+   **Then** the run is retried once automatically.
+3. **Given** both the initial attempt and the retry produce malformed output, **When** validation
+   fails twice, **Then** the mission is marked failed and the error is recorded — no further retry
+   is attempted.
+
+---
+
+### User Story 4 — Agent Prompts Are Colocated and Versioned with Agent Code (Priority: P2)
+
+A developer updates the prompt for an agent. The prompt lives in a dedicated file alongside the
+agent's code, not embedded in application configuration or a database. The change is tracked in
+version control. Shared prompt fragments (system preambles, formatting instructions) are stored
+once and referenced by multiple agents.
+
+**Why this priority**: Prompt co-location keeps agent reasoning and its instructions together and
+version-controlled. This is a structural discipline that all agents must follow from the start.
+
+**Independent Test**: Locate the prompt file for any agent, verify it lives in the same directory
+as the agent code, modify the prompt, and verify the change is picked up on the next agent run.
+
+**Acceptance Scenarios**:
+
+1. **Given** any agent in the system, **When** its directory is inspected, **Then** a dedicated
+   prompt file is present in the same location as the agent's logic file.
+2. **Given** shared prompt content (e.g., a system role description), **When** multiple agents
+   use it, **Then** the shared content is stored once and referenced — not duplicated across
+   agent-specific files.
 
 ---
 
 ### Edge Cases
 
-- What happens when two MCP servers expose tools with conflicting names? -> Initialization rejects ambiguous registrations and reports collision details
-- What happens when a server's tool manifest changes after startup? -> Existing runtime remains stable; changes are picked up only after controlled re-initialization
-- What happens when a provider appears healthy but requests time out intermittently? -> Router applies configured timeout/fallback policy and emits structured failure results
-- What happens when local provider reports models but none match policy constraints? -> Provider is treated as unavailable for routing decisions
-- What happens when override settings exceed allowed bounds? -> Override is rejected or clamped by policy with explicit validation feedback
-- What happens when provider health flaps (alternating available/unavailable)? -> Routing remains deterministic per request: evaluate primary once, then fallback once, emit structured logs for each transition
-- What happens when local provider recovers during runtime? -> Next scheduled probe updates state to available and subsequent routing can select local provider again per policy
+- What happens when the LLM provider is unreachable during an agent run?
+- How are agent runs that time out handled — are partial records stored?
+- What if the configured model name is not present in the pricing registry?
+- How does the system handle an agent that recurses or calls itself unexpectedly?
+- What if two concurrent agent runs attempt to update the same mission simultaneously?
 
----
-
-## Requirements
+## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: System MUST initialize agent tool access from all configured MCP servers before agents begin mission execution
-- **FR-002**: System MUST validate MCP server reachability and manifest availability during initialization
-- **FR-003**: System MUST expose per-server tool sets and a merged all-tools set for agents requiring multi-domain access
-- **FR-004**: System MUST fail fast when required MCP servers are unavailable during startup validation
-- **FR-005**: System MUST return structured tool invocation failures without unhandled runtime exceptions
-- **FR-006**: System MUST detect and reject duplicate/ambiguous tool identifiers across merged registries
-- **FR-007**: System MUST resolve agent model provider using runtime configuration as the source of truth
-- **FR-008**: System MUST apply deterministic fallback selection when primary provider is unavailable
-- **FR-009**: System MUST return explicit resolution errors when no valid provider path exists
-- **FR-010**: System MUST support bounded mission-mode overrides for generation parameters
-- **FR-011**: System MUST enforce policy validation on override values before application
-- **FR-012**: System MUST perform local-provider health probing with bounded timeout and no process crash on failure
-- **FR-013**: System MUST probe local-provider health at startup and on a configurable periodic schedule
-- **FR-014**: System MUST treat local provider as unavailable when health checks fail or no policy-valid models are available
-- **FR-015**: System MUST expose health state to routing logic so routing decisions use current availability
-- **FR-016**: System MUST produce structured logs for tool initialization, provider resolution, fallback decisions, and health-probe outcomes
-- **FR-017**: System MUST keep behavior-critical values configuration-driven and must not hardcode secrets in source
-- **FR-018**: System MUST be testable offline using mocked MCP/provider dependencies
-- **FR-019**: System MUST evaluate provider resolution in deterministic order: primary first, then one configured fallback path, then explicit error
-- **FR-020**: System MUST enforce bounded override ranges: temperature 0.0-1.0 and maxTokens 1-8192, with policy-specific tighter bounds allowed
-- **FR-021**: System MUST include required failure-envelope fields for tool invocation errors: `error.code`, `error.message`, `error.sourceServer`, `error.retryable`, and `durationMs`
-- **FR-022**: System MUST treat local-provider health as stale when last probe age exceeds 2x configured probe interval and route as unavailable until refreshed
-- **FR-023**: System MUST allow explicitly optional MCP servers to be skipped at startup while continuing with all required servers
-
-### Operational Definitions
-
-- **Required MCP server**: A server with `required: true` in `config/runtime/mcp.yaml`; readiness failure blocks startup.
-- **Optional MCP server**: A server with `required: false`; readiness failure is logged and skipped without blocking startup.
-- **Deterministic fallback**: Resolution order is fixed: primary policy -> fallback policy (if configured) -> resolution error. No random/provider-scoring branch selection in 005.
-- **Bounded overrides**: Runtime overrides may only target approved generation fields and must satisfy global bounds (`temperature` 0.0-1.0, `maxTokens` 1-8192) plus per-agent policy bounds.
-- **Structured tool failure envelope**: Failure result must include `error.code`, `error.message`, `error.sourceServer`, `error.retryable`, and `durationMs`.
-- **Health freshness**: Health snapshot older than 2x probe interval is stale and treated as unavailable for routing until a new successful probe arrives.
+- **FR-001**: The system MUST provide a base agent abstraction that all 7 agents extend, handling
+  LLM call execution, output validation, cost recording, and error handling consistently.
+- **FR-002**: Every LLM call MUST be recorded with provider, model, tokens consumed (input and
+  output), cost in USD, and duration in milliseconds, linked to the triggering AgentRun record.
+- **FR-003**: Cost MUST be computed deterministically from a configurable pricing registry; an
+  unknown model MUST record cost as zero with a warning rather than blocking execution.
+- **FR-004**: The system MUST provide a shared MCP client used by all agents to call tools by
+  name, abstracting server routing, serialisation, timeout handling, and error wrapping.
+- **FR-005**: Agent outputs MUST be validated against a declared typed schema; a malformed output
+  MUST trigger one automatic retry before the run is marked failed.
+- **FR-006**: All agent runs MUST produce LLM traces in the configured observability platform,
+  with each call in the run linked as a child span of the overall run trace.
+- **FR-007**: Agent prompts MUST be colocated with agent code in the same directory; shared prompt
+  fragments MUST be stored once in a shared location and referenced by agents that need them.
+- **FR-008**: If the primary LLM provider is unavailable, the system MUST fall back to the
+  configured secondary provider per agent configuration without requiring a code change.
+- **FR-009**: All agent infrastructure behaviour MUST be testable offline without a running LLM
+  provider, using recorded response fixtures or mocked LLM calls.
 
 ### Key Entities
 
-- **AgentToolRegistry**: Runtime registry containing server-specific tool sets plus one merged set for cross-domain agents
-- **ProviderResolutionPolicy**: Configuration-derived rules defining primary/fallback providers and allowable override behavior per agent
-- **ResolvedProviderProfile**: Final provider selection for an invocation, including effective generation settings after policy and overrides
-- **LocalProviderHealthState**: Current availability state and last probe result used by routing decisions
-- **ToolInvocationResultEnvelope**: Deterministic success/error result structure returned to agent runtime
+- **Agent**: A named specialist with a declared input type, output type, system prompt, and
+  model configuration. Extends the base agent abstraction.
+- **AgentRun**: A record of a single agent execution (covered in detail by Feature 002 Data Layer).
+  Created by the base abstraction automatically.
+- **MCPClient**: The shared tool-calling client. Knows all server addresses, routes calls by tool
+  name, and wraps responses in typed objects.
+- **PromptFile**: A versioned text file colocated with an agent, containing the agent's system
+  prompt and any agent-specific instructions.
+- **PricingRegistry**: A configurable map from model names to per-token costs. Used to compute
+  cost for every LLM call deterministically.
 
----
-
-## Success Criteria
+## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of configured required MCP servers must be validated before agent runtime becomes ready; optional servers may be skipped with structured warnings
-- **SC-002**: When one required MCP server is unavailable at startup, readiness fails with a server-specific error in under 10 seconds
-- **SC-003**: Provider resolution returns a valid primary or fallback path for 100% of configured agents in healthy/degraded test scenarios
-- **SC-004**: Local-provider health checks complete within configured timeout and update routing state without unhandled errors
-- **SC-005**: In offline test mode, all infrastructure tests pass without external network dependencies
-- **SC-006**: Tool invocation and provider-resolution failures produce deterministic structured error envelopes in 100% of tested failure cases
-- **SC-007**: Deterministic fallback behavior is verified across three degraded scenarios (primary unavailable, fallback unavailable, and no-fallback configured) with 100% policy-consistent outcomes
-- **SC-008**: Provider-resolution median overhead (excluding upstream model latency) remains <= 25 ms in test runs
-- **SC-009**: CI/offline test execution performs no external DNS/HTTP calls; all MCP/provider interactions are mocked
+- **SC-001**: Every agent run produces a complete AgentRun record with all required fields
+  populated, verified in 100% of test cases.
+- **SC-002**: LLM cost for any agent run matches the deterministic calculation from the pricing
+  registry to within floating-point precision, verified by unit tests.
+- **SC-003**: A tool call through the MCP client completes and returns a typed response within
+  the configured timeout (default 30 seconds).
+- **SC-004**: Agent output validation catches 100% of schema violations in test cases and
+  triggers the retry mechanism correctly.
+- **SC-005**: All agent infrastructure tests pass offline in under 60 seconds without a running
+  LLM provider or tool server.
+- **SC-006**: Switching a model or provider for any agent requires only a configuration change,
+  verified by a test that runs the agent with two different model configurations.
 
 ## Assumptions
 
-- Feature `004-mcp-platform` provides stable MCP contracts for health, manifest, and invocation
-- Feature `003-api-auth` provides required authenticated runtime context for agent operations
-- Runtime configuration already defines agent provider preferences and fallback options
-- Local-provider usage is optional; cloud-provider paths remain the baseline when local provider is unavailable
-- Full model-quality evaluation is out of scope for this feature; this feature covers routing/availability behavior only
-- Feature `004-mcp-platform` contract semantics are version-stable for this feature cycle (manifest and invoke response shapes are non-breaking)
-- Feature `003-api-auth` authentication context contract is version-stable for this feature cycle (no breaking runtime context changes)
+- All 7 agents share the same base abstraction; no agent bypasses the infrastructure for LLM
+  calls, tool calls, or output handling.
+- The MCP client configuration (server addresses, timeouts) is loaded from YAML at startup.
+- LLM provider credentials are loaded from `.env`; no credentials appear in agent code or YAML.
+- Offline tests use pre-recorded LLM response fixtures; the fixture format is decided during
+  planning.
+- The observability platform (LangSmith) is optional in test environments; when unavailable,
+  traces are logged locally rather than blocking execution.
+- The pricing registry is loaded from `config/runtime/pricing.yaml`; adding a new model requires
+  only adding a row to that file.
