@@ -77,3 +77,29 @@ Validation:
 pnpm --filter @finsight/dashboard lint
 pnpm --filter @finsight/dashboard test -- --pool=threads
 ```
+## Seed & Infrastructure (Feature 011)
+
+From repository root:
+
+```bash
+pnpm install
+pnpm seed:run
+pnpm validate:011:parity
+pnpm validate:011:env
+pnpm validate:011:ci
+pnpm validate:011:pulumi
+```
+
+Required environment variables for deploy-capable paths:
+
+- `DEPLOY_HOST`
+- `DEPLOY_USER`
+- `DEPLOY_PATH` (optional, defaults to `/opt/finsight`)
+- `HEALTHCHECK_URLS` (comma-separated post-deploy targets)
+
+Deployment helper usage:
+
+```bash
+pnpm deploy:remote
+pnpm logs:remote -- api
+```

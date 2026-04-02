@@ -1,0 +1,112 @@
+name: ci-cd
+
+on:
+  pull_request:
+    branches:
+      - develop # Default integration branch for validation-only runs (override by editing workflow).
+  push:
+    branches:
+      - main
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r typecheck
+      - name: Typecheck summary
+        if: always()
+        run: echo "- typecheck: completed" >> "$GITHUB_STEP_SUMMARY"
+
+  lint:
+    name: Lint
+    runs-on: [self-hosted, linux]
+    needs: typecheck
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r lint
+      - name: Lint summary
+        if: always()
+        run: echo "- lint: completed" >> "$GITHUB_STEP_SUMMARY"
+
+  test:
+    name: Test
+    runs-on: [self-hosted, linux]
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r test -- --pool=threads
+      - name: Test summary
+        if: always()
+        run: echo "- test: completed" >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: Build
+    runs-on: [self-hosted, linux]
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r --if-present build
+      - name: Build summary
+        if: always()
+        run: echo "- build: completed" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: Deploy
+    runs-on: [self-hosted, linux]
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker capability check
+        run: docker --version
+      - name: Deploy
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          COMPOSE_PROJECT_NAME: ${{ vars.COMPOSE_PROJECT_NAME }}
+          HEALTHCHECK_URLS: ${{ vars.HEALTHCHECK_URLS }}
+        run: bash scripts/deploy.sh
+      - name: Deploy summary
+        if: always()
+        run: |
+          {
+            echo "## CI/CD Outcome"
+            echo "- event: ${{ github.event_name }}"
+            echo "- ref: ${{ github.ref }}"
+            echo "- deploy: completed"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -28,7 +28,15 @@
     "dashboard:typecheck": "pnpm --filter @finsight/dashboard typecheck",
     "dashboard:test": "pnpm --filter @finsight/dashboard test",
     "dashboard:dev": "pnpm --filter @finsight/dashboard dev",
-    "dashboard:build": "pnpm --filter @finsight/dashboard build"
+    "dashboard:build": "pnpm --filter @finsight/dashboard build",
+    "seed:test": "vitest run prisma/__tests__ --pool=threads",
+    "validate:011:parity": "node tools/validation/check-011-parity.mjs",
+    "deploy:remote": "bash scripts/deploy.sh",
+    "seed:run": "pnpm prisma db seed",
+    "validate:011:pulumi": "node tools/validation/validate-pulumi-preview.mjs",
+    "logs:remote": "bash scripts/logs.sh",
+    "validate:011:ci": "node tools/validation/validate-ci-cd-policy.mjs",
+    "validate:011:env": "node tools/validation/validate-env-contract.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -38,9 +46,14 @@
     "prisma": "^6.19.2",
     "typescript": "~5.8.0",
     "vitest": "^3.1.0",
-    "zod": "^3.24.0"
+    "zod": "^3.24.0",
+    "tsx": "^4.19.0"
   },
   "dependencies": {
-    "@prisma/client": "^6.19.2"
+    "@prisma/client": "^6.19.2",
+    "bcryptjs": "^2.4.3"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

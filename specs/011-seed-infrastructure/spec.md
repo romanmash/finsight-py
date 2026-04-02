@@ -1,168 +1,164 @@
-# Feature Specification: Seed & Infrastructure
+# Feature Specification: Seed & Infrastructure Readiness
 
-**Feature**: `011-seed-infrastructure`
+**Feature Branch**: `011-seed-infrastructure`
 **Created**: 2026-03-28
 **Status**: Draft
-**Constitution**: [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md)
-**Depends on**: All preceding features (001–010)
+**Input**: User description: "Manual draft for seed/infrastructure finalization; canonicalize and preserve important implementation decisions"
 
-## Overview
+## User Scenarios & Testing *(mandatory)*
 
-Create the seed script that populates the database with demo-ready data, the Pulumi IaC for AWS deployment, the CI/CD GitHub Actions workflow, deployment scripts, and environment variable documentation. This is the final feature that makes the platform demo-ready and deployable.
+### User Story 1 - Demo Data Bootstrap (Priority: P1)
 
-**Why this feature exists:** The demo is everything. A cold-start empty database shows nothing impressive. The seed script creates a "lived-in" state: existing theses, historical snapshots, prior missions, pending alerts, and a screener run — so the demo starts from a rich baseline that showcases every feature. The IaC and CI/CD prove the system is production-ready, not just a local prototype.
+As a developer preparing a demo environment, I want one bootstrap command that populates realistic baseline data so the platform is immediately demonstrable.
 
----
+**Why this priority**: Without seeded baseline data, major user-facing flows appear empty and cannot be demonstrated credibly.
 
-## User Scenarios & Testing
-
-### User Story 1 — Seed Script (Priority: P1)
-
-As a developer setting up the demo, I want a single command that populates the entire database with realistic data so that every feature is immediately demonstrable.
-
-**Why P1**: The demo script (CASE.md §17) depends entirely on seed data existing. Without seed, `/thesis NVDA`, `/history NVDA`, and the admin dashboard all show empty states.
-
-**Independent Test**: Run `pnpm prisma db seed`, then verify each seeded entity exists via API.
+**Independent Test**: Execute the seed command against a clean environment, then validate seeded entities and demo-critical API reads.
 
 **Acceptance Scenarios**:
 
-1. **Given** a fresh database, **When** `pnpm prisma db seed` runs, **Then** all seed data is created without error
-2. **Given** seed has already run, **When** `pnpm prisma db seed` runs again, **Then** it completes idempotently (no duplicate errors)
-3. **Given** seed has run, **When** `GET /api/kb/thesis/NVDA` is called, **Then** the current bullish thesis is returned
-4. **Given** seed has run, **When** `GET /api/kb/history/NVDA` is called, **Then** 4 snapshots are returned including one with `changeType: 'contradiction'`
-5. **Given** seed has run, **When** `GET /api/alerts` is called for admin, **Then** 1 `earnings_approaching` alert is returned
-6. **Given** seed has run, **When** `GET /api/missions` is called, **Then** 2 prior missions are returned with AgentRun records
-7. **Given** seed has run, **When** the admin dashboard loads, **Then** all panels show populated data
+1. **Given** a clean initialized data store, **When** the seed command runs, **Then** baseline demo data is created successfully.
+2. **Given** a previously seeded environment, **When** the same seed command runs again, **Then** no duplicate or conflicting records are created.
+3. **Given** seed completion, **When** key read paths for knowledge, missions, and alerts are requested, **Then** non-empty demo-representative responses are returned.
+4. **Given** seed completion, **When** admin monitoring UI loads, **Then** primary operational panels show populated values rather than empty-state-only output.
 
 ---
 
-### User Story 2 — CI/CD Pipeline (Priority: P1)
+### User Story 2 - Delivery Automation and Deployability (Priority: P1)
 
-As a developer, I want automated CI that runs on every PR and deploys on merge to main so that code quality is enforced and deployment is reliable.
+As a maintainer, I want automated quality and deployment workflows so that changes are validated consistently and released with low manual overhead.
 
-**Why P1**: CI proves the project has professional engineering standards. The self-hosted runner shows infrastructure capability.
+**Why this priority**: This feature closes the delivery loop for the entire program and is required for reliable handoff and repeatable releases.
 
-**Independent Test**: Push a commit to `develop`, verify CI runs. Merge to `main`, verify deploy runs.
+**Independent Test**: Trigger pull-request and mainline workflows and verify quality gates and deployment behavior align with branch policy.
 
 **Acceptance Scenarios**:
 
-1. **Given** a PR to `develop`, **When** CI runs, **Then** it executes: typecheck → lint → test → build
-2. **Given** a push to `main`, **When** CI runs, **Then** it also executes the deploy job
-3. **Given** CI is on a self-hosted runner, **Then** it uses the Linux server's Docker for builds
-4. **Given** any CI step fails, **Then** the pipeline stops and reports the failure
+1. **Given** a pull request to the develop integration branch (or documented repository override), **When** automation runs, **Then** quality gates execute in the required order and report pass/fail clearly.
+2. **Given** a push to the main release branch, **When** automation runs, **Then** deployment steps execute after quality gates pass.
+3. **Given** any required gate fails, **When** workflow evaluation completes, **Then** deployment is blocked and failure reason is reported.
+4. **Given** deployment completion, **When** service health is checked, **Then** all required runtime endpoints are reachable.
 
 ---
 
-### User Story 3 — Deployment Scripts (Priority: P1)
+### User Story 3 - Operator Deployment Control (Priority: P2)
 
-As a developer, I want a deploy script that deploys to the Linux server via SSH so that I can iterate quickly without manual steps.
+As an operator, I want scripted deploy and log commands so that infrastructure rollout and verification are fast and repeatable.
 
-**Why P1**: Rapid iteration during development. The deploy script is the primary deployment mechanism.
+**Why this priority**: Deployment ergonomics reduce operational error and speed up troubleshooting, but depend on baseline automation from higher-priority stories.
 
-**Independent Test**: Run `./scripts/deploy.sh`, verify services restart and health checks pass on the server.
+**Independent Test**: Run deploy and log scripts in a configured environment and verify synchronized artifacts, restart behavior, and service observability.
 
 **Acceptance Scenarios**:
 
-1. **Given** `./scripts/deploy.sh` is run, **When** it completes, **Then** config files and compose files are synced to the server via rsync
-2. **Given** files are synced, **Then** `docker compose up -d` runs on the server and all services restart
-3. **Given** services restart, **Then** health checks pass for API and all MCP servers
-4. **Given** `./scripts/logs.sh hono-api` is run, **Then** it tails logs for the named container on the server
+1. **Given** deployment script prerequisites are present, **When** deploy is invoked, **Then** required runtime/config artifacts are synchronized to the target environment.
+2. **Given** synchronized artifacts, **When** deploy continues, **Then** service stack restart/update is performed successfully.
+3. **Given** deployment finished, **When** post-deploy health checks run, **Then** results indicate pass/fail per service with actionable output.
+4. **Given** a service identifier, **When** logs helper is invoked, **Then** operator receives live log stream for that target.
 
 ---
 
-### User Story 4 — Pulumi AWS IaC (Priority: P2)
+### User Story 4 - Configuration and Environment Completeness (Priority: P2)
 
-As a developer, I want AWS infrastructure defined as code so that the system can be deployed to the cloud for a production demo.
+As a developer onboarding the project, I want complete environment-variable documentation and infrastructure definitions so that setup and preview are deterministic.
 
-**Why P2**: Cloud deployment is a stretch goal. The system runs perfectly on the Linux server.
+**Why this priority**: Clear configuration contracts reduce onboarding friction and prevent deployment-time configuration drift.
 
-**Independent Test**: Run `pulumi preview` and verify all resources are planned without errors.
+**Independent Test**: Populate environment from example documentation and execute infrastructure preview plus local startup checks.
 
 **Acceptance Scenarios**:
 
-1. **Given** Pulumi config is set, **When** `pulumi up` is run, **Then** it creates VPC, ECS cluster, RDS, ElastiCache, ECR repos, task definitions, services, and ALB
-2. **Given** the stack is up, **Then** the API is reachable via ALB DNS
-
----
-
-### User Story 5 — Environment Documentation (Priority: P1)
-
-As a developer, I want a complete `.env.example` with all required variables so that setup is self-documenting.
-
-**Why P1**: Missing environment variables cause cryptic failures. The example file prevents this.
-
-**Independent Test**: Copy `.env.example` to `.env`, fill in values, verify the system starts.
-
-**Acceptance Scenarios**:
-
-1. **Given** `.env.example` exists, **Then** it documents every required environment variable with comments and example formats
-2. **Given** all variables from `.env.example` are set, **Then** the system starts without "missing env var" errors
-
----
+1. **Given** the environment example file, **When** a developer configures required variables, **Then** startup validation reports no missing required values.
+2. **Given** infrastructure configuration is set, **When** preview is executed, **Then** planned resources are produced without fatal validation errors.
+3. **Given** environment documentation updates, **When** reviewed, **Then** it reflects all required runtime and deployment inputs for this feature scope.
 
 ### Edge Cases
 
-- What if seed runs before migrations? → Error — seed checks for tables and provides helpful message
-- What if embedding API is unavailable during seed? → Seed fails with clear error (embeddings are required for KB entries)
-- What if the Linux server is unreachable during deploy? → Deploy script fails with SSH error
-- What if Pulumi state is corrupted? → Use `pulumi stack export/import` for recovery
+- Seed command is executed before baseline schema state is ready.
+- Seed command is interrupted mid-run and retried.
+- Deployment target is unreachable during synchronization or restart.
+- Automation runner is available but missing required runtime dependencies.
+- Infrastructure preview succeeds but deployment health validation fails partially.
+- Environment variables are present but malformed (invalid formats/values).
+- Non-critical optional seed supplements fail while demo-critical domains succeed.
+- Existing records differ from baseline-managed values during rerun reconciliation.
 
----
-
-## Requirements
+## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-#### Seed Script
-- **FR-001**: MUST be idempotent — safe to run multiple times
-- **FR-002**: MUST create admin user with email from `ADMIN_EMAIL` env and password from `ADMIN_PASSWORD` env
-- **FR-003**: MUST create analyst user (`analyst@finsight.local`, password: `demo1234`)
-- **FR-004**: MUST create admin portfolio: NVDA 50, AAPL 100, GLD 20
-- **FR-005**: MUST create admin watchlists: "portfolio" (NVDA, AAPL, GLD), "interesting" (SPY, AMD, MSFT)
-- **FR-006**: MUST create NVDA KB entry with vector embedding (1536 dimensions via OpenAI embeddings)
-- **FR-007**: MUST create 4 KbThesisSnapshots for NVDA dated -10d/-7d/-4d/-1d (cautious → neutral → contradiction → bullish)
-- **FR-008**: MUST create 1 ScreenerRun (today, scheduled, 3 finds including AMD semiconductors)
-- **FR-009**: MUST create 1 Alert (earnings_approaching, NVDA, high severity, 2 days from now)
-- **FR-010**: MUST create 2 prior Missions with AgentRun records (daily_brief and pattern_request)
-- **FR-011**: MUST create 3 ingested document entries (hardcoded earnings transcript text, chunked and embedded)
+- **FR-001**: The system MUST provide a single seed entrypoint that initializes demo baseline data for all core product surfaces.
+- **FR-002**: Seed execution MUST be idempotent and safe to rerun without creating duplicate logical entities.
+- **FR-003**: Seed execution MUST fail fast with actionable diagnostics if required prerequisites are missing.
+- **FR-004**: Seeded baseline data MUST include representative user/account context needed for demo flows.
+- **FR-005**: Seeded baseline data MUST include representative market-intelligence knowledge context and historical progression.
+- **FR-006**: Seeded baseline data MUST include representative mission history and alerting context.
+- **FR-007**: Seeded baseline data MUST include representative screener context suitable for dashboard and API visibility.
+- **FR-008**: Seeded baseline data MUST support successful demo walkthrough of thesis, history, missions, alerts, and monitoring views.
+- **FR-009**: Seeded credentials and sensitive values MUST come from controlled configuration inputs and MUST NOT require hardcoded secrets in source.
+- **FR-010**: Automation workflow MUST validate type correctness, lint quality, tests, and build viability before deployment eligibility.
+- **FR-011**: Automation workflow MUST enforce branch-aware behavior that separates validation-only runs from deploy-capable runs.
+- **FR-012**: Deployment workflow MUST stop on gate failure and surface clear failure context.
+- **FR-013**: Deployment tooling MUST provide deterministic synchronization of required runtime artifacts to target environment.
+- **FR-014**: Deployment tooling MUST verify post-deploy service health and expose non-zero exit status on failed checks.
+- **FR-015**: Logs tooling MUST provide service-targeted log access for operational diagnostics.
+- **FR-016**: Infrastructure-as-code definitions MUST support non-destructive preview and reproducible provisioning intent.
+- **FR-017**: Environment documentation MUST enumerate all required variables and indicate expected value semantics.
+- **FR-018**: Feature scope MUST preserve implementation-critical decisions from the manual draft in an explicit companion artifact for planning handoff.
+- **FR-019**: CI policy MUST declare a default integration branch (develop) for validation-only pull-request runs and allow an explicitly documented override when repository policy differs.
+- **FR-020**: CI/deploy workflow MUST execute on a self-hosted Linux runner with Docker capability for build and deploy stages.
+- **FR-021**: Seed execution MUST hard-fail when any demo-critical domain cannot be reconciled, and MAY emit warnings (without failing) only for explicitly non-critical seed supplements.
+- **FR-022**: Seed reconciliation MUST apply deterministic precedence rules: baseline-managed fields are authoritative, while non-baseline runtime metadata is preserved unless explicitly declared mutable by the seed profile.
+- **FR-023**: Deployment automation and infrastructure provisioning intent MUST remain separated: CI deploy stages roll out application/runtime artifacts only, while Pulumi preview/provision remains an explicit operator-driven workflow.
 
-#### CI/CD
-- **FR-012**: GitHub Actions workflow MUST run on self-hosted runner
-- **FR-013**: CI jobs: typecheck → lint → test → build (all sequential)
-- **FR-014**: Deploy job: MUST run only on `main` branch push
-- **FR-015**: PR to `develop` MUST trigger CI but NOT deploy
+### Key Entities *(include if feature involves data)*
 
-#### Deploy Scripts
-- **FR-016**: `scripts/deploy.sh` MUST sync configs and compose files via rsync, then restart via SSH
-- **FR-017**: `scripts/deploy.sh` MUST verify health after deploy
-- **FR-018**: `scripts/logs.sh` MUST tail logs for a named service on the server
+- **Seed Profile**: Declarative baseline dataset definition that describes demo-target entities and expected presence rules.
+- **Seed Run Result**: Outcome record for a seed execution including status, created-or-updated summary, and failure diagnostics.
+- **Pipeline Gate Result**: Validation-stage outcome for quality checks that determines deploy eligibility.
+- **Deployment Target**: Environment destination receiving synchronized artifacts and service restart actions.
+- **Environment Variable Contract**: Required configuration keys, constraints, and purpose metadata for local and deployed execution.
+- **Infrastructure Stack Definition**: Desired infrastructure resource model used for preview and provisioning workflows.
 
-#### Environment
-- **FR-019**: `.env.example` MUST document all required variables with comments
+## Success Criteria *(mandatory)*
 
-### Seed Data Summary
+### Measurable Outcomes
 
-| Entity | Count | Key Details |
-|---|---|---|
-| Users | 2 | admin + analyst |
-| Portfolio Items | 3 | NVDA 50, AAPL 100, GLD 20 |
-| Watchlists | 2 | "portfolio" (3 tickers), "interesting" (3 tickers) |
-| KB Entry (NVDA) | 1 | Current bullish thesis with embedding |
-| KB Thesis Snapshots | 4 | -10d cautious, -7d neutral, -4d contradiction, -1d bullish |
-| Screener Run | 1 | 3 sector finds |
-| Alert | 1 | earnings_approaching, NVDA |
-| Prior Missions | 2 | daily_brief + pattern_request with AgentRuns |
-| Ingested Documents | 3 | Earnings transcript chunks with embeddings |
+- **SC-001**: In repeated seed validation runs (minimum 5 reruns on same environment), 100% complete without duplicate-conflict failures.
+- **SC-002**: After seeding, all demo-critical read paths defined for this feature return non-empty, coherent responses in 100% of verification runs.
+- **SC-003**: For pull-request validation runs in this feature scope, 100% execute required quality gates in the prescribed sequence.
+- **SC-004**: Deployment-capable runs execute only on allowed branch events with zero unauthorized deploy executions.
+- **SC-005**: Post-deploy health verification reports all required services reachable within 5 minutes after deployment in at least 95% of measured runs (minimum sample size: 20 deployments).
+- **SC-006**: Fresh onboarding from documented environment examples reaches successful startup validation with no missing-variable errors in 100% of test setups.
 
----
+## Assumptions
 
-## Success Criteria
+- Prior features (001-010) have already established stable contracts for API, auth, orchestration, bot, and dashboard behavior.
+- Demo readiness requires realistic baseline data rather than purely synthetic empty-state behavior.
+- A controlled target environment for deployment/testing exists and permits scripted synchronization and restart operations.
+- Infrastructure provisioning credentials and permissions are managed outside repository source.
+- Seed content may evolve over time, but demo-critical entity categories remain stable for this feature.
+- Demo-critical domains are the authoritative failure boundary for seed success in this feature.
 
-- **SC-001**: `pnpm prisma db seed` runs idempotently
-- **SC-002**: After seed: `GET /api/kb/thesis/NVDA` returns bullish thesis
-- **SC-003**: After seed: `GET /api/kb/history/NVDA` returns 4 snapshots
-- **SC-004**: After seed: `GET /api/alerts` returns 1 alert
-- **SC-005**: After seed: `GET /api/missions` returns 2 missions
-- **SC-006**: CI runs all jobs on self-hosted runner
-- **SC-007**: Deploy script successfully deploys to Linux server
-- **SC-008**: `.env.example` covers all required variables
+## Dependencies
+
+- **001-010**: Functional prerequisites whose contracts are populated and exercised by this feature.
+- Runtime systems required for seeded and deployed execution environments (data store, queue/cache, and service runtime platform).
+- CI runner environment with required toolchain availability.
+
+## Out of Scope
+
+- Building new business capabilities outside seed/deployment/infrastructure readiness.
+- Expanding core domain schema beyond what is required for representative baseline data.
+- Replacing existing orchestration or agent behavior contracts defined in prior features.
+- Production-hardening beyond the deployment and readiness objectives defined here.
+
+## Preserved Implementation Details
+
+Important implementation-level details from the original manual draft are intentionally retained outside this canonical spec:
+
+- [manual-spec-original.md](./manual-spec-original.md) - immutable snapshot of the original manual 011 draft.
+- [decisions.md](./decisions.md) - explicit preserved implementation decisions and constraints for planning/tasks handoff.
+- [manual-parity.md](./manual-parity.md) - row-by-row mapping proving which original manual details are preserved, reinterpreted, or intentionally constrained by constitution.
+
+These preserved details MUST be reviewed during `/speckit-plan` and `/speckit-tasks` and can only be changed with documented rationale.
