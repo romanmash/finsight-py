@@ -4,6 +4,7 @@
   "ai_skills": true,
   "branch_numbering": "sequential",
   "here": true,
+  "no_branch": true,
   "offline": false,
   "preset": null,
   "script": "ps",
