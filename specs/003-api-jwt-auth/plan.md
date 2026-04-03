@@ -142,6 +142,24 @@ apps/api/tests/routes/
 - **Requires**: 002-async-data-layer (Operator + RefreshToken repos)
 - **Required by**: 004 through 011 (all API routes use auth)
 
+> **Cross-feature note (S3 — Service JWT for Telegram bot)**: Feature 009 (Telegram Bot) calls the
+> internal API from a separate process using a machine-to-machine service credential. This is
+> implemented as follows:
+>
+> - A long-lived JWT is signed with `SECRET_KEY`, carrying `sub="service:telegram-bot"` and
+>   `role="service"`. It has no expiry (or a very long one — configurable in `api.yaml` as
+>   `service_token_ttl_days`, default 3650).
+> - `require_role()` in `apps/api/src/api/lib/auth.py` is extended to accept the `service` role
+>   for endpoints that the bot calls (specifically `GET /operators?telegram_user_id=...` and
+>   `PATCH /operators/{id}` to store `telegram_chat_id`).
+> - The token is **pre-generated once** by the seed script (Feature 011) using
+>   `create_access_token(sub="service:telegram-bot", role="service")` and written to the operator's
+>   `.env` as `TELEGRAM_SERVICE_TOKEN`. It is never stored in the database.
+> - No new endpoint is needed — the token is a one-time artefact, not a rotating credential.
+>
+> **Implementation tasks for this feature**: Add `service_token_ttl_days: int` to `ApiConfig` and
+> extend `require_role("service")` in `lib/auth.py`. Feature 011 generates the token value.
+
 > **Cross-feature note (S3)**: Feature 001 establishes `load_all_configs()` in
 > `apps/api/src/api/lib/config.py` which loads exactly 5 YAML files at startup. This feature
 > introduces a 6th YAML file (`api.yaml`). As part of **Phase 1**, extend `load_all_configs()`

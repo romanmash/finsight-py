@@ -92,6 +92,10 @@ apps/api/tests/orchestration/
 - `Celery("finsight", broker=settings.redis_url, backend=settings.redis_url)`
 - Beat schedule built from scheduler.yaml at startup (not hardcoded)
 - `task_always_eager=True` when `CELERY_TASK_ALWAYS_EAGER=true` env var set (test mode)
+- **Known queues**: `watchdog`, `screener`, `brief`, `alert`, `mission`, `telegram`. The
+  `telegram` queue is consumed by the telegram-bot container's own Celery worker (Feature 009).
+  `mission_worker` dispatches to it by name via `celery_app.send_task(...)` — no import of the
+  telegram-bot package is required.
 - **Celery + asyncio pattern**: All 7 agents are `async def`. Celery tasks are synchronous
   by default. Each Celery task bridges the two worlds with `asyncio.run(agent.run(...))`.
   This is the correct pattern for Python 3.10+ — do NOT use `celery[gevent]` (gevent

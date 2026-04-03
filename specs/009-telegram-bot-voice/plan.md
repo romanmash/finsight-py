@@ -13,7 +13,7 @@ All bot interactions tested offline with mocked PTB update objects and mocked Wh
 ## Technical Context
 
 **Language/Version**: Python 3.13
-**Primary Dependencies**: python-telegram-bot[ext]>=20.7, openai>=1.0, httpx, structlog
+**Primary Dependencies**: python-telegram-bot[ext]>=20.7, httpx, structlog
 **Storage**: PostgreSQL (Operator.telegram_user_id + telegram_chat_id, via API HTTP client)
 **Testing**: pytest + pytest-asyncio + respx + unittest.mock (offline)
 **Target Platform**: Linux server (Docker) — telegram-bot container
@@ -66,6 +66,14 @@ apps/telegram-bot/tests/
 
 **Files**: `config/runtime/telegram.yaml`, `config/schemas/telegram.py`
 
+**Key decisions**:
+- `TelegramConfig` Pydantic v2 BaseModel: `whisper_model: str`, `confidence_threshold: float`,
+  `ack_message: str`, `max_message_length: int = 4096`, `poll_timeout_seconds: int = 30`
+- Loaded and validated at `main.py` module level; `sys.exit(1)` with Pydantic error path on
+  any validation failure — same fail-fast contract as all other apps in this project
+- Bot token (`TELEGRAM_BOT_TOKEN`) and service JWT (`TELEGRAM_SERVICE_TOKEN`) come from `.env`
+  only — never in YAML
+
 ### Phase 2: Auth Module
 
 **Files**: `apps/telegram-bot/src/telegram_bot/auth.py`
@@ -109,9 +117,25 @@ apps/telegram-bot/tests/
 **Files**: `apps/telegram-bot/src/telegram_bot/notifier.py`
 
 **Key decisions**:
-- Celery task `deliver_to_telegram(chat_id, text)` — called by mission_worker on completion
-- Splits long messages via `message_utils.split_long_message()`
-- Celery autoretry_for=(TelegramError,), max_retries=3
+- Celery task `deliver_to_telegram(chat_id: str, text: str) -> None` defined in
+  `apps/telegram-bot/src/telegram_bot/notifier.py`
+- **Cross-package dispatch**: `apps/api` (mission_worker) and `apps/telegram-bot` are separate
+  uv workspace packages — `apps/api` cannot import from `apps/telegram-bot`. The dispatch uses
+  Celery's name-based routing:
+  ```python
+  # In apps/api/src/api/workers/mission_worker.py (on mission completion):
+  celery_app.send_task(
+      "telegram_bot.notifier.deliver_to_telegram",
+      args=[chat_id, formatted_text],
+      queue="telegram",
+  )
+  ```
+  The telegram-bot container runs its own Celery worker consuming only the `telegram` queue:
+  `celery -A telegram_bot.notifier worker -Q telegram`
+- The `telegram` queue is registered in `config/runtime/scheduler.yaml` alongside the other
+  queues; `008/plan.md` queue config is updated accordingly
+- Splits long messages via `message_utils.split_long_message()` before sending
+- `autoretry_for=(TelegramError,), max_retries=3, default_retry_delay=5`
 
 ### Phase 7: App Entry Point
 

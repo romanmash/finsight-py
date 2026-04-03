@@ -13,7 +13,7 @@ this foundation being correct.
 ## Technical Context
 
 **Language/Version**: Python 3.13
-**Primary Dependencies**: pydantic>=2.7, pydantic-settings>=2.3, pyyaml>=6.0, structlog>=24.1, alembic>=1.13, sqlalchemy[asyncio]>=2.0, asyncpg>=0.29, pytest>=8.2, pytest-asyncio>=0.23, mypy>=1.10, ruff>=0.4
+**Primary Dependencies**: pydantic>=2.7, pydantic-settings>=2.3, pyyaml>=6.0, structlog>=24.1, alembic>=1.13, sqlalchemy[asyncio]>=2.0, asyncpg>=0.29, croniter>=1.4, pytest>=8.2, pytest-asyncio>=0.23, mypy>=1.10, ruff>=0.4
 **Storage**: PostgreSQL 16 + pgvector (via Docker); Redis 7 (via Docker)
 **Testing**: pytest + pytest-asyncio (offline, no Docker required)
 **Target Platform**: Linux server (Docker) / Windows 11 dev (Podman)

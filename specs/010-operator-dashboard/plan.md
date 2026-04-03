@@ -189,6 +189,5 @@ Coverage targets: all callback branches (success path, API error path, empty res
 
 ## Dependencies
 
-- **Requires**: 001 (config/shared), 002 (data layer), 003 (auth), 004 (missions), 005 (KB),
-  006 (collectors), 007 (agents), 008 (orchestration), 009 (Telegram bot for alert model)
+- **Requires**: 001 (config/shared), 002 (data layer — entities visible in dashboard), 003 (auth — JWT login + role protection), 004 (MCP platform), 005 (agent infrastructure), 006 (collector agents — Watchdog alert model), 007 (reasoning agents — Bookkeeper writes KB entries displayed in dashboard), 008 (orchestration — missions routes, mission status), 009 (Telegram bot — proactive delivery model)
 - **Required by**: 011 (seed data populates entities visible in the dashboard)

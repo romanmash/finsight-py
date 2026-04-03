@@ -13,7 +13,7 @@ registry loaded from pricing.yaml. All tested offline with mocked LLM responses.
 ## Technical Context
 
 **Language/Version**: Python 3.13
-**Primary Dependencies**: langchain-core, langchain-openai, langgraph>=0.2,<1.0, langsmith, structlog, pydantic>=2.0
+**Primary Dependencies**: langchain-core, langchain-openai, langsmith, structlog, pydantic>=2.0
 **Storage**: PostgreSQL (AgentRun records via Feature 002 repositories)
 **Testing**: pytest + pytest-asyncio + unittest.mock (offline)
 **Target Platform**: Linux server (Docker) + Windows dev (Podman)

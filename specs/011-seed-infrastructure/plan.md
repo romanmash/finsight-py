@@ -108,18 +108,28 @@ apps/api/tests/seeds/
 
 **Key decisions**:
 - Passwords hashed with bcrypt at seed time (not stored as plain text)
+- `seed.py` generates the Telegram service JWT once and prints it:
+  ```
+  TELEGRAM_SERVICE_TOKEN=<generated-value>   # add to .env on server
+  ```
+  Uses `create_access_token(sub="service:telegram-bot", role="service")` from `apps/api/lib/auth.py`.
+  Token is printed to stdout — never written to any file automatically.
 - Knowledge entries use `embedding=NULL` — seed entries carry no vector; the Bookkeeper writes real embeddings when missions run. Similarity search queries use `WHERE embedding IS NOT NULL` so seed rows are never returned as search results.
 - All `created_at`/`updated_at` fields set to fixed past timestamps for realistic dashboard display
 
 ### Phase 5: Pulumi IaC
 
-**Files**: `infra/pulumi/__main__.py`, `Pulumi.yaml`, `Pulumi.dev.yaml`
+**Files**: `infra/pulumi/__main__.py`, `Pulumi.yaml`, `Pulumi.dev.yaml`, `infra/pulumi/requirements.txt`
 
 **Key decisions**:
 - `hcloud.Server("finsight-server", server_type="cx21", image="ubuntu-24.04")`
 - `hcloud.Firewall` allowing only ports 22, 80, 443 inbound
 - `hcloud.Volume("postgres-data", size=20)` attached to server for DB persistence
 - SSH key from `.env` PULUMI_SSH_PUBLIC_KEY (never hardcoded)
+- **`infra/pulumi/requirements.txt` is intentionally not a `pyproject.toml`**: Pulumi manages
+  its own Python virtual environment (`infra/pulumi/.venv`) independently of the uv workspace.
+  Adding it as a uv workspace member would conflict with Pulumi's venv management. This is the
+  standard Pulumi Python project layout — do not attempt to add it to the uv workspace.
 
 ### Phase 6: GitHub Actions CI
 

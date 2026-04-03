@@ -161,7 +161,7 @@ healthy, then confirm the API can reach the database and cache.
 ## Assumptions
 
 - The developer has a compatible container runtime available for local infrastructure setup.
-- The `uv` package manager and Python 3.12 are installed on the developer's machine before setup.
+- The `uv` package manager and Python 3.13 are installed on the developer's machine before setup.
 - All secrets (API keys, database passwords, tokens) are provided via `.env`; the `.env.example`
   file lists every required variable with a safe placeholder.
 - The `config/runtime/` directory ships with working default values for all non-secret settings so

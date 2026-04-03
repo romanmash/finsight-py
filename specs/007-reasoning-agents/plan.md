@@ -142,7 +142,15 @@ apps/api/tests/agents/
 
 All tests run entirely offline:
 
-- **Analyst / Pattern / Reporter**: `AsyncMock` replaces `ChatOpenAI.ainvoke`; mock returns a pre-constructed Pydantic model. Tests assert output field values and that no unexpected tool calls occurred.
+- **Analyst / Pattern / Reporter**: `llm.with_structured_output(Schema)` returns a `RunnableSequence`,
+  not the base `ChatOpenAI` — patching `ChatOpenAI.ainvoke` directly will not intercept the call.
+  Correct mock pattern:
+  ```python
+  mock_chain = AsyncMock(return_value=pre_built_pydantic_instance)
+  with patch.object(ChatOpenAI, "with_structured_output", return_value=mock_chain):
+      result = await agent.run(input_fixture)
+  ```
+  Tests assert output field values and that `mock_chain.ainvoke` was called exactly once.
 - **Bookkeeper**: `aiosqlite` in-memory engine with `Base.metadata.create_all(engine)`. Test inserts an entry, inserts again with same hash, asserts single row. Conflict test inserts two entries with divergent `content_summary` for same `(ticker, entry_type)` and asserts `conflict_markers` is non-empty.
 - **PatternReport no-advice test**: `assert "recommendation" not in PatternReport.model_fields` — pure schema inspection, no LLM needed.
 

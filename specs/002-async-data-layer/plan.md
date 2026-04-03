@@ -109,7 +109,7 @@ apps/api/tests/db/
 - All IDs: `uuid.UUID`, `default_factory=uuid.uuid4`
 - `MissionStatus` enum: `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`
 - `AlertSeverity` enum: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`
-- `KnowledgeEntry.embedding: list[float]` (1536 dims)
+- `KnowledgeEntry.embedding: list[float] | None = None` (1536 dims when present; `None` for seed entries and entries awaiting embedding generation)
 - Zero external dependencies in `packages/shared`
 
 ### Phase 2: SQLAlchemy ORM Models
@@ -130,7 +130,7 @@ apps/api/tests/db/
 - `BaseRepository[T]` provides `get_by_id`, `create`, `update`, `list`, `delete`
 - Session injected by caller (not created internally)
 - `KnowledgeEntryRepository.search_similar(vector, limit, filters)` uses `<=>` operator
-- `AlertRepository.get_unacknowledged()` ordered by `created_at DESC`
+- `AlertRepository.get_unacknowledged()` ordered by `created_at ASC` (oldest first — chronological order per spec; surfaces the most time-sensitive alerts at the top)
 
 ### Phase 4: Engine + Redis Singletons
 

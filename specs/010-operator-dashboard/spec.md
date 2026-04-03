@@ -144,8 +144,10 @@ navigate all primary sections, acknowledge an alert, and open a mission detail v
   rather than showing blank panels.
 - **FR-008**: Admin-only actions (system configuration, operator management) MUST be hidden from
   viewer-role users.
-- **FR-009**: The dashboard MUST be served by the same API as the rest of the system; it does not
-  require a separate server.
+- **FR-009**: The dashboard MUST be deployed as part of the same docker-compose stack as the rest
+  of the system. It does not require any infrastructure beyond what the standard stack already
+  provides. It runs as a separate container within that stack; it does not share a process with
+  the API.
 
 ### Key Entities
 
