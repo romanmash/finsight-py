@@ -5,7 +5,7 @@
 ## Summary
 
 This feature establishes the complete monorepo skeleton: uv workspace configuration for all
-six packages, Pydantic v2 config schemas for every YAML runtime file, a fail-fast config loader
+seven packages, Pydantic v2 config schemas for every YAML runtime file, a fail-fast config loader
 that calls `sys.exit(1)` on any validation error, Docker Compose for all services, Alembic
 migration scaffolding, and offline pytest infrastructure. Every subsequent feature depends on
 this foundation being correct.
@@ -53,7 +53,7 @@ pyproject.toml                                    # uv workspace root; mypy + ru
 .python-version                                   # "3.13"
 .env.example                                      # all required env vars documented
 alembic.ini                                       # points to apps/api/alembic/
-docker-compose.yml                                # all ~10 services
+docker-compose.yml                                # core services; later features extend
 docker-compose.dev.yml                            # volume mounts for live reload
 conftest.py                                       # root pytest config (asyncio_mode=auto)
 pytest.ini  (or pyproject.toml [tool.pytest])     # test discovery, asyncio_mode
@@ -192,19 +192,18 @@ apps/api/tests/
 ### Phase 6: Docker Compose
 
 **Files**:
-- `docker-compose.yml` — services:
+- `docker-compose.yml` — core services created in this feature:
   - `db`: `pgvector/pgvector:pg16`; port 5432; healthcheck; volume `pgdata`
   - `redis`: `redis:7-alpine`; port 6379; healthcheck
   - `api`: builds from `apps/api/`; port 8000; depends on `db`, `redis`; env from `.env`
   - `market-data-mcp`: builds from `apps/mcp-servers/market-data/`; port 8001
   - `news-macro-mcp`: builds from `apps/mcp-servers/news-macro/`; port 8002
   - `rag-retrieval-mcp`: builds from `apps/mcp-servers/rag-retrieval/`; port 8003
-  - `dashboard`: builds from `apps/dashboard/`; port 8050
-  - `telegram-bot`: builds from `apps/telegram-bot/`; no exposed port
   - `worker-watchdog`: same image as `api`; command `celery -A api.lib.queues worker -Q watchdog`
   - `worker-brief`: same image as `api`; command `celery -A api.lib.queues worker -Q brief`
   - *(Feature 008 extends this file to add `celery-beat`, `worker-mission`, `worker-alert`, `worker-screener`)*
-  - *(Feature 009 extends this file to add the `telegram-bot` Celery worker for the `telegram` queue)*
+  - *(Feature 009 extends this file to add `telegram-bot` and `telegram-worker`)*
+  - *(Feature 010 extends this file to add `dashboard`)*
 - `docker-compose.dev.yml` — override: volume-mounts source dirs; `RELOAD=true` for API
 
 **Key decisions**:
