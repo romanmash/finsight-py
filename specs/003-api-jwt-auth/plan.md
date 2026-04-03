@@ -141,3 +141,11 @@ apps/api/tests/routes/
 
 - **Requires**: 002-async-data-layer (Operator + RefreshToken repos)
 - **Required by**: 004 through 011 (all API routes use auth)
+
+> **Cross-feature note (S3)**: Feature 001 establishes `load_all_configs()` in
+> `apps/api/src/api/lib/config.py` which loads exactly 5 YAML files at startup. This feature
+> introduces a 6th YAML file (`api.yaml`). As part of **Phase 1**, extend `load_all_configs()`
+> to also load and validate `config/runtime/api.yaml` using `ApiConfig`. The `AllConfigs`
+> dataclass gains an `api: ApiConfig` field. All callers that need auth/CORS settings access
+> them via `configs.api`. This ensures `sys.exit(1)` on invalid `api.yaml` is enforced at the
+> same startup gate as all other config files.

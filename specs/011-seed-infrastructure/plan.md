@@ -108,7 +108,7 @@ apps/api/tests/seeds/
 
 **Key decisions**:
 - Passwords hashed with bcrypt at seed time (not stored as plain text)
-- Knowledge entries use zero-vector embedding `[0.0] * 1536` (demo data; not semantically meaningful)
+- Knowledge entries use `embedding=NULL` — seed entries carry no vector; the Bookkeeper writes real embeddings when missions run. Similarity search queries use `WHERE embedding IS NOT NULL` so seed rows are never returned as search results.
 - All `created_at`/`updated_at` fields set to fixed past timestamps for realistic dashboard display
 
 ### Phase 5: Pulumi IaC
@@ -147,7 +147,7 @@ apps/api/tests/seeds/
 | Seed idempotency | Fixed UUIDs + SQLAlchemy merge() | Deterministic state; safe to re-run |
 | Deploy migration timing | Before docker compose up | Prevents new code on old schema |
 | Pulumi provider | Hetzner Cloud (hcloud) | Best price/performance for personal use |
-| Knowledge embeddings | Zero-vector in seed | Demo data; Bookkeeper writes real vectors |
+| Knowledge embeddings | NULL in seed | Bookkeeper writes real vectors; seed rows excluded from similarity search via `WHERE embedding IS NOT NULL` |
 | CI environment | Ubuntu + Python 3.13 + uv | Matches production; fast installs |
 
 ## Testing Strategy

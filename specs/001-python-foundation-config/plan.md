@@ -226,6 +226,8 @@ TELEGRAM_BOT_TOKEN=...         # optional
 SECRET_KEY=change-this-to-a-random-32-char-string
 ENVIRONMENT=dev
 LOG_LEVEL=INFO
+LANGCHAIN_TRACING_V2=false         # set to true to enable LangSmith tracing
+LANGCHAIN_API_KEY=                 # optional — required only when LANGCHAIN_TRACING_V2=true
 ```
 
 ### Phase 8: Test Infrastructure

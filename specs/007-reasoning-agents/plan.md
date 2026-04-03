@@ -10,7 +10,7 @@ Implement four reasoning agents — Analyst, Pattern Specialist, Bookkeeper/Libr
 
 **Language/Version**: Python 3.13
 **Primary Dependencies**: `langchain-openai>=0.3`, `langchain-core>=0.3`, `sqlalchemy[asyncio]>=2.0`, `aiosqlite>=0.20`, `pydantic>=2.7`, `pytest>=8.0`, `pytest-asyncio>=0.23`, `respx>=0.21`
-**Storage**: PostgreSQL 16 + pgvector (`knowledge_entries` table); embedding column nullable (populated by Feature 004)
+**Storage**: PostgreSQL 16 + pgvector (`knowledge_entries` table created by Feature 002 migration; embedding column nullable)
 **Testing**: pytest + pytest-asyncio + unittest.mock.AsyncMock; offline (no network, no Docker)
 **Target Platform**: Linux server (Docker) / Windows 11 dev (Podman)
 **Project Type**: Python monorepo sub-packages (`packages/shared`, `apps/api`)
@@ -51,8 +51,8 @@ packages/shared/src/finsight/shared/models/
 └── report.py             # ReportSection + FormattedReport Pydantic model
 
 apps/api/src/api/agents/
-├── analyst_agent.py      # AnalystAgent: accepts DataPacket, returns Assessment, one LLM call
-├── analyst_agent.prompt.py  # SYSTEM_PROMPT + build_user_prompt(packet: DataPacket) -> str
+├── analyst_agent.py      # AnalystAgent: accepts ResearchPacket, returns Assessment, one LLM call
+├── analyst_agent.prompt.py  # SYSTEM_PROMPT + build_user_prompt(packet: ResearchPacket) -> str
 ├── pattern_agent.py      # PatternAgent: accepts price/volume history, returns PatternReport
 ├── pattern_agent.prompt.py  # SYSTEM_PROMPT + build_user_prompt(history: PriceHistory) -> str
 ├── bookkeeper_agent.py   # BookkeeperAgent: no LLM call; writes/updates KnowledgeEntry in DB
@@ -60,11 +60,11 @@ apps/api/src/api/agents/
 ├── reporter_agent.py     # ReporterAgent: accepts Assessment+PatternReport, returns FormattedReport
 └── reporter_agent.prompt.py   # SYSTEM_PROMPT + build_user_prompt(...) -> str
 
-apps/api/src/api/models/
-└── knowledge_entry_orm.py   # SQLAlchemy ORM model for knowledge_entries table
+apps/api/src/api/db/models/
+└── knowledge_entry.py   # SQLAlchemy ORM model (created in Feature 002; referenced here)
 
-apps/api/alembic/versions/
-└── 0007_add_knowledge_entries.py  # Alembic migration: CREATE TABLE knowledge_entries
+# No new migration — knowledge_entries table is included in Feature 002's
+# 001_initial_schema.py migration. Feature 007 only adds usage of the existing table.
 
 apps/api/tests/agents/
 ├── test_analyst.py       # 3 test cases: assessment, conflicting signals, no signal
@@ -88,15 +88,18 @@ apps/api/tests/agents/
 - `PatternReport` enforces no advice at the schema level: no `recommendation`, `action`, `buy`, `sell`, or `price_target` fields exist
 - `KnowledgeEntry` Pydantic schema is separate from the ORM model to keep `packages/shared` free of SQLAlchemy imports
 
-### Phase 2: ORM Model + Migration
+### Phase 2: ORM Model Reference
 
 **Files**:
-- `apps/api/src/api/models/knowledge_entry_orm.py` — `KnowledgeEntryORM` SQLAlchemy 2.x mapped class; `pgvector.sqlalchemy.Vector` for embedding column (nullable)
-- `apps/api/alembic/versions/0007_add_knowledge_entries.py` — Alembic migration with `op.create_table`, unique constraint on `(ticker, entry_type, content_hash)`, GIN index on `provenance_history`
+- `apps/api/src/api/db/models/knowledge_entry.py` — `KnowledgeEntryORM` is created in Feature 002.
+  This feature adds no new ORM files; it imports and uses the existing model.
 
 **Key decisions**:
-- `content_hash` has a unique constraint scoped to `(ticker, entry_type)` — same asset can have distinct "assessment" and "pattern" entries
-- pgvector column created nullable; Feature 004 populates it
+- The `knowledge_entries` table (including `content_hash` unique constraint on `(ticker, entry_type)`
+  and nullable `Vector(1536)` embedding column) is fully defined in Feature 002's
+  `001_initial_schema.py` migration. No additional migration is needed here.
+- Feature 007 is the first feature to *write* to this table (via `BookkeeperAgent`), but the
+  schema already exists when this feature is implemented.
 
 ### Phase 3: Agent Implementations
 
@@ -107,7 +110,7 @@ apps/api/tests/agents/
 - `apps/api/src/api/agents/reporter_agent.py` + `reporter_agent.prompt.py`
 
 **Key decisions**:
-- `AnalystAgent.run(packet: DataPacket, mission_id: UUID) -> Assessment`: calls `llm.with_structured_output(Assessment).ainvoke(messages)`, wraps in `record_agent_run`
+- `AnalystAgent.run(packet: ResearchPacket, mission_id: UUID) -> Assessment`: calls `llm.with_structured_output(Assessment).ainvoke(messages)`, wraps in `record_agent_run`
 - `PatternAgent.run(history: PriceHistory, mission_id: UUID) -> PatternReport`: same pattern; prompt explicitly prohibits investment language
 - `BookkeeperAgent.run(inputs: BookkeeperInput, mission_id: UUID) -> KnowledgeEntry`: no LLM call; computes SHA-256 `content_hash`; uses SQLAlchemy `insert(...).on_conflict_do_update` (PostgreSQL upsert); detects conflicts by comparing incoming `confidence` and `content_summary` against existing
 - `ReporterAgent.run(inputs: ReporterInput, mission_id: UUID) -> FormattedReport`: single LLM call formats Assessment + PatternReport into titled sections; system prompt prohibits adding new analysis
@@ -145,5 +148,5 @@ All tests run entirely offline:
 
 ## Dependencies
 
-- **Requires**: Feature 002 (async data layer — AsyncSession, Base), Feature 005 (agent infrastructure — BaseAgent ABC, AgentRun ORM, record_agent_run helper, agents.yaml config), Feature 006 (DataPacket / ResearchPacket models)
+- **Requires**: Feature 002 (async data layer — AsyncSession, Base), Feature 005 (agent infrastructure — BaseAgent ABC, AgentRun ORM, record_agent_run helper, agents.yaml config), Feature 006 (ResearchPacket model and sub-models)
 - **Required by**: Feature 008 (Orchestration — Manager invokes these agents), Feature 010 (Dashboard — displays KnowledgeEntry and FormattedReport)

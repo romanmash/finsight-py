@@ -12,7 +12,7 @@ calls to the correct server by name. All tools are testable offline via respx HT
 ## Technical Context
 
 **Language/Version**: Python 3.13
-**Primary Dependencies**: fastmcp>=0.4, openbb>=4.0, finnhub-python, httpx, redis[hiredis], respx
+**Primary Dependencies**: fastmcp>=0.4, openbb>=4.0, openbb-yfinance, finnhub-python, httpx, redis[hiredis], respx
 **Storage**: Redis 7 (response cache) + PostgreSQL/pgvector (rag-retrieval reads KnowledgeEntry)
 **Testing**: pytest + pytest-asyncio + respx (offline HTTP mocking)
 **Target Platform**: Linux server (Docker) — 3 separate containers
@@ -93,6 +93,12 @@ apps/api/tests/mcp/test_client.py
 **Files**: `apps/mcp-servers/market-data/src/market_data/`
 
 **Key decisions**:
+- **OpenBB provider**: OpenBB Platform 4.x requires provider extensions installed separately.
+  Default provider for development is `openbb-yfinance` (free, no API key required). The active
+  provider is configured via `mcp.yaml` under `servers.market_data.openbb_provider` (default:
+  `"yfinance"`). This is passed to each `obb.*` call as `provider=config.openbb_provider`.
+  Production operators may swap to `openbb-fmp` or `openbb-tiingo` by changing the YAML value
+  and installing the corresponding provider package.
 - OpenBB `obb.equity.price.quote()` for price; `obb.equity.historical()` for OHLCV
 - Tool functions are `@mcp.tool()` decorated async functions with typed Pydantic return types
 - `ToolResponse[T]` envelope: `{"data": T, "error": str | None, "cache_hit": bool, "latency_ms": int}`
@@ -119,19 +125,33 @@ apps/api/tests/mcp/test_client.py
 **Files**: `apps/api/src/api/mcp/client.py`
 
 **Key decisions**:
-- `MCPClient.call_tool(tool_name, params) -> ToolResponse` routes by tool name prefix (e.g. `market.*`)
-- Timeout from mcp.yaml; raises `MCPToolError` on connection failure or timeout
+- **Transport protocol**: FastMCP servers are accessed via HTTP (not stdio). Each server is a
+  standalone ASGI app served by uvicorn and exposes FastMCP's streamable-HTTP transport at
+  `POST /mcp/` (FastMCP ≥2.0 default). The MCP client sends JSON-RPC 2.0 messages to this
+  endpoint using `httpx.AsyncClient`.
+- **Tool routing**: `MCPClient` holds a mapping of tool-name prefixes to base URLs loaded from
+  `mcp.yaml` (e.g. `market.*` → `http://market-data-mcp:8001`). `call_tool(tool_name, params)`
+  selects the correct server, constructs a `{"method": "tools/call", "params": {...}}` JSON-RPC
+  payload, and POSTs it.
+- **Tool discovery**: On startup, `MCPClient.discover()` calls `GET /mcp/` (or equivalent
+  `tools/list` JSON-RPC call) on each server and caches the tool manifests. This enables
+  fail-fast if a server is unreachable.
+- Timeout loaded from `mcp.yaml`; raises `MCPToolError` on connection failure, timeout, or
+  JSON-RPC error response.
 
 ### Phase 6: Tests
 
 - respx mocks all external HTTP (OpenBB, Finnhub, GDELT)
 - Cache hit/miss tested with fakeredis
-- MCPClient timeout tested with respx raising `httpx.ConnectTimeout`
+- MCPClient timeout tested with respx raising `httpx.ConnectTimeout` on `POST /mcp/`
+- MCPClient tool routing tested: assert correct base URL selected per tool name prefix
+- MCPClient discovery tested: respx returns `tools/list` JSON-RPC response; verify manifest cached
 
 ## Key Design Decisions
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
+| MCP transport | FastMCP HTTP (streamable-HTTP at POST /mcp/) | Containerised services; testable with respx |
 | External HTTP in MCP servers | httpx (not SDK clients directly) | Allows respx mocking for offline tests |
 | Tool response envelope | ToolResponse[T] Pydantic generic | Consistent shape; cache_hit flag; typed |
 | Server independence | Separate pyproject.toml per server | Constitution: no cross-imports |

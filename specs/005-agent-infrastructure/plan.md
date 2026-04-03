@@ -13,7 +13,7 @@ registry loaded from pricing.yaml. All tested offline with mocked LLM responses.
 ## Technical Context
 
 **Language/Version**: Python 3.13
-**Primary Dependencies**: langchain-core, langchain-openai, langgraph, langsmith, structlog, pydantic>=2.0
+**Primary Dependencies**: langchain-core, langchain-openai, langgraph>=0.2,<1.0, langsmith, structlog, pydantic>=2.0
 **Storage**: PostgreSQL (AgentRun records via Feature 002 repositories)
 **Testing**: pytest + pytest-asyncio + unittest.mock (offline)
 **Target Platform**: Linux server (Docker) + Windows dev (Podman)
@@ -70,7 +70,7 @@ apps/api/tests/agents/
 **Files**: `config/runtime/agents.yaml`, `config/schemas/agents.py`, `config/runtime/pricing.yaml`, `config/schemas/pricing.py`
 
 **Key decisions**:
-- `agents.yaml`: `agents.{name}.model`, `agents.{name}.provider`, `agents.{name}.fallback_model`, `agents.{name}.fallback_provider`
+- `agents.yaml`: `agents.{name}.model`, `agents.{name}.provider`, `agents.{name}.fallback_model`, `agents.{name}.fallback_provider`, `agents.{name}.base_url` (optional; `str | None`; when set, passed as `base_url=` to `ChatOpenAI` to support local models via LM Studio or other OpenAI-compatible endpoints; `None` uses the provider's default endpoint)
 - `pricing.yaml`: `models.{model_name}.cost_per_1k_input_usd`, `models.{model_name}.cost_per_1k_output_usd`
 
 ### Phase 2: Pricing Registry

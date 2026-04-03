@@ -119,7 +119,7 @@ apps/api/tests/db/
 **Key decisions**:
 - UUID PKs with `server_default=text("gen_random_uuid()")`
 - `KnowledgeEntry` uses `pgvector.sqlalchemy.Vector(1536)`
-- Soft-delete via `is_deleted: Mapped[bool]` on Mission, KnowledgeEntry, Alert
+- Soft-delete via `deleted_at: Mapped[datetime | None]` on Mission, KnowledgeEntry, Alert (NULL = active; timestamp = deleted). Repositories filter `WHERE deleted_at IS NULL` by default.
 - `AgentRun` FK to `missions.id` ON DELETE CASCADE
 
 ### Phase 3: Repository Layer
@@ -155,7 +155,7 @@ apps/api/tests/db/
 | Test database | SQLite in-memory via aiosqlite | No Docker; full SQLAlchemy async compat |
 | Redis in tests | fakeredis.aioredis | No real Redis server needed |
 | Session injection | FastAPI Depends(get_session) | Testable; no global state |
-| Soft delete | is_deleted bool flag | Preserves audit trail per constitution |
+| Soft delete | deleted_at timestamp (NULL = active) | Records when deleted; preserves full audit trail |
 | Embedding dimension | 1536 | Matches text-embedding-3-small |
 
 ## Testing Strategy

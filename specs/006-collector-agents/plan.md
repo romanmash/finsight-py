@@ -84,10 +84,19 @@ apps/api/tests/agents/
 
 **Key decisions**:
 - Calls `MCPClient.call_tool("market.get_price", ...)` and `MCPClient.call_tool("news.get_news", ...)` for each watchlist item
-- Evaluates thresholds deterministically (no LLM needed for threshold evaluation itself)
-- Uses LLM only to generate a human-readable alert description
+- **No LLM call**: the Watchdog is a pure threshold evaluator. Alert descriptions are
+  generated programmatically using string formatting, e.g. `"SPY price moved +3.2% exceeding
+  the 3.0% threshold"`. This keeps `cost_usd=0` in AgentRun, eliminates the need to mock an
+  LLM in tests, and produces more reliable and consistent alert text than an LLM would.
+- **Threshold precedence**: if a WatchlistItem row has a non-null `price_change_pct_threshold`
+  field (or equivalent per-item threshold columns), that value takes precedence over the global
+  default in `watchdog.yaml`. A null per-item field falls back to the `watchdog.yaml` default.
+  This allows per-symbol customisation (e.g. tighter threshold for volatile assets) without
+  requiring YAML edits.
 - Dedup: `AlertRepository.get_recent(ticker, condition, window_hours)` before creating new alert
 - Opens mission via `MissionRepository.create(...)` linked to the alert
+- Watchdog has no prompt file — `watchdog_agent.prompt.py` contains only a module-level
+  docstring documenting the threshold evaluation logic. No system prompt is needed.
 
 ### Phase 4: Researcher Agent
 
@@ -108,7 +117,7 @@ apps/api/tests/agents/
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Watchdog LLM use | Only for alert description text | Threshold math is deterministic |
+| Watchdog LLM use | None — alert descriptions are f-strings | Deterministic text is more reliable; eliminates mock complexity; cost=0 |
 | Researcher LLM use | None | Data assembly needs no reasoning |
 | Absent data | Explicit data_gaps field | Spec FR-009: absence recorded clearly |
 | Dedup | DB query before creating alert | Prevents duplicate missions for same breach |

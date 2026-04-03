@@ -13,7 +13,7 @@ and schedules are fully configurable in scheduler.yaml.
 ## Technical Context
 
 **Language/Version**: Python 3.13
-**Primary Dependencies**: langgraph>=0.1, langgraph-checkpoint-postgres, celery[redis]>=5.3, celery[gevent], langchain-openai
+**Primary Dependencies**: langgraph>=0.2,<1.0, langgraph-checkpoint-postgres, celery[redis]>=5.3, langchain-openai
 **Storage**: PostgreSQL (missions table + langgraph_checkpoints schema), Redis (Celery broker + beat schedule)
 **Testing**: pytest + pytest-asyncio + Celery task_always_eager + SqliteSaver checkpointer (offline)
 **Target Platform**: Linux server (Docker) — api + celery-worker + celery-beat containers
@@ -92,6 +92,17 @@ apps/api/tests/orchestration/
 - `Celery("finsight", broker=settings.redis_url, backend=settings.redis_url)`
 - Beat schedule built from scheduler.yaml at startup (not hardcoded)
 - `task_always_eager=True` when `CELERY_TASK_ALWAYS_EAGER=true` env var set (test mode)
+- **Celery + asyncio pattern**: All 7 agents are `async def`. Celery tasks are synchronous
+  by default. Each Celery task bridges the two worlds with `asyncio.run(agent.run(...))`.
+  This is the correct pattern for Python 3.10+ — do NOT use `celery[gevent]` (gevent
+  monkey-patches are incompatible with asyncio). Worker concurrency uses the default
+  `--pool=prefork` (process-based, not thread-based), which is safe with asyncio.run().
+  Example pattern:
+  ```python
+  @celery_app.task(bind=True, max_retries=1)
+  def run_mission_pipeline(self, mission_id: str) -> None:
+      asyncio.run(_run_pipeline_async(UUID(mission_id)))
+  ```
 
 ### Phase 3: LangGraph Supervisor
 
