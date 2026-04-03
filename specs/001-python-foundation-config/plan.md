@@ -201,8 +201,10 @@ apps/api/tests/
   - `rag-retrieval-mcp`: builds from `apps/mcp-servers/rag-retrieval/`; port 8003
   - `dashboard`: builds from `apps/dashboard/`; port 8050
   - `telegram-bot`: builds from `apps/telegram-bot/`; no exposed port
-  - `worker-watchdog`: same image as `api`; command `celery -A api.workers worker -Q watchdog`
-  - `worker-brief`: same image as `api`; command `celery -A api.workers worker -Q brief`
+  - `worker-watchdog`: same image as `api`; command `celery -A api.lib.queues worker -Q watchdog`
+  - `worker-brief`: same image as `api`; command `celery -A api.lib.queues worker -Q brief`
+  - *(Feature 008 extends this file to add `celery-beat`, `worker-mission`, `worker-alert`, `worker-screener`)*
+  - *(Feature 009 extends this file to add the `telegram-bot` Celery worker for the `telegram` queue)*
 - `docker-compose.dev.yml` — override: volume-mounts source dirs; `RELOAD=true` for API
 
 **Key decisions**:

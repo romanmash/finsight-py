@@ -124,7 +124,7 @@ apps/api/tests/agents/
 - `apps/api/tests/agents/test_reporter.py`
 
 **Key decisions**:
-- All LLM calls mocked via `unittest.mock.patch` on `ChatOpenAI.ainvoke`; mock returns a pre-built Pydantic model instance
+- LLM calls mocked via `patch.object(ChatOpenAI, "with_structured_output", ...)` — see Testing Strategy for the correct pattern
 - Bookkeeper tests use `pytest-asyncio` with an `aiosqlite` in-memory async engine fixture; migrations applied via `Base.metadata.create_all`
 - `test_pattern_report_has_no_investment_advice` inspects `PatternReport.model_fields` keys to assert forbidden field names are absent
 

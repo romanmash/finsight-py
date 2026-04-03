@@ -114,7 +114,8 @@ error path before `sys.exit(1)`.
 - `watchlist_form.py` — `watchlist_form(item: WatchlistItemData | None) -> dash.html.Div`; form
   for add/edit with ticker, name, sector, list_type, active toggle, threshold input
 - `kb_entry_card.py` — `kb_entry_card(entry: KbEntryData) -> dash.html.Div`; conflict indicator
-  when `contradiction_flag=True`
+  rendered when `entry.conflict_markers` is non-empty (matches the `conflict_markers: list[str]`
+  field on `KnowledgeEntry` from Feature 007)
 - `health_indicator.py` — `health_indicator(service: str, status: str) -> dash.html.Div`; green/
   amber/red dot + label; touch target ≥48 px
 - `assets/styles.css` — CSS custom properties: `--touch-target: 48px`; all `button`, `.card`,

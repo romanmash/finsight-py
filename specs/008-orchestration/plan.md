@@ -86,12 +86,19 @@ apps/api/tests/orchestration/
 
 ### Phase 2: Celery App + Beat Schedule
 
-**Files**: `apps/api/src/api/lib/queues.py`
+**Files**: `apps/api/src/api/lib/queues.py`, `docker-compose.yml`
 
 **Key decisions**:
 - `Celery("finsight", broker=settings.redis_url, backend=settings.redis_url)`
 - Beat schedule built from scheduler.yaml at startup (not hardcoded)
 - `task_always_eager=True` when `CELERY_TASK_ALWAYS_EAGER=true` env var set (test mode)
+- **Extend `docker-compose.yml`** (stub created in Feature 001) to add the four containers that
+  this feature introduces:
+  - `celery-beat`: same image as `api`; command `celery -A api.lib.queues beat -l info`
+  - `worker-mission`: same image as `api`; command `celery -A api.lib.queues worker -Q mission`
+  - `worker-alert`: same image as `api`; command `celery -A api.lib.queues worker -Q alert`
+  - `worker-screener`: same image as `api`; command `celery -A api.lib.queues worker -Q screener`
+  (Feature 001's `worker-watchdog` and `worker-brief` remain unchanged.)
 - **Known queues**: `watchdog`, `screener`, `brief`, `alert`, `mission`, `telegram`. The
   `telegram` queue is consumed by the telegram-bot container's own Celery worker (Feature 009).
   `mission_worker` dispatches to it by name via `celery_app.send_task(...)` — no import of the
@@ -124,7 +131,7 @@ apps/api/tests/orchestration/
 
 **Key decisions**:
 - `mission_worker.py`: receives mission_id → creates LangGraph graph instance → runs with checkpointer → updates mission status
-- `alert_worker.py`: polls `AlertRepository.get_pending()` → creates Mission → dispatches `mission_worker.delay()`
+- `alert_worker.py`: polls `AlertRepository.get_unacknowledged()` → creates Mission → dispatches `mission_worker.delay()`
 - Each worker updates mission status (RUNNING on start, COMPLETED/FAILED on end)
 
 ### Phase 5: Mission Routes

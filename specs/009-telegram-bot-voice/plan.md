@@ -119,6 +119,18 @@ apps/telegram-bot/tests/
 **Key decisions**:
 - Celery task `deliver_to_telegram(chat_id: str, text: str) -> None` defined in
   `apps/telegram-bot/src/telegram_bot/notifier.py`
+- **Celery app instance in telegram-bot**: `notifier.py` defines its own `Celery` app instance:
+  ```python
+  celery_app = Celery(
+      "telegram_bot",
+      broker=os.environ["REDIS_URL"],
+      backend=os.environ["REDIS_URL"],
+  )
+  ```
+  This is standard Celery multi-app practice — multiple apps share the same Redis broker
+  without any code coupling between packages. The `@celery_app.task(...)` decorator registers
+  the task under the fully-qualified name `telegram_bot.notifier.deliver_to_telegram`, which
+  is the name `apps/api` uses when calling `send_task(...)`.
 - **Cross-package dispatch**: `apps/api` (mission_worker) and `apps/telegram-bot` are separate
   uv workspace packages — `apps/api` cannot import from `apps/telegram-bot`. The dispatch uses
   Celery's name-based routing:
