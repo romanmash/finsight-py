@@ -84,7 +84,7 @@ apps/api-service/tests/mcp/test_client.py
 **Files**: `config/runtime/mcp.yaml`, `config/schemas/mcp.py`, `cache.py` in each server
 
 **Key decisions**:
-- `mcp.yaml` structure: `servers.{name}.url`, `servers.{name}.tools.{tool_name}.cache_ttl_seconds`
+- `mcp.yaml` structure: `servers.{name}.url`, optional `servers.{name}.tools.{tool_name}.cache_ttl_seconds`
 - Cache key: `f"{server_name}:{tool_name}:{hashlib.sha256(json.dumps(params)).hexdigest()[:16]}"`
 - Cache miss → fetch → cache result as JSON → return
 
@@ -93,13 +93,10 @@ apps/api-service/tests/mcp/test_client.py
 **Files**: `apps/mcp-servers/market-data/src/market_data/`
 
 **Key decisions**:
-- **OpenBB provider**: OpenBB Platform 4.x requires provider extensions installed separately.
-  Default provider for development is `openbb-yfinance` (free, no API key required). The active
-  provider is configured via `mcp.yaml` under `servers.market_data.openbb_provider` (default:
-  `"yfinance"`). This is passed to each `obb.*` call as `provider=config.openbb_provider`.
-  Production operators may swap to `openbb-fmp` or `openbb-tiingo` by changing the YAML value
-  and installing the corresponding provider package.
-- OpenBB `obb.equity.price.quote()` for price; `obb.equity.historical()` for OHLCV
+- **OpenBB provider**: OpenBB provider selection remains config-driven (`openbb_provider` in
+  `mcp.yaml`), but tool implementations call provider HTTP endpoints via `httpx.AsyncClient` so
+  `respx` can fully mock offline tests.
+- Default provider for development is `yfinance`; production can switch provider via YAML only.
 - Tool functions are `@mcp.tool()` decorated async functions with typed Pydantic return types
 - `ToolResponse[T]` envelope: `{"data": T, "error": str | None, "cache_hit": bool, "latency_ms": int}`
 
@@ -165,5 +162,5 @@ apps/api-service/tests/mcp/test_client.py
 
 ## Dependencies
 
-- **Requires**: 001 (monorepo), 002 (KnowledgeEntry table for rag-retrieval)
+- **Requires**: 001 (monorepo), 002 (or equivalent migration that provides `knowledge_entries`)
 - **Required by**: 005-agent-infrastructure (MCP client used by all agents)

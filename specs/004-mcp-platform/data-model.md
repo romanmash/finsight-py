@@ -2,174 +2,123 @@
 
 ## ToolResponse
 
-**Type**: Pydantic generic model (shared)
-**Location**: `packages/shared/src/finsight/shared/models/tool_response.py`
+**Type**: Pydantic generic model (defined independently per server)  
+**Locations**:
+- `apps/mcp-servers/market-data/src/market_data/models.py`
+- `apps/mcp-servers/news-macro/src/news_macro/models.py`
+- `apps/mcp-servers/rag-retrieval/src/rag_retrieval/models.py`
 
 | Field | Type | Description | Constraints |
 |-------|------|-------------|-------------|
 | data | T \| None | Typed tool payload; None on error | generic param T |
-| error | ToolError \| None | Structured error descriptor; None on success | |
-| metadata | ToolCallMetadata | Call provenance and performance info | required |
-
-**Validation rules**: Exactly one of `data` or `error` must be non-None. Enforced via `model_validator(mode="after")`.
-
----
-
-## ToolError
-
-**Type**: Pydantic model (shared)
-**Location**: `packages/shared/src/finsight/shared/models/tool_response.py`
-
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| code | str | Machine-readable error code (e.g., "TIMEOUT", "INVALID_SYMBOL") | non-empty |
-| message | str | Human-readable error description | non-empty |
-| tool_name | str | Name of the tool that failed | non-empty |
-
----
-
-## ToolCallMetadata
-
-**Type**: Pydantic model (shared)
-**Location**: `packages/shared/src/finsight/shared/models/tool_response.py`
-
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| tool_name | str | Name of the called tool | non-empty |
-| server | str | Server identifier ("market-data", "news-macro", "rag-retrieval") | non-empty |
-| cache_hit | bool | True if result served from cache | |
-| latency_ms | int | Wall-clock time for the call in milliseconds | >= 0 |
-| called_at | datetime | UTC timestamp of the tool call | |
+| error | str \| None | Error text; None on success | |
+| cache_hit | bool | True if served from cache | default False |
+| latency_ms | int | Tool call wall-clock latency | >= 0 |
 
 ---
 
 ## CacheEntry
 
-**Type**: Redis key-value (not a Pydantic model — stored as JSON string)
-**Location**: Redis namespace `mcp:{server}:{tool_name}:{params_hash}`
+**Type**: Redis key-value (JSON)
+**Location**: Redis namespace `mcp:{server}:{tool}:{params_hash}`
 
 | Field | Type | Description | Constraints |
 |-------|------|-------------|-------------|
-| key | str | `mcp:{server}:{tool_name}:{sha256(sorted_params)}` | Redis key |
-| value | str | JSON-serialized `ToolResponse` payload (data field only) | |
-| ttl | int | Seconds until expiry; set on write, defined in mcp.yaml | > 0 |
+| key | str | `mcp:{server}:{tool}:{sha256(sorted_params)[:16]}` | Redis key |
+| value | str | JSON-serialized tool payload (`data`) | |
+| ttl | int | Seconds until expiry, loaded from `mcp.yaml` | > 0 |
 
-**Note**: Only the `data` field is cached (not `metadata` or `error`). On cache hit, `metadata.cache_hit = True` and `metadata.latency_ms` reflects cache retrieval time only.
+**Note**: Only successful `data` payloads are cached. `error` responses are not cached.
 
 ---
 
-## MCP Server Configuration
+## MCP Runtime Config
 
-**Type**: Pydantic v2 Settings model
+**Type**: Pydantic v2 model  
 **Location**: `config/schemas/mcp.py`
 
 | Field | Type | Description | Constraints |
 |-------|------|-------------|-------------|
-| servers | dict[str, ServerConfig] | Map of server name to config | keys: "market-data", "news-macro", "rag-retrieval" |
-| tool_ttls | dict[str, int] | Per-tool cache TTL in seconds | values > 0 |
+| servers | dict[str, McpServerConfig] | Server map keyed by server id | keys: `market-data`, `news-macro`, `rag-retrieval` |
 
-### ServerConfig (nested)
+### McpServerConfig
 
 | Field | Type | Description | Constraints |
 |-------|------|-------------|-------------|
-| url | str | Base URL of the MCP server | valid URL |
-| timeout_seconds | int | HTTP client timeout per call | 1–300 |
-| internal_secret | str | Loaded from env var reference | from .env |
+| url | str | MCP server base URL | valid URL |
+| timeout_seconds | int | Per-call timeout | 1-300 |
+| cache_ttl_seconds | int | Default server TTL | > 0 |
+| openbb_provider | str \| None | Market-data provider override | optional |
+| tools | dict[str, ToolCacheConfig] \| None | Optional per-tool TTL map | optional |
+
+### ToolCacheConfig
+
+| Field | Type | Description | Constraints |
+|-------|------|-------------|-------------|
+| cache_ttl_seconds | int | Per-tool TTL override | > 0 |
 
 **YAML path**: `config/runtime/mcp.yaml`
 
 ---
 
-## Market Data Tool Payloads (Pydantic models in market-data server)
+## Market Data Payloads
 
 **Location**: `apps/mcp-servers/market-data/src/market_data/models.py`
 
-### PriceBar
+### PriceData
 
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| symbol | str | Ticker symbol | non-empty |
-| date | date | Bar date | |
-| open | Decimal | Opening price | > 0 |
-| high | Decimal | High price | >= open |
-| low | Decimal | Low price | <= open, > 0 |
-| close | Decimal | Closing price | > 0 |
-| volume | int | Trading volume | >= 0 |
+| Field | Type | Description |
+|-------|------|-------------|
+| symbol | str | Ticker symbol |
+| price | Decimal | Last price |
+| change_pct | float | Daily percentage move |
+| volume | int | Trading volume |
+| timestamp | datetime | Quote timestamp |
 
-### FundamentalData
+### OHLCVBar
 
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| symbol | str | Ticker symbol | non-empty |
-| market_cap | Decimal \| None | Market capitalisation USD | nullable |
-| pe_ratio | Decimal \| None | Price-to-earnings ratio | nullable |
-| eps | Decimal \| None | Earnings per share | nullable |
-| revenue_ttm | Decimal \| None | Trailing 12-month revenue USD | nullable |
-| fetched_at | datetime | UTC fetch timestamp | |
+| Field | Type | Description |
+|-------|------|-------------|
+| date | date | Trading date |
+| open | Decimal | Open price |
+| high | Decimal | High price |
+| low | Decimal | Low price |
+| close | Decimal | Close price |
+| volume | int | Trading volume |
 
-### ETFHolding
+### FundamentalsData / ETFData / OptionsData
 
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| etf_symbol | str | ETF ticker | non-empty |
-| holding_symbol | str | Constituent ticker | non-empty |
-| weight | Decimal | Portfolio weight 0–1 | 0 <= weight <= 1 |
-| name | str \| None | Constituent name | nullable |
+Structured records as defined in `tasks.md` T013 (market cap/PE/EPS, ETF holdings, options contracts).
 
 ---
 
-## News and Macro Tool Payloads (Pydantic models in news-macro server)
+## News and Macro Payloads
 
 **Location**: `apps/mcp-servers/news-macro/src/news_macro/models.py`
 
 ### NewsItem
 
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| id | str | Source-assigned article ID | non-empty |
-| source | str | Data source identifier (e.g., "finnhub") | non-empty |
-| headline | str | Article headline | non-empty |
-| summary | str \| None | Article summary or lead paragraph | nullable |
-| url | str \| None | Article URL | nullable |
-| published_at | datetime | UTC publication timestamp | |
-| relevance_score | float \| None | Source-provided relevance 0–1 | nullable, 0–1 |
-| symbols | list[str] | Related ticker symbols | |
+headline/source/url/published_at/relevance/summary.
 
-### MacroSignal
+### SentimentData
 
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| indicator | str | Signal name (e.g., "vix", "geopolitical_risk_index") | non-empty |
-| value | float | Current indicator value | |
-| source | str | Data source identifier | non-empty |
-| as_of | datetime | Timestamp of the reading | |
-| description | str \| None | Human-readable indicator description | nullable |
+symbol/score/label/as_of.
+
+### MacroSignals
+
+market_sentiment/volatility_regime/geopolitical_risk_index/updated_at.
 
 ---
 
-## RAG Retrieval Tool Payloads (Pydantic models in rag-retrieval server)
+## RAG Retrieval Payloads
 
 **Location**: `apps/mcp-servers/rag-retrieval/src/rag_retrieval/models.py`
 
-### KnowledgeEntry
+### KnowledgeResult
 
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| id | UUID | Entry primary key | |
-| content | str | Text content of the entry | non-empty |
-| source_agent | str | Agent that created the entry | non-empty |
-| entity_symbols | list[str] | Related ticker symbols | |
-| entry_type | str | Classification (e.g., "analyst_note", "brief") | non-empty |
-| created_at | datetime | UTC creation timestamp | |
-| similarity_score | float \| None | Cosine similarity to query (populated on search) | nullable, 0–1 |
+id/content/source_type/author_agent/confidence/tickers/tags/freshness_date/similarity_score.
 
-### RetrievalQuery (tool input)
+### Runtime dependency
 
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| query | str | Natural-language query text | non-empty |
-| top_k | int | Maximum results to return | 1–100, default 10 |
-| source_agent | str \| None | Filter by creating agent | nullable |
-| symbol | str \| None | Filter by related symbol | nullable |
-| from_date | date \| None | Filter entries created on or after | nullable |
-| to_date | date \| None | Filter entries created on or before | nullable |
+RAG retrieval reads from `knowledge_entries` in PostgreSQL/pgvector. If the table is missing at
+startup, the rag-retrieval server must fail fast with `SystemExit(1)` and a clear dependency error.

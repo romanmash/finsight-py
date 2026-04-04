@@ -17,7 +17,7 @@
 ## Phase 1: Setup (Package Structure + Shared Primitives)
 
 **Purpose**: Create all `pyproject.toml` files with correct dependencies, all `__init__.py` stubs,
-and the shared `ToolResponse[T]` Pydantic envelope used by all three servers. No tool logic yet.
+and a consistent per-server `ToolResponse[T]` Pydantic envelope. No tool logic yet.
 
 - [ ] T001 Update `apps/mcp-servers/market-data/pyproject.toml` with dependencies: `fastmcp>=0.4`, `openbb>=4.0`, `openbb-yfinance`, `httpx`, `redis[hiredis]`, `pydantic>=2.0`, `pyyaml>=6.0`, `structlog>=24.1`, `fakeredis` (dev) in `apps/mcp-servers/market-data/pyproject.toml`
 - [ ] T002 [P] Update `apps/mcp-servers/news-macro/pyproject.toml` with dependencies: `fastmcp>=0.4`, `finnhub-python`, `httpx`, `redis[hiredis]`, `pydantic>=2.0`, `pyyaml>=6.0`, `structlog>=24.1`, `fakeredis` (dev) in `apps/mcp-servers/news-macro/pyproject.toml`
@@ -25,7 +25,7 @@ and the shared `ToolResponse[T]` Pydantic envelope used by all three servers. No
 - [ ] T004 [P] Add `respx` to root `pyproject.toml` `[dependency-groups.dev]` (used across all MCP server tests) in `pyproject.toml`
 - [ ] T005 [P] Create all package `__init__.py` stubs: `apps/mcp-servers/market-data/src/market_data/__init__.py`, `apps/mcp-servers/market-data/src/market_data/tools/__init__.py`, `apps/mcp-servers/news-macro/src/news_macro/__init__.py`, `apps/mcp-servers/news-macro/src/news_macro/tools/__init__.py`, `apps/mcp-servers/rag-retrieval/src/rag_retrieval/__init__.py`, `apps/mcp-servers/rag-retrieval/src/rag_retrieval/tools/__init__.py`, `apps/api-service/src/api/mcp/__init__.py` (all empty)
 - [ ] T006 [P] Create test directories: `apps/mcp-servers/market-data/tests/__init__.py`, `apps/mcp-servers/news-macro/tests/__init__.py`, `apps/mcp-servers/rag-retrieval/tests/__init__.py`, `apps/api-service/tests/mcp/__init__.py` (all empty)
-- [ ] T007 Create per-server `ToolResponse[T]` generic Pydantic model (one independent copy per server) — since each server is independent, define it inline in each server's `server.py` (or a shared `models.py` per server):
+- [ ] T007 Create per-server `ToolResponse[T]` generic Pydantic model (one independent copy per server) in each server `models.py`:
   ```python
   class ToolResponse(BaseModel, Generic[T]):
       data: T | None
@@ -49,7 +49,7 @@ all three servers. Must exist before any tool implementation.
 - [ ] T008 Extend `config/runtime/mcp.yaml` to add per-tool TTL structure:
   ```yaml
   servers:
-    market_data:
+    market-data:
       url: "http://market-data-mcp:8001"
       openbb_provider: "yfinance"
       timeout_seconds: 10
@@ -59,14 +59,14 @@ all three servers. Must exist before any tool implementation.
         get_fundamentals: {cache_ttl_seconds: 3600}
         get_etf_holdings: {cache_ttl_seconds: 3600}
         get_options_chain: {cache_ttl_seconds: 120}
-    news_macro:
+    news-macro:
       url: "http://news-macro-mcp:8002"
       timeout_seconds: 15
       tools:
         get_news: {cache_ttl_seconds: 300}
         get_sentiment: {cache_ttl_seconds: 300}
         get_macro_signals: {cache_ttl_seconds: 600}
-    rag_retrieval:
+    rag-retrieval:
       url: "http://rag-retrieval-mcp:8003"
       timeout_seconds: 10
       tools:
@@ -332,3 +332,5 @@ Workstream D: MCPClient in apps/api-service — routing + tests
 - OpenBB calls must use httpx wrapper pattern — do NOT call `obb.*` functions directly in tool tests (respx cannot mock them)
 - `MCPClient.call_tool()` prefix routing: `"market.*"` → market-data URL; `"news.*"` / `"sentiment.*"` / `"macro.*"` → news-macro URL; `"knowledge.*"` / `"search.*"` → rag-retrieval URL
 - `startup_health_check()` is called in FastMCP lifespan, not at import time — tests call it directly
+- When running SpecKit from `main`, set `SPECIFY_FEATURE=004-mcp-platform` first so scripts do not resolve to `specs/main`
+- RAG retrieval requires `knowledge_entries` in Postgres; if absent, `startup_health_check()` must `sys.exit(1)` with explicit dependency error

@@ -20,13 +20,13 @@
 
 ---
 
-## Decision: OpenBB as market data backend
+## Decision: OpenBB-backed market data via httpx transport
 
-**Chosen**: `openbb` Python SDK (OpenBB Platform, installed as `openbb`)
-**Rationale**: Unified Python API covering equities, ETFs, fundamentals, and options with provider abstraction. Single import `from openbb import obb` gives access to `obb.equity.price.historical`, `obb.equity.fundamental`, `obb.etf.holdings`, `obb.derivatives.options.chains`. Provider can be swapped in YAML.
+**Chosen**: `httpx.AsyncClient` calls to OpenBB-compatible HTTP endpoints (provider chosen from config).
+**Rationale**: Keeps market-data tools fully mockable with `respx` in offline tests while preserving provider selection through YAML (`openbb_provider`). This aligns with the project-wide rule that external HTTP must be transport-mockable.
 **Alternatives considered**:
-- `yfinance`: No provider abstraction, brittle against Yahoo changes. Rejected.
-- Direct Finnhub REST: Limited coverage; news-macro server already uses Finnhub. Rejected for market-data to avoid overlap.
+- Direct `openbb` Python SDK (`obb.*`): difficult to intercept transport with `respx` and less deterministic offline tests. Rejected.
+- `yfinance` direct library calls: no provider abstraction and harder to standardize across tools. Rejected.
 
 ---
 

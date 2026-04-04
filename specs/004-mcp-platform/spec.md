@@ -127,7 +127,8 @@ successfully.
 - **FR-004**: All tool servers MUST cache responses from external sources with configurable
   time-to-live values settable without code changes.
 - **FR-005**: Tool servers MUST return structured, typed responses with a consistent envelope
-  format (data, error, metadata) regardless of which underlying source provided the data.
+  format (`data`, `error`, `cache_hit`, `latency_ms`) regardless of which underlying source
+  provided the data.
 - **FR-006**: The market data server MUST provide tools for: current price, historical OHLCV,
   fundamental data, ETF holdings, and options chain for a given asset symbol.
 - **FR-007**: The news and macro server MUST provide tools for: recent news by topic or symbol,
@@ -144,7 +145,7 @@ successfully.
 - **Tool**: A named, typed operation exposed by a server. Has a name, input schema, output
   schema, and cache policy. Consumed by agents via the MCP client.
 - **ToolResponse**: The standardised envelope returned by every tool call. Contains a typed data
-  payload, an optional error descriptor, and call metadata (source, latency, cache hit flag).
+  payload, an optional error string, and observability fields (`cache_hit`, `latency_ms`).
 - **CacheEntry**: A stored tool response keyed by tool name and input parameters hash, with an
   expiry timestamp.
 - **ToolServer**: One of the three independent servers (market-data, news-macro, rag-retrieval).
