@@ -10,7 +10,7 @@ Implement four reasoning agents — Analyst, Technician (Pattern Specialist), Bo
 
 **Language/Version**: Python 3.13
 **Primary Dependencies**: `langchain-openai>=0.3`, `langchain-core>=0.3`, `sqlalchemy[asyncio]>=2.0`, `aiosqlite>=0.20`, `pydantic>=2.7`, `pytest>=8.0`, `pytest-asyncio>=0.23`, `respx>=0.21`
-**Storage**: PostgreSQL 16 + pgvector (`knowledge_entries` table created by Feature 002 migration; embedding column nullable)
+**Storage**: PostgreSQL 16 + pgvector (`knowledge_entries` table introduced by Feature 007 migration; embedding column nullable)
 **Testing**: pytest + pytest-asyncio + unittest.mock.AsyncMock; offline (no network, no Docker)
 **Target Platform**: Linux server (Docker) / Windows 11 dev (Podman)
 **Project Type**: Python monorepo sub-packages (`packages/shared`, `apps/api-service`)
@@ -23,7 +23,7 @@ Implement four reasoning agents — Analyst, Technician (Pattern Specialist), Bo
 - [x] Everything-as-Code — agent model names, thresholds, and prompt toggles live in `config/runtime/agents.yaml`; no hardcoded model strings in Python
 - [x] Agent Boundaries — Analyst: interprets only (no fetch). Technician (Pattern Specialist): technical only (no advice). Bookkeeper: sole KB writer. Reporter: formats only (no analysis). Each boundary enforced by schema design and prompt instruction.
 - [x] MCP Server Independence — N/A; reasoning agents do not call MCP tool servers
-- [x] Cost Observability — every LLM call wrapped in `record_agent_run` helper (Feature 005); captures tokens_in, tokens_out, cost_usd, provider, model, duration_ms
+- [x] Cost Observability — reasoning agents using LLM inherit `BaseAgent.run()` (Feature 005), which persists AgentRun with tokens/cost metadata
 - [x] Fail-Safe Defaults — invalid `agents.yaml` triggers `sys.exit(1)` at startup; LLM parse failure retried once; second failure marks mission FAILED
 - [x] Test-First — all 11 test cases are offline; Bookkeeper tests use aiosqlite in-memory
 - [x] Simplicity Over Cleverness — single LLM call per reasoning agent via `with_structured_output`; no internal graph for single-step agents; Bookkeeper has no LLM call at all
@@ -61,10 +61,10 @@ apps/api-service/src/api/agents/
 └── reporter_agent.prompt.py   # SYSTEM_PROMPT + build_user_prompt(...) -> str
 
 apps/api-service/src/api/db/models/
-└── knowledge_entry.py   # SQLAlchemy ORM model (created in Feature 002; referenced here)
+└── knowledge_entry.py   # SQLAlchemy ORM model for curated KB entries (introduced in 007)
 
-# No new migration — knowledge_entries table is included in Feature 002's
-# 001_initial_schema.py migration. Feature 007 only adds usage of the existing table.
+apps/api-service/alembic/versions/
+└── <new 007 migration>.py  # creates knowledge_entries (+ indexes/constraints)
 
 apps/api-service/tests/agents/
 ├── test_analyst.py       # 3 test cases: assessment, conflicting signals, no signal
@@ -91,15 +91,13 @@ apps/api-service/tests/agents/
 ### Phase 2: ORM Model Reference
 
 **Files**:
-- `apps/api-service/src/api/db/models/knowledge_entry.py` — `KnowledgeEntryORM` is created in Feature 002.
-  This feature adds no new ORM files; it imports and uses the existing model.
+- `apps/api-service/src/api/db/models/knowledge_entry.py` — `KnowledgeEntryORM`
+- `apps/api-service/alembic/versions/<new_007_migration>.py` — migration creating `knowledge_entries`
 
 **Key decisions**:
-- The `knowledge_entries` table (including `content_hash` unique constraint on `(ticker, entry_type)`
-  and nullable `Vector(1536)` embedding column) is fully defined in Feature 002's
-  `001_initial_schema.py` migration. No additional migration is needed here.
-- Feature 007 is the first feature to *write* to this table (via `BookkeeperAgent`), but the
-  schema already exists when this feature is implemented.
+- `knowledge_entries` is introduced in 007 to match Bookkeeper ownership of KB writes.
+- Include unique dedup key and indexes required by Bookkeeper upsert logic.
+- Keep embedding nullable for phased rollout (writing curated entries first, embedding later).
 
 ### Phase 3: Agent Implementations
 
@@ -110,7 +108,7 @@ apps/api-service/tests/agents/
 - `apps/api-service/src/api/agents/reporter_agent.py` + `reporter_agent.prompt.py`
 
 **Key decisions**:
-- `AnalystAgent.run(packet: ResearchPacket, mission_id: UUID) -> Assessment`: calls `llm.with_structured_output(Assessment).ainvoke(messages)`, wraps in `record_agent_run`
+- `AnalystAgent.run(packet: ResearchPacket, mission_id: UUID) -> Assessment`: inherits `BaseAgent.run()` and performs one `with_structured_output(Assessment)` call
 - `PatternAgent.run(history: PriceHistory, mission_id: UUID) -> PatternReport`: same pattern; prompt explicitly prohibits investment language
 - `BookkeeperAgent.run(inputs: BookkeeperInput, mission_id: UUID) -> KnowledgeEntry`: no LLM call; computes SHA-256 `content_hash`; uses SQLAlchemy `insert(...).on_conflict_do_update` (PostgreSQL upsert); detects conflicts by comparing incoming `confidence` and `content_summary` against existing
 - `ReporterAgent.run(inputs: ReporterInput, mission_id: UUID) -> FormattedReport`: single LLM call formats Assessment + PatternReport into titled sections; system prompt prohibits adding new analysis
@@ -156,5 +154,5 @@ All tests run entirely offline:
 
 ## Dependencies
 
-- **Requires**: Feature 002 (async data layer — AsyncSession, Base), Feature 005 (agent infrastructure — BaseAgent ABC, AgentRun ORM, record_agent_run helper, agents.yaml config), Feature 006 (ResearchPacket model and sub-models)
+- **Requires**: Feature 002 (async data layer — AsyncSession, Base), Feature 005 (agent infrastructure — BaseAgent ABC, AgentRun ORM, agents.yaml config), Feature 006 (ResearchPacket model and sub-models)
 - **Required by**: Feature 008 (Orchestration — Manager invokes these agents), Feature 010 (Dashboard — displays KnowledgeEntry and FormattedReport)

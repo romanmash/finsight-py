@@ -32,14 +32,19 @@
 
 ## KnowledgeEntry Storage Backend
 
-**Chosen**: SQLAlchemy 2.x async ORM on PostgreSQL 16 + pgvector extension. `KnowledgeEntry` is a full ORM model with a `pgvector` column (`embedding: Vector(1536)`) for future semantic retrieval (Feature 004 compatibility). The Bookkeeper writes via the async session from `apps/api-service/src/api/lib/db.py`.
-**Rationale**: Consistent with Feature 002 data layer. pgvector column is additive — populated by a separate embedding step (Feature 004) and nullable in 007.
+**Chosen**: SQLAlchemy 2.x async ORM on PostgreSQL 16 + pgvector extension. `KnowledgeEntry`
+is introduced in Feature 007 as a full ORM model with a `pgvector` column
+(`embedding: Vector(1536)`) for future semantic retrieval compatibility.
+**Rationale**: Keeps KB ownership with Bookkeeper (007 scope) while staying consistent with
+the established async data layer patterns. Embedding remains nullable in 007.
 **Alternatives considered**: Redis for fast K/V store (no SQL query support, no vector), separate SQLite for KB (splits infra).
 
 ## AgentRun Cost Tracking
 
-**Chosen**: `AgentRun` ORM model (Feature 005) captured via a `record_agent_run` helper that wraps every LLM call. The helper captures `tokens_in`, `tokens_out`, `cost_usd` (via `pricing.yaml` lookup), `provider`, `model`, `duration_ms` from LLM response metadata.
-**Rationale**: Constitution requirement. Centralised helper avoids duplicating cost logic across 4 agents.
+**Chosen**: LLM-based reasoning agents inherit `BaseAgent.run()` (Feature 005), which records
+AgentRun metadata (`tokens_in`, `tokens_out`, `cost_usd`, `provider`, `model`, `duration_ms`).
+Bookkeeper remains deterministic with explicit zero-cost run recording.
+**Rationale**: Constitution requirement with consistent shared execution path.
 **Alternatives considered**: LangSmith callbacks only (not stored in our DB, no offline fallback), manual per-agent tracking (error-prone, inconsistent).
 
 ## Offline Test Strategy

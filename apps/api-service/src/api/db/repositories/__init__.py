@@ -1,7 +1,8 @@
-"""Repository exports."""
+﻿"""Repository exports."""
 
 from api.db.repositories.agent_run import AgentRunRepository
 from api.db.repositories.alert import AlertRepository
+from api.db.repositories.knowledge_entry import KnowledgeEntryRepository
 from api.db.repositories.mission import MissionRepository
 from api.db.repositories.operator import OperatorRepository
 from api.db.repositories.refresh_token import RefreshTokenRepository
@@ -14,4 +15,5 @@ __all__ = [
     "MissionRepository",
     "AlertRepository",
     "AgentRunRepository",
+    "KnowledgeEntryRepository",
 ]

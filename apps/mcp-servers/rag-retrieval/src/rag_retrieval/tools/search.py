@@ -149,6 +149,8 @@ async def search_knowledge(
 
     results: list[KnowledgeResult] = []
     for row in rows:
+        raw_content = row.get("content")
+        raw_author = row.get("author_agent")
         row_tickers = _to_list(row.get("tickers"))
         row_tags = _to_list(row.get("tags"))
         if tickers and not any(t in row_tickers for t in tickers):
@@ -173,9 +175,9 @@ async def search_knowledge(
         results.append(
             KnowledgeResult(
                 id=UUID(str(row["id"])),
-                content=str(row["content"]),
+                content="" if raw_content is None else str(raw_content),
                 source_type=str(row["source_type"]) if row.get("source_type") is not None else None,
-                author_agent=str(row["author_agent"]),
+                author_agent="unknown" if raw_author is None else str(raw_author),
                 confidence=float(row.get("confidence", 0.0)),
                 tickers=row_tickers,
                 tags=row_tags,

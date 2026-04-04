@@ -69,11 +69,13 @@ async def get_knowledge_entry(entry_id: str) -> ToolResponse[KnowledgeResult]:
         if freshness_raw is not None and not isinstance(freshness_raw, date)
         else freshness_raw
     )
+    raw_content = row.get("content")
+    raw_author = row.get("author_agent")
     data = KnowledgeResult(
         id=UUID(str(row["id"])),
-        content=str(row["content"]),
+        content="" if raw_content is None else str(raw_content),
         source_type=str(row["source_type"]) if row.get("source_type") is not None else None,
-        author_agent=str(row["author_agent"]),
+        author_agent="unknown" if raw_author is None else str(raw_author),
         confidence=float(row.get("confidence", 0.0)),
         tickers=_to_list(row.get("tickers")),
         tags=_to_list(row.get("tags")),

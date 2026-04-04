@@ -1,7 +1,8 @@
-"""ORM model exports."""
+﻿"""ORM model exports."""
 
 from api.db.models.agent_run import AgentRunORM
 from api.db.models.alert import AlertORM
+from api.db.models.knowledge_entry import KnowledgeEntryORM
 from api.db.models.mission import MissionORM
 from api.db.models.operator import OperatorORM
 from api.db.models.refresh_token import RefreshTokenORM
@@ -14,4 +15,5 @@ __all__ = [
     "MissionORM",
     "AlertORM",
     "AgentRunORM",
+    "KnowledgeEntryORM",
 ]

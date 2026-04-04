@@ -18,8 +18,8 @@
 
 **Purpose**: Create empty modules so imports resolve before implementations are written.
 
-- [ ] T001 Create stub modules: `packages/shared/src/finsight/shared/models/assessment.py`, `packages/shared/src/finsight/shared/models/pattern_report.py`, `packages/shared/src/finsight/shared/models/report.py` (all empty) in `packages/shared/src/finsight/shared/models/`
-- [ ] T002 [P] Create empty test files: `apps/api-service/tests/agents/test_analyst.py`, `apps/api-service/tests/agents/test_pattern.py`, `apps/api-service/tests/agents/test_bookkeeper.py`, `apps/api-service/tests/agents/test_reporter.py` in `apps/api-service/tests/agents/`
+- [X] T001 Create stub modules: `packages/shared/src/finsight/shared/models/assessment.py`, `packages/shared/src/finsight/shared/models/pattern_report.py`, `packages/shared/src/finsight/shared/models/report.py` (all empty) in `packages/shared/src/finsight/shared/models/`
+- [X] T002 [P] Create empty test files: `apps/api-service/tests/agents/test_analyst.py`, `apps/api-service/tests/agents/test_pattern.py`, `apps/api-service/tests/agents/test_bookkeeper.py`, `apps/api-service/tests/agents/test_reporter.py` in `apps/api-service/tests/agents/`
 
 **Checkpoint**: All stub files importable; existing Feature 005/006 tests still pass.
 
@@ -33,7 +33,7 @@ can import them without pulling in SQLAlchemy or FastAPI.
 
 **⚠️ CRITICAL**: All user story phases depend on these models.
 
-- [ ] T003 Create `packages/shared/src/finsight/shared/models/assessment.py` with:
+- [X] T003 Create `packages/shared/src/finsight/shared/models/assessment.py` with:
   - `ThesisImpact(str, Enum)`: `SUPPORTS = "supports"`, `CONTRADICTS = "contradicts"`, `NEUTRAL = "neutral"`
   - `RiskItem(BaseModel)`: `description: str`, `severity: Literal["low","medium","high"]`
   - `Assessment(BaseModel)`:
@@ -45,7 +45,7 @@ can import them without pulling in SQLAlchemy or FastAPI.
     - `data_limitations: list[str]` — what was missing or uncertain
   - No `recommendation`, `action`, `buy`, `sell`, or `price_target` fields
   in `packages/shared/src/finsight/shared/models/assessment.py`
-- [ ] T004 [P] Create `packages/shared/src/finsight/shared/models/pattern_report.py` with:
+- [X] T004 [P] Create `packages/shared/src/finsight/shared/models/pattern_report.py` with:
   - `PatternType(str, Enum)`: `UPTREND`, `DOWNTREND`, `CONSOLIDATION`, `BREAKOUT`, `REVERSAL`, `ACCUMULATION`, `DISTRIBUTION`, `NO_PATTERN`
   - `PatternObservation(BaseModel)`: `observation: str`, `supporting_data: str`
   - `PatternReport(BaseModel)`:
@@ -57,7 +57,7 @@ can import them without pulling in SQLAlchemy or FastAPI.
     - `no_pattern_rationale: str | None` — populated when pattern_type == NO_PATTERN
   - ⚠️ Strictly NO fields named: `recommendation`, `action`, `buy`, `sell`, `price_target`, `target`, `entry`, `exit`
   in `packages/shared/src/finsight/shared/models/pattern_report.py`
-- [ ] T005 [P] Create `packages/shared/src/finsight/shared/models/report.py` with:
+- [X] T005 [P] Create `packages/shared/src/finsight/shared/models/report.py` with:
   - `ReportSection(BaseModel)`: `title: str`, `content: str`
   - `FormattedReport(BaseModel)`:
     - `title: str`
@@ -67,7 +67,7 @@ can import them without pulling in SQLAlchemy or FastAPI.
     - `mission_id: UUID`
     - `generated_at: datetime`
   in `packages/shared/src/finsight/shared/models/report.py`
-- [ ] T006 Update `packages/shared/src/finsight/shared/models/__init__.py` to export: `Assessment`, `ThesisImpact`, `RiskItem`, `PatternReport`, `PatternType`, `PatternObservation`, `FormattedReport`, `ReportSection` in `packages/shared/src/finsight/shared/models/__init__.py`
+- [X] T006 Update `packages/shared/src/finsight/shared/models/__init__.py` to export: `Assessment`, `ThesisImpact`, `RiskItem`, `PatternReport`, `PatternType`, `PatternObservation`, `FormattedReport`, `ReportSection` in `packages/shared/src/finsight/shared/models/__init__.py`
 
 **Checkpoint**: `from finsight.shared.models import Assessment, PatternReport, FormattedReport` works; `"recommendation" not in PatternReport.model_fields` is True.
 
@@ -81,18 +81,18 @@ a `ResearchPacket` as sole input, returns a typed `Assessment`, and records the 
 
 **Independent Test**: `uv run pytest apps/api-service/tests/agents/test_analyst.py` — all 3 tests pass offline.
 
-- [ ] T007 [US1] Create `apps/api-service/src/api/agents/analyst_agent.prompt.py` with:
+- [X] T007 [US1] Create `apps/api-service/src/api/agents/analyst_agent.prompt.py` with:
   - Import `SYSTEM_ROLE_PREAMBLE`, `ANALYSIS_CONSTRAINTS` from `agents/shared/prompts.py`
   - `ANALYST_SYSTEM_PROMPT: str` — instructs the model to: synthesise evidence from the Research Packet, assess thesis support/contradiction, identify risks, explicitly NOT fetch data or make recommendations
   - `def build_user_prompt(packet: ResearchPacket) -> str` — formats ticker, price data, news headlines, KB snippet summaries, data gaps into a structured prompt string
   in `apps/api-service/src/api/agents/analyst_agent.prompt.py`
-- [ ] T008 [US1] Create `apps/api-service/src/api/agents/analyst_agent.py` with `AnalystAgent(BaseAgent[ResearchPacket, Assessment])`:
+- [X] T008 [US1] Create `apps/api-service/src/api/agents/analyst_agent.py` with `AnalystAgent(BaseAgent[ResearchPacket, Assessment])`:
   - `name = "analyst"`
   - `output_schema = Assessment`
   - `_build_prompt(self, input: ResearchPacket) -> str` — delegates to `analyst_agent.prompt.build_user_prompt(input)` and returns the full prompt (system + user combined or as messages list)
   - `run(input: ResearchPacket, mission_id: UUID) -> Assessment` — inherited from `BaseAgent`; makes exactly one `with_structured_output(Assessment)` call; no `_call_tool()` invocations
   in `apps/api-service/src/api/agents/analyst_agent.py`
-- [ ] T009 [US1] Write `apps/api-service/tests/agents/test_analyst.py` (all offline):
+- [X] T009 [US1] Write `apps/api-service/tests/agents/test_analyst.py` (all offline):
   - Fixtures: import `mock_agent_run_repo`, `mock_mcp_client`, `mock_llm_chain`, `pricing_registry`, `agent_configs` from Feature 005 `tests/agents/conftest.py`; create `research_packet_fixture` (valid ResearchPacket with all fields)
   - `test_analyst_returns_assessment` — mock `with_structured_output` returns pre-built `Assessment` instance; assert returned object is `Assessment` with all required fields populated; assert `mock_chain.ainvoke` called exactly once
   - `test_analyst_records_agent_run` — assert `agent_run_repo.create()` called once with `agent_name="analyst"`, `status="complete"`, `cost_usd` matches pricing calculation
@@ -111,18 +111,18 @@ Research Packet, returns `PatternReport` with no investment advice fields, recor
 
 **Independent Test**: `uv run pytest apps/api-service/tests/agents/test_pattern.py` — all 3 tests pass offline.
 
-- [ ] T010 [P] [US2] Create `apps/api-service/src/api/agents/pattern_agent.prompt.py` with:
+- [X] T010 [P] [US2] Create `apps/api-service/src/api/agents/pattern_agent.prompt.py` with:
   - Import `SYSTEM_ROLE_PREAMBLE`, `ANALYSIS_CONSTRAINTS` from shared prompts
   - `PATTERN_SYSTEM_PROMPT: str` — instructs the model to: identify technical patterns only, describe observations with supporting data, explicitly prohibit any investment advice or price targets, output `NO_PATTERN` if no clear pattern exists
   - `def build_user_prompt(price_history: list, ticker: str) -> str` — formats OHLCV bars into a compact text table for LLM consumption
   in `apps/api-service/src/api/agents/pattern_agent.prompt.py`
-- [ ] T011 [US2] Create `apps/api-service/src/api/agents/pattern_agent.py` with `PatternAgent(BaseAgent[PatternInput, PatternReport])` where `PatternInput(BaseModel)` has `ticker: str`, `price_history: list[OHLCVBar]`, `mission_id: UUID`:
+- [X] T011 [US2] Create `apps/api-service/src/api/agents/pattern_agent.py` with `PatternAgent(BaseAgent[PatternInput, PatternReport])` where `PatternInput(BaseModel)` has `ticker: str`, `price_history: list[OHLCVBar]`, `mission_id: UUID`:
   - `name = "technician"`
   - `output_schema = PatternReport`
   - `_build_prompt(self, input: PatternInput) -> str` — delegates to `pattern_agent.prompt.build_user_prompt(input.price_history, input.ticker)`
   - Raises `AgentOutputError` if `price_history` has fewer than 5 bars (too short to identify patterns) — sets `pattern_type = PatternType.NO_PATTERN` with `no_pattern_rationale = "Insufficient price history"`
   in `apps/api-service/src/api/agents/pattern_agent.py`
-- [ ] T012 [US2] Write `apps/api-service/tests/agents/test_pattern.py` (all offline):
+- [X] T012 [US2] Write `apps/api-service/tests/agents/test_pattern.py` (all offline):
   - `test_pattern_found` — mock LLM returns `PatternReport(pattern_type=PatternType.UPTREND, confidence=0.8, observations=[...])` with non-empty observations; assert all fields present
   - `test_no_pattern_returned_for_unclear_history` — mock LLM returns `PatternReport(pattern_type=PatternType.NO_PATTERN, no_pattern_rationale="No clear structure")` ; assert `no_pattern_rationale` non-empty
   - `test_pattern_report_has_no_investment_advice_fields` — pure schema inspection: `assert "recommendation" not in PatternReport.model_fields`, `assert "action" not in PatternReport.model_fields`, `assert "buy" not in PatternReport.model_fields`, `assert "sell" not in PatternReport.model_fields`, `assert "price_target" not in PatternReport.model_fields`
@@ -141,7 +141,7 @@ when incoming content diverges significantly from existing entries.
 
 **Independent Test**: `uv run pytest apps/api-service/tests/agents/test_bookkeeper.py` — all 3 tests pass offline with aiosqlite.
 
-- [ ] T013 [US3] Create `apps/api-service/src/api/agents/bookkeeper_agent.prompt.py` with module docstring only:
+- [X] T013 [US3] Create `apps/api-service/src/api/agents/bookkeeper_agent.prompt.py` with module docstring only:
   ```python
   """
   BookkeeperAgent — Sole Knowledge Base Writer
@@ -155,7 +155,7 @@ when incoming content diverges significantly from existing entries.
   """
   ```
   in `apps/api-service/src/api/agents/bookkeeper_agent.prompt.py`
-- [ ] T014 [US3] Create `apps/api-service/src/api/agents/bookkeeper_agent.py` with `BookkeeperAgent`:
+- [X] T014 [US3] Create `apps/api-service/src/api/agents/bookkeeper_agent.py` with `BookkeeperAgent`:
   - Does NOT extend `BaseAgent` (no LLM; custom run pattern)
   - `__init__(self, session: AsyncSession, agent_run_repo: AgentRunRepository)`
   - `BookkeeperInput(BaseModel)`: `ticker: str`, `entry_type: str` (e.g., `"analysis"`, `"pattern"`), `content_summary: str`, `source_agent: str`, `mission_id: UUID`, `confidence: float`, `freshness_date: date | None`, `tickers: list[str]`, `tags: list[str]`
@@ -167,7 +167,7 @@ when incoming content diverges significantly from existing entries.
     5. Record `AgentRunORM` with `cost_usd=Decimal("0.00")`, `tokens_in=0`, `tokens_out=0`, `agent_name="bookkeeper"`, `status="complete"`, `duration_ms`
     6. Return `KnowledgeEntryModel` from the upserted record
   in `apps/api-service/src/api/agents/bookkeeper_agent.py`
-- [ ] T015 [US3] Write `apps/api-service/tests/agents/test_bookkeeper.py` using `aiosqlite` in-memory engine fixture:
+- [X] T015 [US3] Write `apps/api-service/tests/agents/test_bookkeeper.py` using `aiosqlite` in-memory engine fixture:
   - Fixtures: `async_engine` (creates `knowledge_entries` table via `Base.metadata.create_all`), `session`, `mock_agent_run_repo`
   - `test_bookkeeper_writes_new_entry` — call `BookkeeperAgent.run(input_fixture)` on empty DB; assert 1 row in `knowledge_entries`; assert `author_agent == "bookkeeper"`; assert `mission_id` matches; assert `content_hash` non-empty
   - `test_bookkeeper_deduplication_upserts_not_duplicates` — call `run()` twice with identical `(ticker, entry_type, content_summary)`; assert exactly 1 row in DB (second call updated the first)
@@ -185,18 +185,18 @@ optional summary text, returns `FormattedReport` with human-readable sections. N
 
 **Independent Test**: `uv run pytest apps/api-service/tests/agents/test_reporter.py` — all 2 tests pass offline.
 
-- [ ] T016 [P] [US4] Create `apps/api-service/src/api/agents/reporter_agent.prompt.py` with:
+- [X] T016 [P] [US4] Create `apps/api-service/src/api/agents/reporter_agent.prompt.py` with:
   - Import `SYSTEM_ROLE_PREAMBLE` from shared prompts
   - `REPORTER_SYSTEM_PROMPT: str` — instructs model to: format provided content into sections, use plain language, explicitly NOT add new analysis or conclusions, produce a `full_text` under 4096 chars for Telegram
   - `def build_user_prompt(assessment: Assessment, pattern_report: PatternReport, ticker: str, mission_id: UUID) -> str` — serialises inputs as structured text for LLM
   in `apps/api-service/src/api/agents/reporter_agent.prompt.py`
-- [ ] T017 [US4] Create `apps/api-service/src/api/agents/reporter_agent.py` with `ReporterAgent(BaseAgent[ReporterInput, FormattedReport])` where `ReporterInput(BaseModel)` has `assessment: Assessment`, `pattern_report: PatternReport`, `ticker: str`, `mission_id: UUID`:
+- [X] T017 [US4] Create `apps/api-service/src/api/agents/reporter_agent.py` with `ReporterAgent(BaseAgent[ReporterInput, FormattedReport])` where `ReporterInput(BaseModel)` has `assessment: Assessment`, `pattern_report: PatternReport`, `ticker: str`, `mission_id: UUID`:
   - `name = "reporter"`
   - `output_schema = FormattedReport`
   - `_build_prompt(self, input: ReporterInput) -> str` — delegates to `reporter_agent.prompt.build_user_prompt(...)`
   - Inherited `run()` from BaseAgent; single `with_structured_output(FormattedReport)` call
   in `apps/api-service/src/api/agents/reporter_agent.py`
-- [ ] T018 [US4] Write `apps/api-service/tests/agents/test_reporter.py` (all offline):
+- [X] T018 [US4] Write `apps/api-service/tests/agents/test_reporter.py` (all offline):
   - `test_reporter_formats_all_key_points` — provide `Assessment` with 2 risks and `PatternReport` with 1 observation; mock LLM returns `FormattedReport` with sections; assert `full_text` non-empty, `len(full_text) <= 4096`, `title` non-empty, `sections` non-empty
   - `test_reporter_adds_no_new_analysis` — inspect `FormattedReport` schema: assert no fields named `recommendation`, `analysis`, `conclusion`, `opinion`, `action` exist in `FormattedReport.model_fields`; additionally assert the mock LLM's output instance contains only formatted text (no new reasoning added beyond what the prompt instructed)
   - Mock pattern: same `patch.object(ChatOpenAI, "with_structured_output", return_value=mock_chain)` pattern
@@ -208,9 +208,9 @@ optional summary text, returns `FormattedReport` with human-readable sections. N
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T019 [P] Run `uv run mypy --strict packages/shared/src/finsight/shared/models/assessment.py packages/shared/src/finsight/shared/models/pattern_report.py packages/shared/src/finsight/shared/models/report.py apps/api-service/src/api/agents/analyst_agent.py apps/api-service/src/api/agents/pattern_agent.py apps/api-service/src/api/agents/bookkeeper_agent.py apps/api-service/src/api/agents/reporter_agent.py` — fix all type errors until zero errors remain
-- [ ] T020 [P] Run `uv run ruff check` on all new files — fix all warnings
-- [ ] T021 Run full test suite: `uv run pytest apps/api-service/tests/agents/` — all 11 tests across 4 test files pass offline; no network calls; no Docker
+- [X] T019 [P] Run `uv run mypy --strict packages/shared/src/finsight/shared/models/assessment.py packages/shared/src/finsight/shared/models/pattern_report.py packages/shared/src/finsight/shared/models/report.py apps/api-service/src/api/agents/analyst_agent.py apps/api-service/src/api/agents/pattern_agent.py apps/api-service/src/api/agents/bookkeeper_agent.py apps/api-service/src/api/agents/reporter_agent.py` — fix all type errors until zero errors remain
+- [X] T020 [P] Run `uv run ruff check` on all new files — fix all warnings
+- [X] T021 Run full test suite: `uv run pytest apps/api-service/tests/agents/` — all 11 tests across 4 test files pass offline; no network calls; no Docker
 
 ---
 
@@ -284,7 +284,7 @@ Workstream D (US4 Reporter):         T016 → T017 → T018
 - Assert `mock_chain.ainvoke.call_count == 1` not `mock_chain.call_count` — the chain is called via `.ainvoke()`, not directly
 - `BookkeeperAgent` has NO LLM call — does not extend `BaseAgent`; implements its own AgentRun recording directly; `cost_usd = Decimal("0.00")` always
 - `PatternReport` no-advice check is a schema-level test (`model_fields` inspection) — no LLM needed for this test
-- `content_hash` unique constraint enables the `ON CONFLICT DO UPDATE` upsert — this constraint must exist in the `knowledge_entries` table from Feature 002's migration (add if not already there via a note in the migration comments)
+- `content_hash` unique constraint enables the `ON CONFLICT DO UPDATE` upsert — define this constraint in the 007 `knowledge_entries` migration and validate with an upsert test
 - `KnowledgeEntryModel` (Pydantic domain model in `packages/shared`) is separate from `KnowledgeEntryORM` (SQLAlchemy in `apps/api-service`) — Bookkeeper converts ORM → domain model for return value
 - `aiosqlite` does not support `ON CONFLICT DO UPDATE` with PostgreSQL dialect — use `merge()` or standard `upsert` pattern that is SQLite-compatible in tests (check if existing row, update or insert)
 - `FormattedReport.full_text` should be truncated at 4096 chars with a trailing `"\n[Truncated]"` note if the LLM produces longer text — this is Telegram's message limit
