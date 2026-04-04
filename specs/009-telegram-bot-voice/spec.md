@@ -57,12 +57,11 @@ transcribed, verify the transcription is used to create a mission, verify a resp
 
 ---
 
-### User Story 3 — Operator Uses Bot Commands to Manage Watchlist and Missions (Priority: P2)
+### User Story 3 — Operator Uses Bot Commands to Manage Missions (Priority: P2)
 
-The operator uses slash commands to interact with the system directly: checking the current
-watchlist, viewing active missions, acknowledging alerts, and requesting the latest brief. Each
-command is authenticated, produces an immediate response, and does not require the operator to
-leave the Telegram interface.
+The operator uses slash commands to interact with the system directly: viewing mission status,
+requesting the latest brief, and getting command help. Each command is authenticated, produces an
+immediate response, and does not require the operator to leave the Telegram interface.
 
 **Why this priority**: Slash commands give the operator structured control without typing free-form
 questions. They are the operational interface layer above conversational queries.
@@ -73,12 +72,12 @@ they are rejected.
 
 **Acceptance Scenarios**:
 
-1. **Given** a registered operator sends `/watchlist`, **When** the bot receives it, **Then** it
-   returns a formatted list of all active watchlist items with their current status.
-2. **Given** a registered operator sends `/missions`, **When** the bot receives it, **Then** it
+1. **Given** a registered operator sends `/missions`, **When** the bot receives it, **Then** it
    returns a list of recent missions with their status (active, complete, failed).
-3. **Given** an admin operator sends `/alert acknowledge [id]`, **When** the bot receives it,
-   **Then** the specified alert is marked acknowledged and a confirmation is returned.
+2. **Given** a registered operator sends `/brief`, **When** the bot receives it, **Then** a brief
+   mission is created and an acknowledgement is returned.
+3. **Given** any user sends `/help`, **When** the bot receives it, **Then** the bot returns the
+   supported commands and usage.
 
 ---
 
@@ -123,14 +122,14 @@ delivers the result to the configured operator chat without any operator-initiat
   an external transcription service, and process the transcription as a text query.
 - **FR-004**: The bot MUST deliver mission results proactively to the operator's chat when results
   become available, without requiring operator polling.
-- **FR-005**: The bot MUST support at minimum the following slash commands: `/watchlist`,
-  `/missions`, `/brief`, and `/alert acknowledge [id]`.
+- **FR-005**: The bot MUST support at minimum the following slash commands: `/missions`, `/brief`,
+  and `/help`.
 - **FR-006**: Unregistered Telegram users MUST receive an access denied response and no system
   action MUST be taken on their behalf.
 - **FR-007**: If the transcription service is unavailable, the bot MUST inform the operator and
   request they resend as text rather than silently failing.
-- **FR-008**: The bot MUST handle Telegram message length limits by splitting long responses into
-  multiple messages rather than truncating content.
+- **FR-008**: The bot MUST handle Telegram message length limits without Telegram API failures
+  (for example by splitting long plain-text responses into chunks).
 - **FR-009**: All bot behaviour MUST be testable offline using mocked Telegram update objects and
   mocked transcription service responses.
 
@@ -140,8 +139,8 @@ delivers the result to the configured operator chat without any operator-initiat
   identity against this record on every message.
 - **VoiceMessage**: An audio file received from Telegram. Processed by transcription into a text
   string before being treated as a text query.
-- **BotCommand**: A slash command supported by the bot. Has a name, description, required role
-  (admin or viewer), and a handler.
+- **BotCommand**: A slash command supported by the bot. Has a name, description, required role,
+  and a handler.
 
 ## Success Criteria *(mandatory)*
 
@@ -163,8 +162,7 @@ delivers the result to the configured operator chat without any operator-initiat
   the target deployment environment.
 - Voice message transcription uses an external API accessed via HTTPS; the API key is stored
   in `.env`.
-- When the transcription service returns a low-confidence result, the confidence threshold for
-  requesting clarification is configurable in YAML.
+- When the transcription service returns confidence metadata, low-confidence handling is configurable.
 - The bot is a single-user personal tool; there is no concern about concurrent message storms
   from many users simultaneously.
 - The bot's Telegram token and the operator's Telegram user IDs are stored in `.env` and in the

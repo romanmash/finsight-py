@@ -1,4 +1,4 @@
-"""Mission orchestration API routes."""
+﻿"""Mission orchestration API routes."""
 
 from __future__ import annotations
 
@@ -18,7 +18,13 @@ from api.lib.db import get_session
 from api.workers.mission_worker import run_mission_pipeline
 
 router = APIRouter()
+_service_or_admin = require_role("admin", "service")
+_service_or_viewer_admin = require_role("admin", "viewer", "service")
 _viewer_or_admin = require_role("admin", "viewer")
+ServiceOrAdminOperator = Annotated[TokenPayload, Depends(_service_or_admin)]
+ServiceOrViewerOrAdminOperator = Annotated[
+    TokenPayload, Depends(_service_or_viewer_admin)
+]
 ViewerOrAdminOperator = Annotated[TokenPayload, Depends(_viewer_or_admin)]
 
 
@@ -84,7 +90,7 @@ def _serialize_agent_run(run: Any) -> AgentRunResponse:
 @router.post("", status_code=status.HTTP_202_ACCEPTED)
 async def create_mission(
     payload: CreateMissionPayload,
-    _: ViewerOrAdminOperator,
+    _: ServiceOrViewerOrAdminOperator,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> dict[str, str]:
     mission_repo = MissionRepository(session)
@@ -134,4 +140,19 @@ async def list_missions(
         "items": [entry.model_dump(mode="json") for entry in map(_serialize_mission, missions)],
         "limit": limit,
         "offset": offset,
+    }
+
+
+@router.get("/service/recent")
+async def list_recent_missions_for_service(
+    _: ServiceOrAdminOperator,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    limit: Annotated[int, Query(ge=1, le=20)] = 10,
+) -> dict[str, object]:
+    mission_repo = MissionRepository(session)
+    missions = await mission_repo.list(source="operator", limit=limit, offset=0)
+    return {
+        "items": [entry.model_dump(mode="json") for entry in map(_serialize_mission, missions)],
+        "limit": limit,
+        "offset": 0,
     }

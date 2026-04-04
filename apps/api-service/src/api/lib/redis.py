@@ -19,7 +19,7 @@ class CacheError(RuntimeError):
 def get_redis() -> Redis:
     """Return shared async Redis client instance."""
     settings = get_settings()
-    return Redis.from_url(settings.redis_url, decode_responses=False)
+    return cast(Redis, Redis.from_url(settings.redis_url, decode_responses=False))
 
 
 class CacheClient:
@@ -51,3 +51,4 @@ class CacheClient:
         except (RedisError, OSError) as exc:
             raise CacheError(f"Cache delete failed for key '{key}': {exc}") from exc
         return cast(int, deleted) > 0
+

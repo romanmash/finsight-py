@@ -38,17 +38,18 @@ dev = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-pythonpath = [".", "apps/api-service/src", "packages/shared/src"]
+pythonpath = [".", "apps/api-service/src", "apps/telegram-bot/src", "packages/shared/src"]
 addopts = ["-p", "no:cacheprovider"]
 norecursedirs = ["pytest-cache-files-*", ".pytest_cache", ".venv", ".git"]
-testpaths = ["apps/api-service/tests"]
+testpaths = ["apps/api-service/tests", "apps/telegram-bot/tests"]
 
 [tool.mypy]
 python_version = "3.13"
-files = ["apps/api-service", "config", "packages/shared"]
+files = ["apps/api-service", "apps/telegram-bot", "config", "packages/shared"]
 strict = true
 warn_unused_configs = true
 cache_dir = ".cache/mypy"
+exclude = "^apps/api-service/tests/|^apps/telegram-bot/tests/"
 
 [tool.ruff]
 line-length = 100

@@ -2,30 +2,25 @@ rateLimitPerUserPerMinute: 10
 commandBehavior:
   allowFreeTextOperatorQuery: true
   enabledCommands:
-    help: true
+    missions: true
     brief: true
-    pattern: true
-    compare: true
-    devil: true
-    thesis: true
-    history: true
-    screener_show_last: true
-    trade: true
-    approve: true
-    reject: true
-    alert: true
-    ack: true
-    watchlist: true
-    add: true
-    portfolio: true
+    help: true
 responseMessages:
   unauthorized: "⛔ Access denied."
   throttled: "⏱ Rate limit exceeded. Please wait."
   validationError: "⚠️ Invalid command. Use /help."
   temporaryUnavailable: "⚠️ Service temporarily unavailable. Please try again."
   internalFailure: "⚠️ Internal error. Please retry later."
+  processingAck: "Processing your request... I'll reply when done."
+  transcriptionUnavailable: "⚠️ Voice transcription unavailable, please resend as text."
+  lowConfidence: "⚠️ Voice transcription confidence too low. Please clarify or send text."
 delivery:
   messageMaxLength: 4096
   gracefulShutdownMs: 10000
+  proactivePrimaryChatId: null
+  pollTimeoutSeconds: 30
+voice:
+  transcriptionModel: "whisper-1"
+  confidenceThreshold: 0.6
 performance:
   acknowledgmentP95Ms: 3000

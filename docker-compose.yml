@@ -1,4 +1,4 @@
-﻿services:
+services:
   db:
     image: pgvector/pgvector:pg16
     ports:
@@ -154,5 +154,29 @@
     volumes:
       - ./config/runtime:/app/config/runtime:ro
 
+  telegram-bot:
+    build:
+      context: ./apps/telegram-bot
+    command: ["python", "-m", "telegram_bot.main"]
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config/runtime:/app/config/runtime:ro
+
+  telegram-worker:
+    build:
+      context: ./apps/telegram-bot
+    command: ["celery", "-A", "telegram_bot.notifier", "worker", "-Q", "telegram"]
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config/runtime:/app/config/runtime:ro
 volumes:
   pgdata:
+

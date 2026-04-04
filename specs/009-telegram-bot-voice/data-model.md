@@ -1,57 +1,60 @@
 # Data Model: Telegram Bot & Voice (009)
 
-## Operator (additions for Telegram)
+## Operator (existing from 002/008, reused by 009)
 
-**Type**: SQLAlchemy ORM + Pydantic domain model additions
-**Location**: `apps/api-service/src/api/db/models/operator.py` (extend Feature 002)
+**Type**: SQLAlchemy ORM + API route serialization
+**Location**: `apps/api-service/src/api/db/models/operator.py`
 
-New fields added to Operator:
+Relevant fields:
 | Field | Python Type | Description |
 |-------|-------------|-------------|
-| telegram_user_id | int \| None | Telegram numeric user ID (set on first message) |
-| telegram_chat_id | int \| None | Telegram chat ID for proactive delivery |
-| telegram_username | str \| None | For display only; not used for auth |
+| id | UUID | Operator identifier |
+| telegram_user_id | int \| None | Stable Telegram user identity used for auth |
+| telegram_chat_id | int \| None | Chat destination bound on first successful contact |
+| role | str | RBAC role used by API auth |
+| is_active | bool | Inactive operators are denied |
 
----
+## Telegram Runtime Config (009-owned)
 
-## TelegramConfig (YAML-backed)
+**Type**: Pydantic config model in telegram-bot package
+**Location**: `apps/telegram-bot/src/telegram_bot/config.py`
+**Source file**: `config/runtime/telegram.yaml`
 
-**Type**: Pydantic v2 BaseSettings
-**Location**: `config/schemas/telegram.py`
+| Field Group | Purpose |
+|-------------|---------|
+| `rateLimitPerUserPerMinute` | Input throttling |
+| `commandBehavior.enabledCommands` | Enable/disable command handlers |
+| `responseMessages.*` | User-facing bot responses |
+| `delivery.messageMaxLength` | Telegram chunking limit |
+| `delivery.proactivePrimaryChatId` (optional) | Proactive push destination |
+| `performance.acknowledgmentP95Ms` | Operational target |
 
-| Field | Python Type | Default | Description |
-|-------|-------------|---------|-------------|
-| whisper_model | str | "whisper-1" | OpenAI Whisper model name |
-| transcription_confidence_threshold | float | 0.7 | Below this → ask to clarify |
-| max_message_length | int | 4096 | Telegram message limit |
-| long_poll_timeout | int | 30 | Long-polling timeout in seconds |
-| mission_ack_message | str | "Processing your request..." | Default ack message |
+## Mission Payload Contract (from 008)
 
----
+**Producer**: `apps/api-service/src/api/workers/mission_worker.py`
+**Consumer**: `apps/telegram-bot/src/telegram_bot/notifier.py`
 
-## BotCommand registry
+Task name: `telegram_bot.notifier.deliver_to_telegram`
 
-**Type**: List of CommandHandler registrations in main.py
+Task args:
+1. `mission_id: str`
+2. `formatted_payload: dict[str, object]` (serialized `FormattedReport` when available)
 
-| Command | Handler | Required Role |
-|---------|---------|---------------|
-| /watchlist | `handle_watchlist` | viewer |
-| /missions | `handle_missions` | viewer |
-| /brief | `handle_brief` | viewer |
-| /alert acknowledge {id} | `handle_alert_ack` | admin |
-| /help | `handle_help` | viewer |
+## BotCommand Registry (009 scope)
 
----
+| Command | Handler | Auth Requirement |
+|---------|---------|------------------|
+| /missions | `handle_missions` | Registered operator |
+| /brief | `handle_brief` | Registered operator |
+| /help | `handle_help` | None |
 
-## VoiceMessage processing flow
+## VoiceMessage Processing Flow
 
+```text
+PTB receives voice update
+  -> authenticate operator
+  -> download voice bytes
+  -> transcribe via HTTP API
+  -> POST /missions with transcription text
+  -> send acknowledgement message
 ```
-PTB receives Update with voice
-  → handler downloads OGG bytes
-  → POST to OpenAI Whisper API (httpx)
-  → receive transcription text
-  → dispatch as text query to mission system
-  → send ack to operator
-```
-
-No persistent model — voice is a transient processing step only.

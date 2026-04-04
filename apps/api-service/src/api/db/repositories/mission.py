@@ -1,4 +1,4 @@
-"""Mission repository."""
+﻿"""Mission repository."""
 
 from __future__ import annotations
 
@@ -59,12 +59,15 @@ class MissionRepository:
         self,
         *,
         status: str | None = None,
+        source: str | None = None,
         limit: int = 20,
         offset: int = 0,
     ) -> list[MissionORM]:
         stmt = select(MissionORM).where(MissionORM.deleted_at.is_(None))
         if status is not None:
             stmt = stmt.where(MissionORM.status == status)
+        if source is not None:
+            stmt = stmt.where(MissionORM.source == source)
         stmt = stmt.order_by(MissionORM.created_at.desc()).limit(limit).offset(offset)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
