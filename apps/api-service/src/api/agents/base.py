@@ -353,14 +353,15 @@ class BaseAgent[InputT: BaseModel, OutputT: BaseModel](ABC):
             endpoint = base_url
             if normalized == "lmstudio" and endpoint is None:
                 endpoint = "http://127.0.0.1:1234/v1"
-            return ChatOpenAI(
-                model=model,
-                temperature=self.config.temperature,
-                timeout=self.config.timeout_seconds,
-                max_retries=self.config.max_retries,
-                base_url=endpoint,
-                model_kwargs={"max_tokens": self.config.max_tokens},
-            )
+            chat_kwargs: dict[str, Any] = {
+                "model": model,
+                "temperature": self.config.temperature,
+                "timeout": self.config.timeout_seconds,
+                "max_retries": self.config.max_retries,
+                "base_url": endpoint,
+                "max_tokens": self.config.max_tokens,
+            }
+            return ChatOpenAI(**chat_kwargs)
         raise LLMProviderError(f"unsupported_provider:{provider}")
 
     @staticmethod

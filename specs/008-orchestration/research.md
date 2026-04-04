@@ -20,13 +20,13 @@
 
 ## Mission Lifecycle State Machine
 
-**Chosen**: `MissionStatus` enum: `PENDING → RUNNING → COMPLETED | FAILED`. Status transitions written to the `missions` table (Feature 002) at each step. Each transition is a single `UPDATE` in the Celery task, wrapped in a try/finally to ensure `FAILED` is written on exception.
+**Chosen**: `MissionStatus` enum: `pending → running → completed | failed`. Status transitions written to the `missions` table (Feature 002) at each step. Each transition is a single `UPDATE` in the Celery task, wrapped in a try/finally to ensure `failed` is written on exception.
 **Rationale**: Simple three-state machine is sufficient. Database record provides the audit trail needed by the Dashboard (Feature 010) and Telegram delivery (Feature 009).
 **Alternatives considered**: Event sourcing (overkill), Redis-only status (not durable).
 
 ## Alert-to-Mission Trigger Mechanism
 
-**Chosen**: The `alert_worker` Celery task polls the `alerts` table for `status='PENDING'` alerts on a short interval (configurable in `scheduler.yaml`, default 30 s). On detection it calls `create_mission_from_alert` which creates a `Mission` row and dispatches the investigation Celery task. Alert is marked `status='PROCESSING'` atomically with mission creation.
+**Chosen**: The `alert_worker` Celery task polls unprocessed alerts (for current schema: alerts where `mission_id` is null and `deleted_at` is null) on a short interval configurable in `scheduler.yaml` (default 30s). On detection it creates a mission row and dispatches the investigation task, then links the created mission id back to the alert atomically.
 **Rationale**: Polling avoids complexity of PostgreSQL LISTEN/NOTIFY integration and is sufficient for single-operator scale. The configurable poll interval keeps it tunable.
 **Alternatives considered**: PostgreSQL LISTEN/NOTIFY (more complex, harder to test offline), Celery signal hooks (no clean alert model integration), Redis pub/sub (adds a second messaging layer).
 
@@ -47,3 +47,4 @@
 **Chosen**: The `ManagerAgent` uses an LLM call with a small system prompt that classifies incoming text into a named pipeline type (`investigation`, `daily_brief`, `screener_scan`). The classification output is a `PipelineClassification` Pydantic model containing only `pipeline_type: str` and `ticker: str | None`. No content reasoning, no analysis.
 **Rationale**: Constitution: "Manager routes, never reasons about content." The LLM is used only for intent classification; all subsequent reasoning is delegated to specialist agents.
 **Alternatives considered**: Regex/keyword routing (brittle for natural language), full LLM reasoning in Manager (violates agent boundaries).
+

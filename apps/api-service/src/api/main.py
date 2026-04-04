@@ -17,6 +17,7 @@ from api.lib.logging import configure_logging
 from api.routes.auth import limiter
 from api.routes.auth import router as auth_router
 from api.routes.health import router as health_router
+from api.routes.missions import router as missions_router
 from api.routes.operators import router as operators_router
 
 configs = load_all_configs()
@@ -54,3 +55,4 @@ app.add_middleware(SlowAPIMiddleware)
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(health_router, tags=["health"])
 app.include_router(operators_router, prefix="/operators", tags=["operators"])
+app.include_router(missions_router, prefix="/missions", tags=["missions"])

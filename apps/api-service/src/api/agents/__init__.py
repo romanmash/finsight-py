@@ -2,6 +2,7 @@
 
 from api.agents.analyst_agent import AnalystAgent
 from api.agents.bookkeeper_agent import BookkeeperAgent, BookkeeperInput
+from api.agents.manager_agent import ManagerAgent, ManagerInput, PipelineClassification
 from api.agents.pattern_agent import PatternAgent, PatternInput
 from api.agents.reporter_agent import ReporterAgent, ReporterInput
 from api.agents.researcher_agent import ResearcherAgent, ResearchInput
@@ -18,6 +19,9 @@ __all__ = [
     "PatternInput",
     "BookkeeperAgent",
     "BookkeeperInput",
+    "ManagerAgent",
+    "ManagerInput",
+    "PipelineClassification",
     "ReporterAgent",
     "ReporterInput",
 ]

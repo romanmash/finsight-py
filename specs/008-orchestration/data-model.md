@@ -13,7 +13,7 @@
 | research_packet | ResearchPacket \| None | Researcher output |
 | assessment | Assessment \| None | Analyst output |
 | pattern_report | PatternReport \| None | Technician (Pattern Specialist) output |
-| formatted_summary | str \| None | Reporter output |
+| formatted_report | FormattedReport \| None | Reporter output |
 | error | str \| None | Last error message |
 | completed_nodes | list[str] | For checkpoint/resume tracking |
 
@@ -43,16 +43,16 @@
 |-------|-------------|-------------|
 | pipelines | list[PipelineConfig] | All pipeline definitions |
 | alert_poll_interval_seconds | int | Alert detection poll interval (default 30) |
-| daily_brief_cron | str | Default "0 7 * * MON-FRI" |
+| legacy fields | optional | During migration from pre-008 scheduler schema (`screener_cron`, `brief_cron`) |
 
 ---
 
 ## Mission state transitions
 
 ```
-PENDING → RUNNING (when Celery task picks it up)
-RUNNING → COMPLETED (when final agent node completes)
-RUNNING → FAILED (on unrecoverable error after retries)
+pending → running (when Celery task picks it up)
+running → completed (when final agent node completes)
+running → failed (on unrecoverable error after retries)
 ```
 
 Stored in `missions.status` column (Feature 002).
@@ -69,3 +69,4 @@ Stored in `missions.status` column (Feature 002).
 | pipeline_type | Literal["investigation", "daily_brief", "screener_scan", "unknown"] | Classified intent |
 | ticker | str \| None | Extracted asset ticker |
 | confidence | float | 0.0–1.0 classification confidence |
+

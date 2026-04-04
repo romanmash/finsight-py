@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,3 +25,11 @@ class WatchlistItemRepository:
         )
         return list(result.scalars().all())
 
+    async def get_by_id(self, watchlist_item_id: UUID) -> WatchlistItemORM | None:
+        result = await self._session.execute(
+            select(WatchlistItemORM).where(
+                WatchlistItemORM.id == watchlist_item_id,
+                WatchlistItemORM.deleted_at.is_(None),
+            )
+        )
+        return result.scalars().first()

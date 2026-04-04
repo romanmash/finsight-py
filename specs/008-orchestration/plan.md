@@ -7,7 +7,7 @@
 Implement the Manager agent (LangGraph supervisor — intent classification and routing only),
 the LangGraph supervisor graph with checkpointing (PostgresSaver), Celery workers for all
 scheduled pipelines (watchdog scan, screener, daily brief, alert trigger), mission lifecycle
-state machine (PENDING→RUNNING→COMPLETED/FAILED), and the `/missions` FastAPI routes. Pipelines
+state machine (pending→running→completed/failed), and the `/missions` FastAPI routes. Pipelines
 and schedules are fully configurable in scheduler.yaml.
 
 ## Technical Context
@@ -28,7 +28,7 @@ and schedules are fully configurable in scheduler.yaml.
 - [x] Agent Boundaries — Manager classifies intent only; NEVER reasons about content
 - [x] MCP Server Independence — N/A (orchestration layer does not call MCP tools directly)
 - [x] Cost Observability — Manager's LLM call recorded via BaseAgent infrastructure
-- [x] Fail-Safe Defaults — failed agent step → retry per policy → mark mission FAILED; operator notified
+- [x] Fail-Safe Defaults — failed agent step → retry per policy → mark mission failed; operator notified
 - [x] Test-First — pipeline tests with Celery always_eager; graph tests with SqliteSaver
 - [x] Simplicity Over Cleverness — LangGraph supervisor pattern; Celery for scheduling (no custom scheduler)
 
@@ -131,15 +131,17 @@ apps/api-service/tests/orchestration/
 
 **Key decisions**:
 - `mission_worker.py`: receives mission_id → creates LangGraph graph instance → runs with checkpointer → updates mission status
-- `alert_worker.py`: polls `AlertRepository.get_unacknowledged()` → creates Mission → dispatches `mission_worker.delay()`
-- Each worker updates mission status (RUNNING on start, COMPLETED/FAILED on end)
+- `alert_worker.py`: polls unprocessed alerts from repository (for current schema:
+  `mission_id IS NULL AND deleted_at IS NULL`) → creates Mission → dispatches
+  `mission_worker.delay()`
+- Each worker updates mission status (`running` on start, `completed`/`failed` on end)
 
 ### Phase 5: Mission Routes
 
 **Files**: `apps/api-service/src/api/routes/missions.py`
 
 **Key decisions**:
-- `POST /missions` — creates Mission (PENDING), dispatches Celery task, returns mission_id
+- `POST /missions` — creates Mission (`pending`), dispatches Celery task, returns mission_id
 - `GET /missions/{id}` — returns mission with status + all AgentRun records
 - `GET /missions` — paginated list, filterable by status
 
@@ -148,14 +150,14 @@ apps/api-service/tests/orchestration/
 **Files**: `apps/api-service/src/api/agents/manager_agent.py` + `.prompt.py`
 
 **Key decisions**:
-- Input: raw text query
+- Input: `ManagerInput(BaseModel)` with `query: str`
 - Output: `PipelineClassification(pipeline_type, ticker, confidence)`
 - ONLY LLM call in Manager; no content analysis
 
 ### Phase 7: Tests
 
 - `conftest.py` sets `CELERY_TASK_ALWAYS_EAGER=true`
-- Mission lifecycle test: POST /missions → Celery runs → DB shows COMPLETED
+- Mission lifecycle test: POST /missions → Celery runs → DB shows `completed`
 - Alert trigger test: create Alert → `alert_worker.delay()` → Mission created
 
 ## Key Design Decisions
@@ -179,3 +181,4 @@ apps/api-service/tests/orchestration/
 
 - **Requires**: 005 (BaseAgent), 006 (Watchdog, Researcher), 007 (Analyst, Pattern, Bookkeeper, Reporter), 002 (repos), 003 (auth for routes)
 - **Required by**: 009-telegram-bot-voice, 010-operator-dashboard
+

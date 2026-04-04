@@ -98,5 +98,61 @@
     volumes:
       - ./config/runtime:/app/config/runtime:ro
 
+  celery-beat:
+    build:
+      context: ./apps/api-service
+    command: ["celery", "-A", "api.lib.queues", "beat", "-l", "info"]
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config/runtime:/app/config/runtime:ro
+
+  worker-mission:
+    build:
+      context: ./apps/api-service
+    command: ["celery", "-A", "api.lib.queues", "worker", "-Q", "mission"]
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config/runtime:/app/config/runtime:ro
+
+  worker-alert:
+    build:
+      context: ./apps/api-service
+    command: ["celery", "-A", "api.lib.queues", "worker", "-Q", "alert"]
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config/runtime:/app/config/runtime:ro
+
+  worker-screener:
+    build:
+      context: ./apps/api-service
+    command: ["celery", "-A", "api.lib.queues", "worker", "-Q", "screener"]
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config/runtime:/app/config/runtime:ro
+
 volumes:
   pgdata:

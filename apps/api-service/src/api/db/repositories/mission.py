@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.db.models.mission import MissionORM
@@ -44,3 +46,33 @@ class MissionRepository:
         await self._session.flush()
         return entity
 
+    async def get_by_id(self, mission_id: UUID) -> MissionORM | None:
+        result = await self._session.execute(
+            select(MissionORM).where(
+                MissionORM.id == mission_id,
+                MissionORM.deleted_at.is_(None),
+            )
+        )
+        return result.scalars().first()
+
+    async def list(
+        self,
+        *,
+        status: str | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> list[MissionORM]:
+        stmt = select(MissionORM).where(MissionORM.deleted_at.is_(None))
+        if status is not None:
+            stmt = stmt.where(MissionORM.status == status)
+        stmt = stmt.order_by(MissionORM.created_at.desc()).limit(limit).offset(offset)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def update_status(self, mission_id: UUID, status: str) -> MissionORM | None:
+        mission = await self.get_by_id(mission_id)
+        if mission is None:
+            return None
+        mission.status = status
+        await self._session.flush()
+        return mission

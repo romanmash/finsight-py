@@ -127,7 +127,7 @@ mission resumes from its last checkpoint, and verify no steps are duplicated.
   mission is marked failed.
 - **FR-007**: The operator MUST be notified when a mission fails, with a description of the
   failure sufficient to understand what went wrong.
-- **FR-008**: The Mission lifecycle (pending → active → complete/failed) MUST be recorded in the
+- **FR-008**: The Mission lifecycle (pending → running → completed/failed) MUST be recorded in the
   database at each transition.
 - **FR-009**: All orchestration flows MUST be testable offline using mocked agent responses and
   a test task queue.
@@ -166,3 +166,4 @@ mission resumes from its last checkpoint, and verify no steps are duplicated.
   before the next agent is called.
 - The Telegram Bot (Feature 009) is responsible for delivering completed mission outputs to the
   operator; the orchestration system queues results for delivery.
+

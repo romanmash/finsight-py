@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -74,3 +75,26 @@ class AlertRepository:
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def list_unprocessed(self, limit: int = 100) -> list[AlertORM]:
+        stmt = (
+            select(AlertORM)
+            .where(
+                AlertORM.mission_id.is_(None),
+                AlertORM.deleted_at.is_(None),
+            )
+            .order_by(AlertORM.created_at.asc())
+            .limit(limit)
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def set_mission_id(self, alert_id: UUID, mission_id: UUID) -> AlertORM | None:
+        stmt = select(AlertORM).where(AlertORM.id == alert_id)
+        result = await self._session.execute(stmt)
+        alert = result.scalars().first()
+        if alert is None:
+            return None
+        alert.mission_id = mission_id
+        await self._session.flush()
+        return alert
