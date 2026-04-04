@@ -9,26 +9,28 @@
 |-------|------|-------------|-------------|
 | id | UUID | Primary key | auto-generated, server_default=uuid_generate_v4() |
 | agent_name | str | Agent identifier (e.g., "watchdog", "researcher") | non-empty, indexed |
-| mission_id | UUID \| None | FK to missions.id; None for standalone runs | nullable, FK |
+| mission_id | UUID | FK to missions.id | NOT NULL, FK |
 | tokens_in | int | Input tokens consumed in this run | >= 0 |
 | tokens_out | int | Output tokens generated in this run | >= 0 |
 | cost_usd | Decimal | Computed cost using pricing registry | >= 0, precision 10, scale 6 |
-| provider | str | LLM provider (e.g., "lmstudio", "openai", "anthropic") | non-empty |
+| provider | str \| None | LLM provider identifier | nullable |
 | model | str | Model name (e.g., "llama-3.2-3b", "gpt-4o") | non-empty |
-| duration_ms | int | Wall-clock run time in milliseconds | >= 0 |
-| status | str | "success", "failed", "retry_failed" | enum-like, non-empty |
-| error | str \| None | Error message if status != "success" | nullable |
-| output_json | str \| None | JSON-serialized agent output (for debugging) | nullable |
-| created_at | datetime | UTC run start timestamp | server_default=now() |
+| duration_ms | int \| None | Wall-clock run time in milliseconds | nullable, >= 0 |
+| status | str | "running", "completed", "failed" | enum-like, non-empty |
+| input_snapshot | dict \| None | Serialized input payload | nullable |
+| output_snapshot | dict \| None | Serialized output payload | nullable |
+| error_message | str \| None | Error message if status = "failed" | nullable |
+| started_at | datetime | UTC run start timestamp | server_default=now() |
+| completed_at | datetime \| None | UTC run completion timestamp | nullable |
 
-**Relationships**: Many `AgentRun` records belong to one `Mission` (nullable FK).
-**Indexes**: `(agent_name, created_at)`, `(mission_id)`.
+**Relationships**: Many `AgentRun` records belong to one `Mission` (required FK).
+**Indexes**: `(mission_id)`, `(agent_name)`, `(started_at DESC)`.
 
 ---
 
 ## AgentsConfig
 
-**Type**: Pydantic v2 BaseSettings model
+**Type**: Pydantic v2 BaseModel
 **Location**: `config/schemas/agents.py`
 
 | Field | Type | Description | Constraints |
@@ -63,12 +65,11 @@
 
 | Field | Type | Description | Constraints |
 |-------|------|-------------|-------------|
-| provider | str | Provider identifier | non-empty |
-| input_per_1k_tokens | Decimal | Cost per 1000 input tokens in USD | >= 0 |
-| output_per_1k_tokens | Decimal | Cost per 1000 output tokens in USD | >= 0 |
+| input_cost_per_1k | float | Cost per 1000 input tokens in USD | >= 0 |
+| output_cost_per_1k | float | Cost per 1000 output tokens in USD | >= 0 |
 
 **YAML path**: `config/runtime/pricing.yaml`
-**Validation rule**: `model_validator` logs warning and returns `Decimal("0.00")` for any model key not present in `models` dict. Never raises.
+**Validation rule**: unknown model keys return `(0.0, 0.0)` via `PricingConfig.get_cost(...)` and emit warning log.
 
 ---
 
@@ -106,7 +107,7 @@ class BaseAgent(ABC):
 
     def __init__(self, config: AgentsConfig, pricing: PricingConfig, mcp_client: MCPClient, db_session: AsyncSession) -> None: ...
 
-    async def run(self, input_data: BaseModel, mission_id: UUID | None = None) -> BaseModel: ...
+    async def run(self, input_data: BaseModel, mission_id: UUID) -> BaseModel: ...
 
     @abstractmethod
     async def execute(self, input_data: BaseModel) -> BaseModel: ...
@@ -117,7 +118,7 @@ class BaseAgent(ABC):
 2. Call `execute()` (implemented by subclass).
 3. Validate output against `output_type`.
 4. On `ValidationError`: retry once with correction prompt.
-5. On second failure: raise `AgentOutputValidationError`.
+5. On second failure: raise `AgentOutputError`.
 6. On any exception: status = "failed".
 7. Write `AgentRun` record to DB.
 8. Return validated output.
@@ -129,11 +130,4 @@ class BaseAgent(ABC):
 **Type**: Section within `Mcp.servers` in `config/schemas/mcp.py` (shared with Feature 004)
 **Location**: `config/runtime/mcp.yaml`
 
-Consumed by `apps/api-service/src/api/mcp/client.py`. The client reads `servers` (URL + timeout per server) and `tool_routing` (tool name → server name mapping) at startup.
-
-### ToolRouting entry (in mcp.yaml)
-
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| tool_name | str | Name of the MCP tool | non-empty |
-| server | str | Server identifier | one of "market-data", "news-macro", "rag-retrieval" |
+Consumed by `apps/api-service/src/api/mcp/client.py`. The client reads `servers` (HTTPS URL + timeout per server). Tool routing is internal prefix-based mapping in `MCPClient` (`market.*`, `news.*`, `macro.*`, `knowledge.*`). URLs must use `https://` per `McpServerConfig` validation.

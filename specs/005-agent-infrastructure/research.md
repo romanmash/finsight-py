@@ -12,8 +12,8 @@
 
 ## Decision: LLM provider abstraction
 
-**Chosen**: LangChain `BaseChatModel` interface with `langchain-openai` (for LM Studio / OpenAI-compatible endpoints) and `langchain-anthropic` as providers. Provider and model per agent configured in `agents.yaml`. Instantiation in `BaseAgent.__init__` from config.
-**Rationale**: `BaseChatModel` is the standard interface for all LangChain-compatible LLM providers. Switching provider requires only changing `agents.yaml`. The `with_structured_output()` method handles Pydantic output validation natively.
+**Chosen**: LangChain `BaseChatModel` interface with a provider-agnostic adapter layer. Initial implementation uses `langchain-openai` because it supports OpenAI-compatible endpoints (including local runtimes), but `BaseAgent` depends only on the abstract chat-model contract, not any single vendor SDK.
+**Rationale**: `BaseChatModel` is the standard interface for all LangChain-compatible LLM providers. Switching provider requires only changing `agents.yaml` (and adapter wiring), without changing agent business logic. The `with_structured_output()` method handles Pydantic output validation natively.
 **Alternatives considered**:
 - Direct OpenAI SDK: Would require separate code paths per provider. Rejected.
 - LiteLLM: Another abstraction layer on top of LangChain. Unnecessary complexity. Rejected.
@@ -22,7 +22,7 @@
 
 ## Decision: Cost tracking persistence
 
-**Chosen**: Write `AgentRun` record to PostgreSQL via SQLAlchemy 2.x async session inside `BaseAgent.run()`. Fields: `id` (UUID), `agent_name` (str), `mission_id` (UUID, nullable), `tokens_in` (int), `tokens_out` (int), `cost_usd` (Decimal), `provider` (str), `model` (str), `duration_ms` (int), `status` (str), `error` (str, nullable), `created_at` (datetime).
+**Chosen**: Write `AgentRun` record to PostgreSQL via SQLAlchemy 2.x async session inside `BaseAgent.run()`. Fields aligned with Feature 002: `id` (UUID), `mission_id` (UUID, required), `agent_name` (str), `status` (`running|completed|failed`), `input_snapshot` (JSONB), `output_snapshot` (JSONB), `tokens_in` (int), `tokens_out` (int), `cost_usd` (Decimal), `provider` (str | None), `model` (str | None), `duration_ms` (int | None), `error_message` (str | None), `started_at` (datetime), `completed_at` (datetime | None).
 **Rationale**: Persisting to the same PostgreSQL as other domain models keeps observability data queryable by the dashboard (Feature 010). The `AgentRun` ORM model is defined in Feature 002 (data layer); Feature 005 just writes to it.
 **Alternatives considered**:
 - Write to a separate time-series DB: Overkill. The dashboard needs SQL joins. Rejected.
@@ -45,14 +45,12 @@
 **Chosen**: `config/runtime/pricing.yaml` with structure:
 ```yaml
 models:
-  gpt-4o:
-    provider: openai
-    input_per_1k_tokens: 0.005
-    output_per_1k_tokens: 0.015
-  llama-3.2-3b:
-    provider: lmstudio
-    input_per_1k_tokens: 0.0
-    output_per_1k_tokens: 0.0
+  openai/gpt-4o:
+    input_cost_per_1k: 0.005
+    output_cost_per_1k: 0.015
+  lmstudio/llama-3.2-3b:
+    input_cost_per_1k: 0.0
+    output_cost_per_1k: 0.0
 ```
 Loaded at startup into a `PricingConfig` Pydantic v2 model. `pricing.py` exposes `compute_cost(model, tokens_in, tokens_out) -> Decimal`. Unknown model logs a `structlog` warning and returns `Decimal("0.00")`.
 **Rationale**: YAML is readable and editable without code changes. Pydantic v2 validation catches malformed entries at startup. Returning zero for unknown models (with warning) satisfies FR-003 — never block execution.
@@ -64,7 +62,7 @@ Loaded at startup into a `PricingConfig` Pydantic v2 model. `pricing.py` exposes
 
 ## Decision: Agent output validation and retry policy
 
-**Chosen**: LangChain `with_structured_output(OutputSchema, include_raw=True)`. On `ValidationError`, retry once with an error-correction prompt appended. If second attempt fails, raise `AgentOutputValidationError` caught in `BaseAgent.run()`, which marks the `AgentRun` as failed.
+**Chosen**: LangChain `with_structured_output(OutputSchema, include_raw=True)`. On `ValidationError`, retry once with an error-correction prompt appended. If second attempt fails, raise `AgentOutputError` caught in `BaseAgent.run()`, which marks the `AgentRun` as failed.
 **Rationale**: `with_structured_output` handles JSON extraction and Pydantic validation in one call. `include_raw=True` gives access to the raw LLM response for the retry prompt. One retry is the spec-mandated policy — no infinite loops.
 **Alternatives considered**:
 - `instructor` library: Adds a dependency; `with_structured_output` achieves the same result. Rejected.

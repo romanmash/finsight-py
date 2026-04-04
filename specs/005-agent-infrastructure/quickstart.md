@@ -29,14 +29,12 @@ Edit `config/runtime/pricing.yaml` to set token costs:
 
 ```yaml
 models:
-  llama-3.2-3b:
-    provider: lmstudio
-    input_per_1k_tokens: 0.0
-    output_per_1k_tokens: 0.0
-  gpt-4o:
-    provider: openai
-    input_per_1k_tokens: 0.005
-    output_per_1k_tokens: 0.015
+  lmstudio/llama-3.2-3b:
+    input_cost_per_1k: 0.0
+    output_cost_per_1k: 0.0
+  openai/gpt-4o:
+    input_cost_per_1k: 0.005
+    output_cost_per_1k: 0.015
 ```
 
 ## Testing
@@ -67,15 +65,18 @@ uv run ruff check apps/api-service/src/api/agents/ apps/api-service/src/api/lib/
 
 ```python
 # In a Python REPL with uv run python
+from api.lib.config import load_yaml_config
 from api.lib.pricing import PricingRegistry
+from config.schemas.pricing import PricingConfig
 from pathlib import Path
 
-registry = PricingRegistry.from_yaml(Path("config/runtime/pricing.yaml"))
-cost = registry.compute_cost("gpt-4o", tokens_in=1000, tokens_out=500)
+pricing_cfg = load_yaml_config(Path("config/runtime/pricing.yaml"), PricingConfig)
+registry = PricingRegistry(pricing_cfg)
+cost = registry.compute_cost("openai/gpt-4o", tokens_in=1000, tokens_out=500)
 print(cost)  # Decimal("0.012500")
 
 # Unknown model — returns zero with warning
-cost = registry.compute_cost("unknown-model-xyz", tokens_in=100, tokens_out=50)
+cost = registry.compute_cost("unknown-provider/unknown-model", tokens_in=100, tokens_out=50)
 print(cost)  # Decimal("0.000000")
 ```
 

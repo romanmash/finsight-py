@@ -52,7 +52,7 @@ apps/api-service/src/api/mcp/
 
 config/runtime/
 ├── agents.yaml          # per-agent: model, provider, fallback_provider, fallback_model
-└── pricing.yaml         # per-model: cost_per_1k_input, cost_per_1k_output
+└── pricing.yaml         # per-model: input_cost_per_1k, output_cost_per_1k
 
 config/schemas/
 ├── agents.py            # Pydantic schema for agents.yaml
@@ -70,8 +70,8 @@ apps/api-service/tests/agents/
 **Files**: `config/runtime/agents.yaml`, `config/schemas/agents.py`, `config/runtime/pricing.yaml`, `config/schemas/pricing.py`
 
 **Key decisions**:
-- `agents.yaml`: `agents.{name}.model`, `agents.{name}.provider`, `agents.{name}.fallback_model`, `agents.{name}.fallback_provider`, `agents.{name}.base_url` (optional; `str | None`; when set, passed as `base_url=` to `ChatOpenAI` to support local models via LM Studio or other OpenAI-compatible endpoints; `None` uses the provider's default endpoint)
-- `pricing.yaml`: `models.{model_name}.cost_per_1k_input_usd`, `models.{model_name}.cost_per_1k_output_usd`
+- `agents.yaml`: `agents.{name}.model`, `agents.{name}.provider`, `agents.{name}.fallback_model`, `agents.{name}.fallback_provider`, `agents.{name}.base_url` (optional; adapter-specific endpoint override for local or custom provider endpoints; `None` uses provider default endpoint)
+- `pricing.yaml`: `models.{provider}/{model}.input_cost_per_1k`, `models.{provider}/{model}.output_cost_per_1k`
 
 ### Phase 2: Pricing Registry
 
@@ -121,7 +121,7 @@ apps/api-service/tests/agents/
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| LLM client | langchain-openai ChatOpenAI | Supports both OpenAI-compatible local (LM Studio) and cloud |
+| LLM client | LangChain `BaseChatModel` abstraction (initial implementation via `ChatOpenAI`) | Provider-agnostic base infrastructure; adapters can be added without changing base agent contract |
 | Output validation | Pydantic model_validate(response_json) | Same Pydantic models used everywhere |
 | Retry policy | Retry once (exactly) | Constitution: retry once then fail mission |
 | Cost precision | Python Decimal | Avoids float rounding errors on cost totals |

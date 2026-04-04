@@ -77,19 +77,19 @@ LangSmith tracing. One concrete stub agent confirms the base class works end-to-
   - `async def run(self, input: InputT, mission_id: UUID) -> OutputT`:
     1. Record `started_at = datetime.utcnow()`
     2. `run_id = tracer.create_run(self.name, input)`
-    3. Build `ChatOpenAI(model=config.model, base_url=config.base_url or None)` chain via `with_structured_output(self.output_schema)`
+    3. Build provider-agnostic `BaseChatModel` chain from config via `with_structured_output(self.output_schema)`
     4. Try: `result = await chain.ainvoke(prompt)` (primary provider)
     5. On `LLMProviderError`: try fallback provider if configured; else re-raise
     6. Extract `usage_metadata` from callback: `tokens_in`, `tokens_out`
     7. `cost_usd = pricing.compute_cost(config.model, tokens_in, tokens_out)`
     8. `duration_ms = int((datetime.utcnow() - started_at).total_seconds() * 1000)`
-    9. `await agent_run_repo.create({mission_id, agent_name=self.name, status="complete", tokens_in, tokens_out, cost_usd, provider, model, duration_ms, output_snapshot})`
+    9. `await agent_run_repo.create({mission_id, agent_name=self.name, status="completed", tokens_in, tokens_out, cost_usd, provider, model, duration_ms, input_snapshot, output_snapshot})`
     10. `tracer.end_run(run_id, outputs=result.model_dump(), error=None)`
     11. Return `result`
   - `AgentOutputError(Exception)` defined in same file with `agent_name: str`, `detail: str`
   in `apps/api-service/src/api/agents/base.py`
 - [ ] T010 [US1] Write US1 tests in `apps/api-service/tests/agents/test_base.py`:
-  - `test_run_creates_agent_run_record` — mock LLM returns valid output instance; assert `agent_run_repo.create()` called once with correct `tokens_in`, `tokens_out`, `cost_usd` (matches pricing registry calculation), `provider`, `model`, `duration_ms > 0`, `status="complete"`
+  - `test_run_creates_agent_run_record` — mock LLM returns valid output instance; assert `agent_run_repo.create()` called once with correct `tokens_in`, `tokens_out`, `cost_usd` (matches pricing registry calculation), `provider`, `model`, `duration_ms > 0`, `status="completed"`
   - `test_run_cost_matches_pricing_registry` — mock LLM returns 1000 input + 500 output tokens on a known-price model; assert `cost_usd == Decimal("expected")` exactly
   - `test_run_with_langsmith_tracing` — patch `TracingClient.create_run` and `end_run`; assert both called once with correct args
   - `test_run_unknown_model_cost_is_zero` — use unknown model name in config; assert `cost_usd == Decimal("0.00")` and structlog warning emitted
@@ -134,11 +134,11 @@ AgentRun failed. All tested offline with mock LLM returning invalid/valid JSON i
   - Attempt 1: `result = await chain.ainvoke(prompt)` — if `ValidationError` caught: attempt 2
   - Attempt 2: same call — if `ValidationError` again: call `agent_run_repo.create(status="failed", error_message=str(e))` + `tracer.end_run(run_id, error=str(e))` + raise `AgentOutputError(agent_name=self.name, detail=str(e))`
   - Valid result on either attempt: return parsed `OutputT` instance
-  - Note: `with_structured_output` returns a `RunnableSequence`; mock in tests using `patch.object(ChatOpenAI, "with_structured_output", return_value=mock_chain)` where `mock_chain = AsyncMock(return_value=output_instance)`
+  - Note: `with_structured_output` returns a runnable; mock the configured model factory to return a chain mock with deterministic `ainvoke` responses
   in `apps/api-service/src/api/agents/base.py`
 - [ ] T014 [US3] Add US3 tests to `apps/api-service/tests/agents/test_base.py`:
-  - `test_valid_output_accepted_no_retry` — mock chain returns valid Pydantic instance; assert `agent_run_repo.create()` called once with `status="complete"`; assert chain.ainvoke called exactly once
-  - `test_invalid_output_triggers_one_retry` — mock chain raises `ValidationError` on first call, returns valid instance on second; assert `chain.ainvoke` called exactly twice; assert `status="complete"` in AgentRun
+  - `test_valid_output_accepted_no_retry` — mock chain returns valid Pydantic instance; assert `agent_run_repo.create()` called once with `status="completed"`; assert chain.ainvoke called exactly once
+  - `test_invalid_output_triggers_one_retry` — mock chain raises `ValidationError` on first call, returns valid instance on second; assert `chain.ainvoke` called exactly twice; assert `status="completed"` in AgentRun
   - `test_two_invalid_outputs_marks_failed` — mock chain raises `ValidationError` on both calls; assert `AgentOutputError` raised; assert `agent_run_repo.create(status="failed", error_message=...)` called; assert `chain.ainvoke` called exactly twice (no third attempt)
   in `apps/api-service/tests/agents/test_base.py`
 
@@ -248,11 +248,11 @@ Workstream B (US3): T013 refactor _invoke_llm_with_retry() → T014 write retry 
 ## Notes
 
 - Tests are **required** by spec (FR-009: all agent infrastructure behaviour testable offline)
-- `with_structured_output` mock pattern (critical): `patch.object(ChatOpenAI, "with_structured_output", return_value=AsyncMock(return_value=output_instance))` — patching `ChatOpenAI.ainvoke` directly does NOT work because `with_structured_output` returns a `RunnableSequence`
+- `with_structured_output` mock pattern (critical): patch the configured model factory / adapter output rather than vendor SDK internals; patching a raw provider client's `ainvoke` directly is usually insufficient because `with_structured_output` returns a separate runnable
 - `chain.ainvoke` call count assertions: use `mock_chain.ainvoke.call_count` not `mock_chain.call_count`
 - `BaseAgent` is generic `BaseAgent[InputT, OutputT]` — mypy --strict requires `TypeVar` declarations
 - `AgentOutputError` is raised by BaseAgent and caught by the LangGraph mission worker (Feature 008)
 - `StubAgent` in `stub_agent.py` is for testing the infrastructure pattern only — it is NOT a production agent; it will coexist with production agents in Feature 006+
 - `PricingRegistry.compute_cost()` uses `Decimal` arithmetic throughout — do not mix with `float`
 - LangSmith tracing is always a no-op if `LANGCHAIN_TRACING_V2` is not `"true"` — no test breakage from missing LangSmith credentials
-- `base_url: str | None` in `AgentConfig` is passed as `ChatOpenAI(model=..., base_url=config.base_url)` — when `None`, LangChain uses the provider default URL; enables LM Studio support without code changes
+- `base_url: str | None` in `AgentConfig` is passed to the selected provider adapter; when `None`, adapter/provider defaults are used
