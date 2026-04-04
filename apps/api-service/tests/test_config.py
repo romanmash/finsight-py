@@ -5,9 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from api.lib.config import get_settings, load_yaml_config
+from api.lib.config import get_settings, load_all_configs, load_yaml_config
 
 from config.schemas.agents import AgentsConfig
+from config.schemas.api import ApiConfig
 from config.schemas.pricing import ModelPricing, PricingConfig
 
 
@@ -130,3 +131,74 @@ def test_unknown_pricing_model_returns_zero() -> None:
     )
 
     assert pricing.get_cost("openai", "does-not-exist") == (0.0, 0.0)
+
+
+def test_load_all_configs_includes_api(tmp_config_dir: Path) -> None:
+    _write(
+        tmp_config_dir / "agents.yaml",
+        """
+agents:
+  manager:
+    model: gpt-4o-mini
+    provider: openai
+    temperature: 0.2
+    max_tokens: 2048
+    max_retries: 2
+    timeout_seconds: 30
+    base_url: null
+""".strip(),
+    )
+    _write(
+        tmp_config_dir / "mcp.yaml",
+        """
+servers:
+  market-data:
+    url: http://market-data-mcp:8001
+    timeout_seconds: 5
+    cache_ttl_seconds: 60
+""".strip(),
+    )
+    _write(
+        tmp_config_dir / "pricing.yaml",
+        """
+models:
+  openai/gpt-4o:
+    input_cost_per_1k: 0.005
+    output_cost_per_1k: 0.015
+""".strip(),
+    )
+    _write(
+        tmp_config_dir / "watchdog.yaml",
+        """
+poll_interval_seconds: 30
+alert_cooldown_seconds: 300
+default_thresholds:
+  price_change_pct: 2.0
+  volume_spike_multiplier: 2.5
+  rsi_overbought: 70.0
+""".strip(),
+    )
+    _write(
+        tmp_config_dir / "scheduler.yaml",
+        """
+screener_cron: "0 7 * * 1-5"
+brief_cron: "0 6 * * *"
+earnings_lookback_days: 3
+timezone: "Europe/Copenhagen"
+""".strip(),
+    )
+    _write(
+        tmp_config_dir / "api.yaml",
+        """
+access_token_ttl_minutes: 15
+refresh_token_ttl_days: 30
+service_token_ttl_days: 3650
+cors_origins:
+  - http://localhost:8050
+rate_limit_login: "10/minute"
+rate_limit_refresh: "30/minute"
+""".strip(),
+    )
+
+    configs = load_all_configs(tmp_config_dir)
+    assert isinstance(configs.api, ApiConfig)

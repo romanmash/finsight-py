@@ -19,9 +19,9 @@
 **Purpose**: Create all directory structure, add dependencies, and extend Feature 001's config
 infrastructure with the new `api.yaml` YAML + schema. No auth logic yet — scaffolding only.
 
-- [ ] T001 Add `python-jose[cryptography]`, `passlib[bcrypt]`, `slowapi`, `python-multipart`, `httpx` to `apps/api-service/pyproject.toml` dependencies in `apps/api-service/pyproject.toml`
-- [ ] T002 [P] Create `apps/api-service/src/api/routes/__init__.py` (empty) and `apps/api-service/src/api/routes/auth.py` (empty module with `router = APIRouter()`), `apps/api-service/src/api/routes/health.py` (empty module with `router = APIRouter()`), and `apps/api-service/src/api/routes/operators.py` (empty module with `router = APIRouter()`) in `apps/api-service/src/api/routes/`
-- [ ] T003 [P] Create `apps/api-service/tests/routes/__init__.py` (empty) in `apps/api-service/tests/routes/__init__.py`
+- [X] T001 Add `python-jose[cryptography]`, `passlib[bcrypt]`, `slowapi`, `python-multipart`, `httpx` to `apps/api-service/pyproject.toml` dependencies in `apps/api-service/pyproject.toml`
+- [X] T002 [P] Create `apps/api-service/src/api/routes/__init__.py` (empty) and `apps/api-service/src/api/routes/auth.py` (empty module with `router = APIRouter()`), `apps/api-service/src/api/routes/health.py` (empty module with `router = APIRouter()`), and `apps/api-service/src/api/routes/operators.py` (empty module with `router = APIRouter()`) in `apps/api-service/src/api/routes/`
+- [X] T003 [P] Create `apps/api-service/tests/routes/__init__.py` (empty) in `apps/api-service/tests/routes/__init__.py`
 
 **Checkpoint**: `uv sync` completes; new dependencies installed; route module stubs importable.
 
@@ -34,14 +34,14 @@ instance with middleware must all exist before any route can be implemented or t
 
 **⚠️ CRITICAL**: All user stories depend on this phase being complete.
 
-- [ ] T004 Create `config/runtime/api.yaml` with defaults: `access_token_ttl_minutes: 15`, `refresh_token_ttl_days: 30`, `service_token_ttl_days: 3650`, `cors_origins: ["http://localhost:8050"]`, `rate_limit_login: "10/minute"`, `rate_limit_refresh: "30/minute"` in `config/runtime/api.yaml`
-- [ ] T005 Create `config/schemas/api.py` with `ApiConfig(BaseModel)`: `access_token_ttl_minutes: int`, `refresh_token_ttl_days: int`, `service_token_ttl_days: int = 3650`, `cors_origins: list[str]`, `rate_limit_login: str`, `rate_limit_refresh: str` — `model_config = ConfigDict(frozen=True)` in `config/schemas/api.py`
-- [ ] T006 Extend `apps/api-service/src/api/lib/config.py` to:
+- [X] T004 Create `config/runtime/api.yaml` with defaults: `access_token_ttl_minutes: 15`, `refresh_token_ttl_days: 30`, `service_token_ttl_days: 3650`, `cors_origins: ["http://localhost:8050"]`, `rate_limit_login: "10/minute"`, `rate_limit_refresh: "30/minute"` in `config/runtime/api.yaml`
+- [X] T005 Create `config/schemas/api.py` with `ApiConfig(BaseModel)`: `access_token_ttl_minutes: int`, `refresh_token_ttl_days: int`, `service_token_ttl_days: int = 3650`, `cors_origins: list[str]`, `rate_limit_login: str`, `rate_limit_refresh: str` — `model_config = ConfigDict(frozen=True)` in `config/schemas/api.py`
+- [X] T006 Extend `apps/api-service/src/api/lib/config.py` to:
   - Add `from config.schemas.api import ApiConfig` import
   - Add `api: ApiConfig` field to `AllConfigs` dataclass
   - Add `load_yaml_config(config_dir / "api.yaml", ApiConfig)` call inside `load_all_configs()` (now loads 6 YAML files total)
   in `apps/api-service/src/api/lib/config.py`
-- [ ] T007 Create `apps/api-service/src/api/lib/auth.py` with:
+- [X] T007 Create `apps/api-service/src/api/lib/auth.py` with:
   - `TokenPayload(BaseModel)`: `sub: str`, `role: str`, `exp: int`, `iat: int`
   - `create_access_token(sub: str, role: str, ttl_minutes: int) -> str` — HS256-signed JWT using `SECRET_KEY` from settings
   - `decode_access_token(token: str) -> TokenPayload` — raises `HTTPException(401)` on invalid/expired token
@@ -50,7 +50,7 @@ instance with middleware must all exist before any route can be implemented or t
   - `get_current_operator(token: str = Depends(oauth2_scheme)) -> TokenPayload` — decodes token; raises 401 if invalid
   - `require_role(*roles: str) -> Callable` — returns a FastAPI `Depends(...)` callable that calls `get_current_operator` and verifies `payload.role in roles`; raises `HTTPException(403)` on role mismatch; accepts `"admin"`, `"viewer"`, `"service"`
   in `apps/api-service/src/api/lib/auth.py`
-- [ ] T008 Create `apps/api-service/src/api/main.py` with:
+- [X] T008 Create `apps/api-service/src/api/main.py` with:
   - FastAPI app instance with lifespan that calls `load_all_configs()` and `configure_logging()` at startup
   - `CORSMiddleware(allow_origins=configs.api.cors_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])`
   - `SlowAPIMiddleware` from slowapi; `limiter = Limiter(key_func=get_remote_address)` attached to app state
@@ -58,7 +58,7 @@ instance with middleware must all exist before any route can be implemented or t
   - `app.include_router(health_router, tags=["health"])`
   - `app.include_router(operators_router, prefix="/operators", tags=["operators"])`
   in `apps/api-service/src/api/main.py`
-- [ ] T009 Create `apps/api-service/tests/routes/conftest.py` with:
+- [X] T009 Create `apps/api-service/tests/routes/conftest.py` with:
   - `app_client` async fixture: `httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test")`
   - `mock_operator_repo` fixture: `AsyncMock` of `OperatorRepository` with a preset admin operator and a viewer operator
   - `admin_token` fixture: calls `create_access_token(sub=str(admin_op.id), role="admin", ttl_minutes=15)`
@@ -78,7 +78,7 @@ operator identity; both fully tested offline with `httpx.AsyncClient`.
 
 **Independent Test**: `uv run pytest apps/api-service/tests/routes/test_auth.py::test_login_success apps/api-service/tests/routes/test_auth.py::test_me` — pass.
 
-- [ ] T010 [US1] Implement `POST /auth/login` in `apps/api-service/src/api/routes/auth.py`:
+- [X] T010 [US1] Implement `POST /auth/login` in `apps/api-service/src/api/routes/auth.py`:
   - Accept `OAuth2PasswordRequestForm` (username=email, password)
   - Call `OperatorRepository.get_by_email()` → if not found or `verify_password` fails → `HTTPException(401, "Invalid credentials")`
   - If `operator.is_active` is False → `HTTPException(401, "Account disabled")`
@@ -87,16 +87,16 @@ operator identity; both fully tested offline with `httpx.AsyncClient`.
   - Return `{"access_token": ..., "token_type": "bearer", "operator_id": ..., "role": ...}` and set httpOnly cookie `refresh_token=<raw_token>; SameSite=Strict; HttpOnly; Path=/auth`
   - Apply `@limiter.limit(configs.api.rate_limit_login)` decorator
   in `apps/api-service/src/api/routes/auth.py`
-- [ ] T011 [US1] Implement `GET /auth/me` in `apps/api-service/src/api/routes/auth.py`:
+- [X] T011 [US1] Implement `GET /auth/me` in `apps/api-service/src/api/routes/auth.py`:
   - `Depends(get_current_operator)` → `payload: TokenPayload`
   - Return `{"operator_id": payload.sub, "role": payload.role}`
   in `apps/api-service/src/api/routes/auth.py`
-- [ ] T012 [US1] Implement `POST /auth/logout` in `apps/api-service/src/api/routes/auth.py`:
+- [X] T012 [US1] Implement `POST /auth/logout` in `apps/api-service/src/api/routes/auth.py`:
   - Read `refresh_token` cookie → hash it → `RefreshTokenRepository.revoke()` if found
   - Delete the `refresh_token` cookie from response
   - Return HTTP 204 No Content
   in `apps/api-service/src/api/routes/auth.py`
-- [ ] T013 [US1] Write `apps/api-service/tests/routes/test_auth.py` — US1 tests:
+- [X] T013 [US1] Write `apps/api-service/tests/routes/test_auth.py` — US1 tests:
   - `test_login_success` — mock OperatorRepo returns admin op, verify_password returns True → 200 + access_token + cookie set
   - `test_login_wrong_password` — verify_password returns False → 401
   - `test_login_unknown_user` — get_by_email returns None → 401
@@ -116,7 +116,7 @@ new access token. Expired/revoked refresh tokens rejected with 401.
 
 **Independent Test**: `uv run pytest apps/api-service/tests/routes/test_auth.py -k "refresh"` — all pass.
 
-- [ ] T014 [US2] Implement `POST /auth/refresh` in `apps/api-service/src/api/routes/auth.py`:
+- [X] T014 [US2] Implement `POST /auth/refresh` in `apps/api-service/src/api/routes/auth.py`:
   - Read `refresh_token` cookie (missing cookie → `HTTPException(401)`)
   - Hash the raw token (SHA-256) → `RefreshTokenRepository.get_by_hash()` → None or `revoked_at` set or `expires_at` past → `HTTPException(401, "Invalid or expired refresh token")`
   - Look up operator by `refresh_token.operator_id` → if `is_active` False → 401
@@ -124,7 +124,7 @@ new access token. Expired/revoked refresh tokens rejected with 401.
   - Issue new access token → return `{"access_token": ..., "token_type": "bearer"}`
   - Apply `@limiter.limit(configs.api.rate_limit_refresh)` decorator
   in `apps/api-service/src/api/routes/auth.py`
-- [ ] T015 [US2] Add US2 tests to `apps/api-service/tests/routes/test_auth.py`:
+- [X] T015 [US2] Add US2 tests to `apps/api-service/tests/routes/test_auth.py`:
   - `test_refresh_valid_cookie` — mock RefreshTokenRepo returns valid record → 200 + new access_token + rotated cookie
   - `test_refresh_no_cookie` → 401
   - `test_refresh_revoked_token` — `revoked_at` is set → 401
@@ -144,11 +144,11 @@ admin route verifies the pattern.
 
 **Independent Test**: `uv run pytest apps/api-service/tests/routes/test_auth.py -k "rbac or role or admin or service"` — all pass.
 
-- [ ] T016 [US3] Add a test-only admin endpoint to `apps/api-service/src/api/routes/auth.py` (decorated with `include_in_schema=False`):
+- [X] T016 [US3] Add a test-only admin endpoint to `apps/api-service/src/api/routes/auth.py` (decorated with `include_in_schema=False`):
   - `GET /auth/admin-only` — `Depends(require_role("admin"))` → returns `{"ok": True}`
   - This endpoint exists solely to test RBAC; it will be removed or replaced once Feature 004+ adds real admin routes
   in `apps/api-service/src/api/routes/auth.py`
-- [ ] T017 [US3] Add US3 tests to `apps/api-service/tests/routes/test_auth.py`:
+- [X] T017 [US3] Add US3 tests to `apps/api-service/tests/routes/test_auth.py`:
   - `test_admin_route_with_admin_token` — admin token on `/auth/admin-only` → 200
   - `test_admin_route_with_viewer_token` — viewer token → 403 (not 401)
   - `test_admin_route_with_no_token` → 401 (distinguish from 403)
@@ -167,7 +167,7 @@ returns degraded status without raising an unhandled exception.
 
 **Independent Test**: `uv run pytest apps/api-service/tests/routes/test_health.py` — all pass offline.
 
-- [ ] T018 [US4] Implement `GET /health` in `apps/api-service/src/api/routes/health.py`:
+- [X] T018 [US4] Implement `GET /health` in `apps/api-service/src/api/routes/health.py`:
   - No `Depends(get_current_operator)` — fully public
   - Check DB: run `SELECT 1` via `get_session()`; catch any `SQLAlchemyError` → status = "error"
   - Check Redis: `CacheClient.get("health_probe")` or `ping()`; catch any exception → status = "error"
@@ -175,7 +175,7 @@ returns degraded status without raising an unhandled exception.
   - Return: `{"status": "healthy" if all ok else "degraded", "subsystems": {"database": "ok"|"error", "cache": "ok"|"error", "config": "ok"}}`
   - Response time target: < 200 ms
   in `apps/api-service/src/api/routes/health.py`
-- [ ] T019 [P] [US4] Write `apps/api-service/tests/routes/test_health.py`:
+- [X] T019 [P] [US4] Write `apps/api-service/tests/routes/test_health.py`:
   - `test_health_all_ok` — mock DB and Redis healthy → 200 `{"status": "healthy", ...}`
   - `test_health_db_down` — mock DB raises `SQLAlchemyError` → 200 `{"status": "degraded", "subsystems": {"database": "error", ...}}`
   - `test_health_no_auth_required` — no Authorization header → 200 (not 401)
@@ -192,12 +192,12 @@ returns degraded status without raising an unhandled exception.
 
 **Independent Test**: `uv run pytest apps/api-service/tests/routes/test_auth.py -k "rate_limit"` — pass.
 
-- [ ] T020 [US5] Add US5 tests to `apps/api-service/tests/routes/test_auth.py`:
+- [X] T020 [US5] Add US5 tests to `apps/api-service/tests/routes/test_auth.py`:
   - `test_login_rate_limit` — send 11 POST /auth/login requests from the same mock client IP; assert the 11th returns 429 with a `Retry-After` header (use `slowapi` test utilities or patch limiter storage)
   - `test_refresh_rate_limit` — send 31 POST /auth/refresh requests; assert 31st returns 429
   - Note: use `limits.storage.MemoryStorage()` for the limiter in tests to avoid Redis dependency
   in `apps/api-service/tests/routes/test_auth.py`
-- [ ] T021 [US5] Verify slowapi `Limiter` in `apps/api-service/src/api/main.py` is initialised with `storage_uri="memory://"` when `ENVIRONMENT=test` (or always in unit tests via fixture override); document the test pattern in a comment in `apps/api-service/src/api/main.py`
+- [X] T021 [US5] Verify slowapi `Limiter` in `apps/api-service/src/api/main.py` is initialised with `storage_uri="memory://"` when `ENVIRONMENT=test` (or always in unit tests via fixture override); document the test pattern in a comment in `apps/api-service/src/api/main.py`
 
 **Checkpoint**: `uv run pytest apps/api-service/tests/routes/test_auth.py -k "rate"` — pass offline.
 
@@ -207,21 +207,21 @@ returns degraded status without raising an unhandled exception.
 
 **Purpose**: Wire up service JWT docs, final quality gate, and ensure `main.py` startup validation works end-to-end.
 
-- [ ] T022 [P] Add `TELEGRAM_SERVICE_TOKEN=` placeholder and documentation comment to `.env.example` explaining it is generated by Feature 011's seed script and printed to stdout for manual addition in `.env.example`
-- [ ] T023 [P] Update `apps/api-service/tests/test_config.py` to add a test verifying `load_all_configs()` now loads 6 YAML files (including `api.yaml`) and `AllConfigs` has an `api` attribute of type `ApiConfig` in `apps/api-service/tests/test_config.py`
-- [ ] T024 [P] Implement service-role operator lookup/update endpoints in `apps/api-service/src/api/routes/operators.py`:
+- [X] T022 [P] Add `TELEGRAM_SERVICE_TOKEN=` placeholder and documentation comment to `.env.example` explaining it is generated by Feature 011's seed script and printed to stdout for manual addition in `.env.example`
+- [X] T023 [P] Update `apps/api-service/tests/test_config.py` to add a test verifying `load_all_configs()` now loads 6 YAML files (including `api.yaml`) and `AllConfigs` has an `api` attribute of type `ApiConfig` in `apps/api-service/tests/test_config.py`
+- [X] T024 [P] Implement service-role operator lookup/update endpoints in `apps/api-service/src/api/routes/operators.py`:
   - `GET /operators` with required query param `telegram_user_id: int`; `Depends(require_role("service", "admin"))`; calls `OperatorRepository.get_by_telegram_user_id()`; returns Operator JSON on hit, 404 on miss
   - `PATCH /operators/{operator_id}` with payload `{"telegram_chat_id": int}`; `Depends(require_role("service", "admin"))`; updates operator chat id via repository; returns updated Operator JSON; 404 on unknown operator
   - Ensure both endpoints return structured error payloads on validation/auth failures
   in `apps/api-service/src/api/routes/operators.py`
-- [ ] T025 [P] Add `apps/api-service/tests/routes/test_operators.py`:
+- [X] T025 [P] Add `apps/api-service/tests/routes/test_operators.py`:
   - `test_get_operator_by_telegram_user_id_service_token_success` — service token + known telegram ID → 200 with operator payload
   - `test_get_operator_by_telegram_user_id_not_found` — service token + unknown ID → 404
   - `test_patch_operator_telegram_chat_id_service_token_success` — service token + valid operator_id + payload → 200 and updated `telegram_chat_id`
   - `test_patch_operator_telegram_chat_id_unauthenticated` — no token → 401
   - `test_patch_operator_telegram_chat_id_viewer_forbidden` — viewer token → 403
   in `apps/api-service/tests/routes/test_operators.py`
-- [ ] T026 Run full quality gate: `uv run pytest apps/api-service/tests/routes/ apps/api-service/tests/test_config.py` (all offline, all pass) + `uv run mypy --strict apps/api-service/src/api/` (zero errors) + `uv run ruff check` (zero warnings) — fix any remaining issues
+- [X] T026 Run full quality gate: `uv run pytest apps/api-service/tests/routes/ apps/api-service/tests/test_config.py` (all offline, all pass) + `uv run mypy --strict apps/api-service/src/api/` (zero errors) + `uv run ruff check` (zero warnings) — fix any remaining issues
 
 ---
 
@@ -306,3 +306,4 @@ Task T012: POST /auth/logout implementation
 - `slowapi` limiter must use `MemoryStorage` in tests (not Redis) — configure via fixture or env var `ENVIRONMENT=test`
 - The test-only `GET /auth/admin-only` endpoint (T016) has `include_in_schema=False` — it does not appear in the OpenAPI docs
 - `AllConfigs` now has 6 fields including `api: ApiConfig` — T023 verifies this in the existing config test file
+

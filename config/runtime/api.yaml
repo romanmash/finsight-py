@@ -1,0 +1,7 @@
+﻿access_token_ttl_minutes: 15
+refresh_token_ttl_days: 30
+service_token_ttl_days: 3650
+cors_origins:
+  - http://localhost:8050
+rate_limit_login: "10/minute"
+rate_limit_refresh: "30/minute"
