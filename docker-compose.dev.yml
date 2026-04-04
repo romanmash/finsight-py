@@ -1,20 +1,17 @@
-services:
-  postgres:
-    ports:
-      - "5432:5432"
-
-  redis:
-    ports:
-      - "6379:6379"
-
+﻿services:
   api:
+    environment:
+      RELOAD: "true"
     volumes:
-      - ./:/app
+      - ./apps/api-service/src:/app/src
       - ./config/runtime:/app/config/runtime:ro
-    command: ["sh", "-c", "sleep infinity"]
 
-  agent-worker:
+  worker-watchdog:
     volumes:
-      - ./:/app
+      - ./apps/api-service/src:/app/src
       - ./config/runtime:/app/config/runtime:ro
-    command: ["sh", "-c", "sleep infinity"]
+
+  worker-brief:
+    volumes:
+      - ./apps/api-service/src:/app/src
+      - ./config/runtime:/app/config/runtime:ro

@@ -59,6 +59,7 @@ agents:
     message = str(exc.value)
     assert "agents.yaml" in message
     assert "temperature" in message
+    assert "valid number" in message
 
 
 def test_missing_required_field_exits(tmp_config_dir: Path) -> None:
@@ -83,6 +84,7 @@ agents:
     message = str(exc.value)
     assert "agents.yaml" in message
     assert "timeout_seconds" in message
+    assert "Field required" in message
 
 
 def test_unparseable_yaml_exits(tmp_config_dir: Path) -> None:
@@ -124,9 +126,7 @@ def test_extra_env_vars_ignored(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_unknown_pricing_model_returns_zero() -> None:
     pricing = PricingConfig(
-        models={
-            "openai/gpt-4o": ModelPricing(input_cost_per_1k=0.005, output_cost_per_1k=0.015)
-        }
+        models={"openai/gpt-4o": ModelPricing(input_cost_per_1k=0.005, output_cost_per_1k=0.015)}
     )
 
     assert pricing.get_cost("openai", "does-not-exist") == (0.0, 0.0)

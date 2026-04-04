@@ -1,167 +1,102 @@
-name: finsight
-
-x-app-defaults: &app-defaults
-  restart: unless-stopped
-  env_file:
-    - .env
-  volumes:
-    - ./config/runtime:/app/config/runtime:ro
-  networks:
-    - finsight
-
-services:
-  postgres:
+﻿services:
+  db:
     image: pgvector/pgvector:pg16
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: finsight
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d finsight"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 10s
-    networks:
-      - finsight
+    volumes:
+      - pgdata:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - redis-data:/data
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 5s
-    networks:
-      - finsight
-
-  market-data-mcp:
-    <<: *app-defaults
-    image: hashicorp/http-echo:1.0.0
-    command: ["-listen", ":3001", "-text", "ok"]
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3001/health >/dev/null 2>&1 || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-
-  macro-signals-mcp:
-    <<: *app-defaults
-    image: hashicorp/http-echo:1.0.0
-    command: ["-listen", ":3002", "-text", "ok"]
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3002/health >/dev/null 2>&1 || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-
-  news-mcp:
-    <<: *app-defaults
-    image: hashicorp/http-echo:1.0.0
-    command: ["-listen", ":3003", "-text", "ok"]
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3003/health >/dev/null 2>&1 || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-
-  rag-retrieval-mcp:
-    <<: *app-defaults
-    image: hashicorp/http-echo:1.0.0
-    command: ["-listen", ":3004", "-text", "ok"]
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3004/health >/dev/null 2>&1 || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-
-  enterprise-connector-mcp:
-    <<: *app-defaults
-    image: hashicorp/http-echo:1.0.0
-    command: ["-listen", ":3005", "-text", "ok"]
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3005/health >/dev/null 2>&1 || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-
-  trader-platform-mcp:
-    <<: *app-defaults
-    image: hashicorp/http-echo:1.0.0
-    command: ["-listen", ":3006", "-text", "ok"]
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3006/health >/dev/null 2>&1 || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
 
   api:
-    <<: *app-defaults
-    image: python:3.13-slim
-    working_dir: /app
-    command: ["sh", "-c", "sleep infinity"]
+    build:
+      context: ./apps/api-service
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
       redis:
         condition: service_healthy
-      market-data-mcp:
-        condition: service_healthy
-      macro-signals-mcp:
-        condition: service_healthy
-      news-mcp:
-        condition: service_healthy
-      rag-retrieval-mcp:
-        condition: service_healthy
-      enterprise-connector-mcp:
-        condition: service_healthy
-      trader-platform-mcp:
-        condition: service_healthy
+    volumes:
+      - ./config/runtime:/app/config/runtime:ro
 
-  agent-worker:
-    <<: *app-defaults
-    image: python:3.13-slim
-    working_dir: /app
-    command: ["sh", "-c", "sleep infinity"]
+  market-data-mcp:
+    build:
+      context: ./apps/mcp-servers/market-data
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    volumes:
+      - ./config/runtime:/app/config/runtime:ro
+
+  news-macro-mcp:
+    build:
+      context: ./apps/mcp-servers/news-macro
+    ports:
+      - "8002:8002"
+    env_file:
+      - .env
+    volumes:
+      - ./config/runtime:/app/config/runtime:ro
+
+  rag-retrieval-mcp:
+    build:
+      context: ./apps/mcp-servers/rag-retrieval
+    ports:
+      - "8003:8003"
+    env_file:
+      - .env
+    volumes:
+      - ./config/runtime:/app/config/runtime:ro
+
+  worker-watchdog:
+    build:
+      context: ./apps/api-service
+    command: ["celery", "-A", "api.lib.queues", "worker", "-Q", "watchdog"]
+    env_file:
+      - .env
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - ./config/runtime:/app/config/runtime:ro
 
-  frontend:
-    <<: *app-defaults
-    image: nginx:1.27-alpine
+  worker-brief:
+    build:
+      context: ./apps/api-service
+    command: ["celery", "-A", "api.lib.queues", "worker", "-Q", "brief"]
+    env_file:
+      - .env
     depends_on:
-      api:
-        condition: service_started
-
-  telegram-bot:
-    <<: *app-defaults
-    image: python:3.13-slim
-    working_dir: /app
-    command: ["sh", "-c", "sleep infinity"]
-    depends_on:
-      api:
-        condition: service_started
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config/runtime:/app/config/runtime:ro
 
 volumes:
-  postgres-data:
-  redis-data:
-
-networks:
-  finsight:
-    driver: bridge
+  pgdata:
