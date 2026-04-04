@@ -86,11 +86,11 @@ EOF
 uv run python - <<'EOF'
 import asyncio, random
 from apps.api.src.api.lib.db import AsyncSessionLocal
-from apps.api.src.api.db.repositories.knowledge import KnowledgeRepository
+from api.db.repositories.knowledge_entry import KnowledgeEntryRepository
 
 async def test_search():
     async with AsyncSessionLocal() as session:
-        repo = KnowledgeRepository(session)
+        repo = KnowledgeEntryRepository(session)
         # Insert two entries with distinct vectors
         vec_a = [random.random() for _ in range(1536)]
         vec_b = [1.0 - v for v in vec_a]  # roughly opposite
@@ -98,7 +98,7 @@ async def test_search():
         await repo.create(content="Oil prices rise", embedding=vec_b, author_agent="bookkeeper", tickers=["USO"])
         await session.commit()
         # Search with vec_a — should rank Apple first
-        results = await repo.similarity_search(query_vector=vec_a, top_k=2)
+        results = await repo.search_similar(vector=vec_a, limit=2, filters=None)
         print(f"Top result: {results[0].content}")
         assert "Apple" in results[0].content
 

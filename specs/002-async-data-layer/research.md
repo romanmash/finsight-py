@@ -45,8 +45,8 @@ from sqlalchemy import select
 from pgvector.sqlalchemy import Vector
 stmt = (
     select(KnowledgeEntryORM)
-    .order_by(KnowledgeEntryORM.embedding.cosine_distance(query_vector))
-    .limit(top_k)
+    .order_by(KnowledgeEntryORM.embedding.cosine_distance(vector))
+    .limit(limit)
 )
 ```
 

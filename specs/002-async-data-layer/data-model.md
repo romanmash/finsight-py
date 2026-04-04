@@ -26,6 +26,8 @@ KnowledgeEntry  (standalone; written by Bookkeeper only)
 | `hashed_password` | VARCHAR(255) | NOT NULL | bcrypt hash |
 | `role` | VARCHAR(20) | NOT NULL, default `'viewer'` | `'admin'` or `'viewer'` |
 | `telegram_handle` | VARCHAR(64) | NULLABLE | e.g. `@username` |
+| `telegram_user_id` | BIGINT | NULLABLE, UNIQUE | Telegram user identifier |
+| `telegram_chat_id` | VARCHAR(64) | NULLABLE | Telegram chat identifier |
 | `is_active` | BOOLEAN | NOT NULL, default `true` | Soft disable |
 | `created_at` | TIMESTAMPTZ | NOT NULL, default `now()` | |
 | `updated_at` | TIMESTAMPTZ | NOT NULL, default `now()` | Updated by trigger/ORM |
@@ -37,6 +39,8 @@ class OperatorModel(BaseModel):
     email: str
     role: Literal["admin", "viewer"]
     telegram_handle: str | None
+    telegram_user_id: int | None
+    telegram_chat_id: str | None
     is_active: bool
     created_at: datetime
 ```
@@ -61,7 +65,7 @@ Password hash is never included in the domain model.
 
 ## Mission
 
-**Purpose**: A unit of work for the agent team. Status lifecycle: `pending → active → complete | failed | cancelled`.
+**Purpose**: A unit of work for the agent team. Status lifecycle: `pending → running → completed | failed | cancelled`.
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
@@ -91,7 +95,7 @@ Password hash is never included in the domain model.
 | `id` | UUID | PK | |
 | `mission_id` | UUID | FK → Mission.id, NOT NULL | Cascade delete |
 | `agent_name` | VARCHAR(50) | NOT NULL | e.g. `'researcher'`, `'analyst'` |
-| `status` | VARCHAR(20) | NOT NULL | `'running'`, `'complete'`, `'failed'` |
+| `status` | VARCHAR(20) | NOT NULL | `'running'`, `'completed'`, `'failed'` |
 | `input_snapshot` | JSONB | NULLABLE | Serialized input payload |
 | `output_snapshot` | JSONB | NULLABLE | Serialized output payload |
 | `tokens_in` | INTEGER | NOT NULL, default 0 | |
@@ -191,12 +195,12 @@ WatchlistItem (1) ──< (N) Alert          [watchlist_item_id, RESTRICT delete
 Operations in order:
 1. `CREATE EXTENSION IF NOT EXISTS vector`
 2. `CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`
-3. Create `operator` table
-4. Create `refresh_token` table
-5. Create `mission` table
-6. Create `agent_run` table
-7. Create `knowledge_entry` table (including `VECTOR(1536)` column)
-8. Create IVFFlat index on `knowledge_entry.embedding`
-9. Create `watchlist_item` table
-10. Create `alert` table
+3. Create `operators` table
+4. Create `refresh_tokens` table
+5. Create `missions` table
+6. Create `agent_runs` table
+7. Create `knowledge_entries` table (including `VECTOR(1536)` column)
+8. Create IVFFlat index on `knowledge_entries.embedding`
+9. Create `watchlist_items` table
+10. Create `alerts` table
 11. Create all secondary indexes

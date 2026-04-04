@@ -2,7 +2,7 @@
 
 **Feature Branch**: `002-async-data-layer`
 **Created**: 2026-04-02
-**Status**: Draft
+**Status**: Ready for Implementation
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -198,8 +198,9 @@ task deduplication. It is needed before those components can be built, but indep
 
 ## Assumptions
 
-- The production database supports vector similarity search natively; the local development
-  environment provides this same capability so tests are representative.
+- The production database supports vector similarity search natively; local offline tests run on
+  SQLite and validate vector-related behavior through repository fallbacks and interface-level
+  checks.
 - All entities are identified by system-generated unique identifiers; no external IDs are used
   as primary keys.
 - The cache store and the database are separate infrastructure components; the cache is not used

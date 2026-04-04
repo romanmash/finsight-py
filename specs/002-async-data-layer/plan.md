@@ -107,8 +107,8 @@ apps/api-service/tests/db/
 
 **Key decisions**:
 - All IDs: `uuid.UUID`, `default_factory=uuid.uuid4`
-- `MissionStatus` enum: `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`
-- `AlertSeverity` enum: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`
+- `MissionStatus` enum: `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED`
+- `AlertSeverity` enum: `INFO`, `WARNING`, `CRITICAL`
 - `KnowledgeEntry.embedding: list[float] | None = None` (1536 dims when present; `None` for seed entries and entries awaiting embedding generation)
 - Zero external dependencies in `packages/shared`
 
