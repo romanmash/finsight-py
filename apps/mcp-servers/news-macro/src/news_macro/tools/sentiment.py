@@ -12,6 +12,7 @@ from redis.asyncio import Redis
 
 from news_macro.cache import CacheHelper
 from news_macro.models import SentimentData, ToolResponse
+from news_macro.settings import tool_ttl
 
 _redis = Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"), decode_responses=False)
 _cache = CacheHelper(_redis)
@@ -51,6 +52,6 @@ async def get_sentiment(symbol: str) -> ToolResponse[SentimentData]:
     score = float(payload.get("score", 0.0)) if isinstance(payload, dict) else 0.0
     label = _label(score)
     data = SentimentData(symbol=symbol, score=score, label=label, as_of=datetime.now(UTC))
-    await _cache.set(key, data.model_dump(mode="json"), ttl=300)
+    await _cache.set(key, data.model_dump(mode="json"), ttl=tool_ttl("get_sentiment"))
     latency = int((time.perf_counter() - started) * 1000)
     return ToolResponse(data=data, cache_hit=False, latency_ms=latency)

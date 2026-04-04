@@ -11,6 +11,7 @@ from redis.asyncio import Redis
 
 from market_data.cache import CacheHelper
 from market_data.models import ETFData, ETFHolding, ToolResponse
+from market_data.settings import tool_ttl
 
 _redis = Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"), decode_responses=False)
 _cache = CacheHelper(_redis)
@@ -52,6 +53,6 @@ async def get_etf_holdings(symbol: str) -> ToolResponse[ETFData]:
     as_of_value = payload.get("as_of_date") if isinstance(payload, dict) else None
     as_of = date.fromisoformat(str(as_of_value)) if as_of_value is not None else None
     data = ETFData(symbol=symbol, holdings=holdings, as_of_date=as_of)
-    await _cache.set(key, data.model_dump(mode="json"), ttl=3600)
+    await _cache.set(key, data.model_dump(mode="json"), ttl=tool_ttl("get_etf_holdings"))
     latency = int((time.perf_counter() - started) * 1000)
     return ToolResponse(data=data, cache_hit=False, latency_ms=latency)

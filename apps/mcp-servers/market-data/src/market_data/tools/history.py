@@ -12,6 +12,7 @@ from redis.asyncio import Redis
 
 from market_data.cache import CacheHelper
 from market_data.models import OHLCVBar, OHLCVData, ToolResponse
+from market_data.settings import tool_ttl
 
 _redis = Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"), decode_responses=False)
 _cache = CacheHelper(_redis)
@@ -54,6 +55,6 @@ async def get_ohlcv(symbol: str, period: str = "1mo") -> ToolResponse[OHLCVData]
         if isinstance(row, dict)
     ]
     data = OHLCVData(symbol=symbol, bars=bars)
-    await _cache.set(key, data.model_dump(mode="json"), ttl=300)
+    await _cache.set(key, data.model_dump(mode="json"), ttl=tool_ttl("get_ohlcv"))
     latency = int((time.perf_counter() - started) * 1000)
     return ToolResponse(data=data, cache_hit=False, latency_ms=latency)

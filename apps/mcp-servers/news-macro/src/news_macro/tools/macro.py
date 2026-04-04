@@ -5,19 +5,21 @@ from __future__ import annotations
 import os
 import time
 from datetime import UTC, datetime
+from typing import Literal
 
 import httpx
 from redis.asyncio import Redis
 
 from news_macro.cache import CacheHelper
 from news_macro.models import MacroSignals, ToolResponse
+from news_macro.settings import tool_ttl
 
 _redis = Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"), decode_responses=False)
 _cache = CacheHelper(_redis)
 _base_url = os.getenv("GDELT_BASE_URL", "https://gdelt.invalid")
 
 
-def _regime(volatility: float) -> str:
+def _regime(volatility: float) -> Literal["low", "medium", "high"]:
     if volatility < 0.3:
         return "low"
     if volatility < 0.7:
@@ -58,10 +60,10 @@ async def get_macro_signals() -> ToolResponse[MacroSignals]:
     )
     data = MacroSignals(
         market_sentiment=market_sentiment,
-        volatility_regime=_regime(volatility),  # type: ignore[arg-type]
+        volatility_regime=_regime(volatility),
         geopolitical_risk_index=geopolitical,
         updated_at=datetime.now(UTC),
     )
-    await _cache.set(key, data.model_dump(mode="json"), ttl=600)
+    await _cache.set(key, data.model_dump(mode="json"), ttl=tool_ttl("get_macro_signals"))
     latency = int((time.perf_counter() - started) * 1000)
     return ToolResponse(data=data, cache_hit=False, latency_ms=latency)

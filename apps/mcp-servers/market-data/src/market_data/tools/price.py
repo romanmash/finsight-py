@@ -6,31 +6,13 @@ import os
 import time
 from datetime import UTC, datetime
 from decimal import Decimal
-from pathlib import Path
 
 import httpx
 from redis.asyncio import Redis
 
-from config.schemas.mcp import McpConfig
 from market_data.cache import CacheHelper
 from market_data.models import PriceData, ToolResponse
-
-
-def _load_mcp_config() -> McpConfig:
-    import yaml
-
-    path = Path("config/runtime/mcp.yaml")
-    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
-    return McpConfig.model_validate(raw)
-
-
-def _tool_ttl() -> int:
-    cfg = _load_mcp_config()
-    server = cfg.servers["market-data"]
-    if server.tools and "get_price" in server.tools:
-        return server.tools["get_price"].cache_ttl_seconds
-    return server.cache_ttl_seconds
-
+from market_data.settings import tool_ttl
 
 _redis = Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"), decode_responses=False)
 _cache = CacheHelper(_redis)
@@ -75,6 +57,6 @@ async def get_price(symbol: str) -> ToolResponse[PriceData]:
             str(payload.get("timestamp", datetime.now(UTC).isoformat()))
         ),
     )
-    await _cache.set(key, data.model_dump(mode="json"), ttl=_tool_ttl())
+    await _cache.set(key, data.model_dump(mode="json"), ttl=tool_ttl("get_price"))
     latency = int((time.perf_counter() - started) * 1000)
     return ToolResponse(data=data, cache_hit=False, latency_ms=latency)

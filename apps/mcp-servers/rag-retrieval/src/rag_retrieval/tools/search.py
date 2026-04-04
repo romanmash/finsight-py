@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import time
 from datetime import date
@@ -15,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from rag_retrieval.cache import CacheHelper
 from rag_retrieval.models import KnowledgeResult, ToolResponse
+from rag_retrieval.settings import tool_ttl
 
 _redis = Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"), decode_responses=False)
 _cache = CacheHelper(_redis)
@@ -34,6 +36,37 @@ def _to_list(value: str | None) -> list[str]:
         return [str(item) for item in decoded] if isinstance(decoded, list) else []
     except json.JSONDecodeError:
         return []
+
+
+def _to_embedding(value: object) -> list[float]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [float(item) for item in value]
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return []
+        if isinstance(parsed, list):
+            return [float(item) for item in parsed]
+    return []
+
+
+def _cosine_similarity(a: list[float], b: list[float]) -> float | None:
+    if not a or not b or len(a) != len(b):
+        return None
+    dot = sum(x * y for x, y in zip(a, b, strict=False))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(y * y for y in b))
+    if norm_a == 0.0 or norm_b == 0.0:
+        return None
+    return dot / (norm_a * norm_b)
+
+
+def _pgvector_param(embedding: list[float]) -> str:
+    values = ",".join(str(component) for component in embedding)
+    return f"[{values}]"
 
 
 async def _embed(query: str) -> list[float]:
@@ -65,22 +98,51 @@ async def search_knowledge(
         return ToolResponse(data=data, cache_hit=True, latency_ms=latency)
 
     try:
-        await _embed(query)
+        query_embedding = await _embed(query)
     except httpx.HTTPError as exc:
         latency = int((time.perf_counter() - started) * 1000)
         return ToolResponse(data=None, error=f"Embedding failed: {exc}", latency_ms=latency)
-
-    stmt = """
-        SELECT id, content, source_type, author_agent, confidence, tickers, tags, freshness_date
-        FROM knowledge_entries
-        WHERE deleted_at IS NULL
-        ORDER BY created_at DESC
-        LIMIT :limit
-    """
     try:
         async with _session_factory() as session:
-            result = await session.execute(text(stmt), {"limit": limit})
-            rows = result.mappings().all()
+            dialect_name = session.bind.dialect.name if session.bind is not None else ""
+            if dialect_name == "postgresql":
+                stmt = """
+                    SELECT
+                        id,
+                        content,
+                        source_type,
+                        author_agent,
+                        confidence,
+                        tickers,
+                        tags,
+                        freshness_date,
+                        (embedding <=> CAST(:embedding AS vector)) AS distance
+                    FROM knowledge_entries
+                    WHERE deleted_at IS NULL AND embedding IS NOT NULL
+                    ORDER BY embedding <=> CAST(:embedding AS vector)
+                """
+                result = await session.execute(
+                    text(stmt),
+                    {"embedding": _pgvector_param(query_embedding)},
+                )
+                rows = result.mappings().all()
+            else:
+                stmt = """
+                    SELECT
+                        id,
+                        content,
+                        source_type,
+                        author_agent,
+                        confidence,
+                        tickers,
+                        tags,
+                        freshness_date,
+                        embedding
+                    FROM knowledge_entries
+                    WHERE deleted_at IS NULL
+                """
+                result = await session.execute(text(stmt))
+                rows = result.mappings().all()
     except Exception as exc:
         latency = int((time.perf_counter() - started) * 1000)
         return ToolResponse(data=None, error=f"search_knowledge failed: {exc}", latency_ms=latency)
@@ -99,6 +161,15 @@ async def search_knowledge(
             if freshness_raw is not None and not isinstance(freshness_raw, date)
             else freshness_raw
         )
+        distance = row.get("distance")
+        similarity_score: float | None
+        if distance is not None:
+            similarity_score = max(0.0, 1.0 - float(distance))
+        else:
+            similarity_score = _cosine_similarity(
+                query_embedding,
+                _to_embedding(row.get("embedding")),
+            )
         results.append(
             KnowledgeResult(
                 id=UUID(str(row["id"])),
@@ -109,10 +180,16 @@ async def search_knowledge(
                 tickers=row_tickers,
                 tags=row_tags,
                 freshness_date=freshness_date,
-                similarity_score=None,
+                similarity_score=similarity_score,
             )
         )
 
-    await _cache.set(key, {"items": [item.model_dump(mode="json") for item in results]}, ttl=60)
+    results.sort(key=lambda item: item.similarity_score or -1.0, reverse=True)
+    results = results[:limit]
+    await _cache.set(
+        key,
+        {"items": [item.model_dump(mode="json") for item in results]},
+        ttl=tool_ttl("search_knowledge"),
+    )
     latency = int((time.perf_counter() - started) * 1000)
     return ToolResponse(data=results, cache_hit=False, latency_ms=latency)

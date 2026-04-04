@@ -11,6 +11,7 @@ from redis.asyncio import Redis
 
 from news_macro.cache import CacheHelper
 from news_macro.models import NewsItem, ToolResponse
+from news_macro.settings import tool_ttl
 
 _redis = Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"), decode_responses=False)
 _cache = CacheHelper(_redis)
@@ -56,6 +57,10 @@ async def get_news(query: str, limit: int = 10) -> ToolResponse[list[NewsItem]]:
         for row in rows
         if isinstance(row, dict)
     ]
-    await _cache.set(key, {"items": [it.model_dump(mode="json") for it in items]}, ttl=300)
+    await _cache.set(
+        key,
+        {"items": [it.model_dump(mode="json") for it in items]},
+        ttl=tool_ttl("get_news"),
+    )
     latency = int((time.perf_counter() - started) * 1000)
     return ToolResponse(data=items, cache_hit=False, latency_ms=latency)

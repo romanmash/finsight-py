@@ -11,6 +11,7 @@ from redis.asyncio import Redis
 
 from market_data.cache import CacheHelper
 from market_data.models import FundamentalsData, ToolResponse
+from market_data.settings import tool_ttl
 
 _redis = Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"), decode_responses=False)
 _cache = CacheHelper(_redis)
@@ -55,6 +56,6 @@ async def get_fundamentals(symbol: str) -> ToolResponse[FundamentalsData]:
         revenue=Decimal(str(payload["revenue"])) if payload.get("revenue") is not None else None,
         sector=str(payload["sector"]) if payload.get("sector") is not None else None,
     )
-    await _cache.set(key, data.model_dump(mode="json"), ttl=3600)
+    await _cache.set(key, data.model_dump(mode="json"), ttl=tool_ttl("get_fundamentals"))
     latency = int((time.perf_counter() - started) * 1000)
     return ToolResponse(data=data, cache_hit=False, latency_ms=latency)

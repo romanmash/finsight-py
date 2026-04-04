@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from rag_retrieval.cache import CacheHelper
 from rag_retrieval.models import KnowledgeResult, ToolResponse
+from rag_retrieval.settings import tool_ttl
 
 _redis = Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"), decode_responses=False)
 _cache = CacheHelper(_redis)
@@ -79,6 +80,6 @@ async def get_knowledge_entry(entry_id: str) -> ToolResponse[KnowledgeResult]:
         freshness_date=freshness_date,
         similarity_score=None,
     )
-    await _cache.set(key, data.model_dump(mode="json"), ttl=300)
+    await _cache.set(key, data.model_dump(mode="json"), ttl=tool_ttl("get_knowledge_entry"))
     latency = int((time.perf_counter() - started) * 1000)
     return ToolResponse(data=data, cache_hit=False, latency_ms=latency)

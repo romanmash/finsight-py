@@ -50,8 +50,8 @@ def agents_yaml_fixture() -> dict[str, object]:
 def mcp_yaml_fixture() -> dict[str, object]:
     return {
         "servers": {
-            "market_data": {
-                "url": "http://market-data-mcp:8001",
+            "market-data": {
+                "url": "https://market-data-mcp:8001",
                 "timeout_seconds": 10,
                 "cache_ttl_seconds": 300,
             }

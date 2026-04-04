@@ -12,6 +12,7 @@ from redis.asyncio import Redis
 
 from market_data.cache import CacheHelper
 from market_data.models import OptionsContract, OptionsData, ToolResponse
+from market_data.settings import tool_ttl
 
 _redis = Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"), decode_responses=False)
 _cache = CacheHelper(_redis)
@@ -45,7 +46,7 @@ async def get_options_chain(symbol: str, expiry: str | None = None) -> ToolRespo
         OptionsContract(
             strike=Decimal(str(row.get("strike", 0))),
             expiry=date.fromisoformat(str(row.get("expiry", "1970-01-01"))),
-            call_put=str(row.get("call_put", "call")),  # type: ignore[arg-type]
+            call_put="put" if str(row.get("call_put", "call")).lower() == "put" else "call",
             bid=Decimal(str(row.get("bid", 0))),
             ask=Decimal(str(row.get("ask", 0))),
             iv=float(row["iv"]) if row.get("iv") is not None else None,
@@ -57,6 +58,6 @@ async def get_options_chain(symbol: str, expiry: str | None = None) -> ToolRespo
         if isinstance(row, dict)
     ]
     data = OptionsData(symbol=symbol, contracts=contracts)
-    await _cache.set(key, data.model_dump(mode="json"), ttl=120)
+    await _cache.set(key, data.model_dump(mode="json"), ttl=tool_ttl("get_options_chain"))
     latency = int((time.perf_counter() - started) * 1000)
     return ToolResponse(data=data, cache_hit=False, latency_ms=latency)

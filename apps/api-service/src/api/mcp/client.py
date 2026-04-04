@@ -42,13 +42,18 @@ class MCPClient:
                 return server_name
         raise MCPToolError(tool_name=tool_name, detail="No server route for tool prefix")
 
+    @staticmethod
+    def _mcp_endpoint(url: object) -> str:
+        base = str(url).rstrip("/")
+        return f"{base}/mcp/"
+
     async def discover(self) -> dict[str, list[str]]:
         manifests: dict[str, list[str]] = {}
         for server_name, server in self._configs.servers.items():
             payload = {"jsonrpc": "2.0", "method": "tools/list", "params": {}, "id": 1}
             try:
                 async with httpx.AsyncClient(timeout=server.timeout_seconds) as client:
-                    response = await client.post(f"{server.url}/mcp/", json=payload)
+                    response = await client.post(self._mcp_endpoint(server.url), json=payload)
                     response.raise_for_status()
                     body = response.json()
             except httpx.HTTPError as exc:
@@ -77,7 +82,7 @@ class MCPClient:
         }
         try:
             async with httpx.AsyncClient(timeout=server.timeout_seconds) as client:
-                response = await client.post(f"{server.url}/mcp/", json=payload)
+                response = await client.post(self._mcp_endpoint(server.url), json=payload)
                 response.raise_for_status()
                 body = response.json()
         except httpx.HTTPError as exc:

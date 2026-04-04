@@ -9,6 +9,7 @@ from api.lib.config import get_settings, load_all_configs, load_yaml_config
 
 from config.schemas.agents import AgentsConfig
 from config.schemas.api import ApiConfig
+from config.schemas.mcp import McpConfig
 from config.schemas.pricing import ModelPricing, PricingConfig
 
 
@@ -153,7 +154,7 @@ agents:
         """
 servers:
   market-data:
-    url: http://market-data-mcp:8001
+    url: https://market-data-mcp:8001
     timeout_seconds: 5
     cache_ttl_seconds: 60
 """.strip(),
@@ -202,3 +203,22 @@ rate_limit_refresh: "30/minute"
 
     configs = load_all_configs(tmp_config_dir)
     assert isinstance(configs.api, ApiConfig)
+
+
+def test_mcp_config_rejects_http_url(tmp_config_dir: Path) -> None:
+    path = tmp_config_dir / "mcp.yaml"
+    _write(
+        path,
+        """
+servers:
+  market-data:
+    url: http://market-data-mcp:8001
+    timeout_seconds: 5
+    cache_ttl_seconds: 60
+""".strip(),
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        load_yaml_config(path, McpConfig)
+
+    assert "MCP server URL must use https://" in str(exc.value)

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
+from types import SimpleNamespace
 from uuid import uuid4
 
 import fakeredis.aioredis
@@ -26,6 +27,7 @@ INSERT_KNOWLEDGE_ENTRY_SQL = text(
         confidence,
         tickers,
         tags,
+        embedding,
         freshness_date,
         created_at,
         deleted_at
@@ -38,6 +40,7 @@ INSERT_KNOWLEDGE_ENTRY_SQL = text(
         :confidence,
         :tickers,
         :tags,
+        :embedding,
         :freshness_date,
         :created_at,
         :deleted_at
@@ -72,6 +75,7 @@ async def sqlite_setup(monkeypatch: pytest.MonkeyPatch) -> None:
                     confidence REAL NOT NULL,
                     tickers TEXT NULL,
                     tags TEXT NULL,
+                    embedding TEXT NULL,
                     freshness_date TEXT NULL,
                     created_at TEXT NOT NULL,
                     deleted_at TEXT NULL
@@ -105,8 +109,9 @@ async def test_search_knowledge_returns_results(sqlite_setup: None) -> None:
                     "confidence": 0.9,
                     "tickers": json.dumps(["AAPL"]),
                     "tags": json.dumps(["tech"]),
+                    "embedding": json.dumps([0.1, 0.2, 0.3]),
                     "freshness_date": "2026-01-02",
-                    "created_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(UTC).isoformat(),
                     "deleted_at": None,
                 },
             )
@@ -114,6 +119,7 @@ async def test_search_knowledge_returns_results(sqlite_setup: None) -> None:
         result = await search_knowledge("Apple", limit=10)
         assert result.data is not None
         assert len(result.data) >= 1
+        assert result.data[0].similarity_score is not None
 
 
 @pytest.mark.asyncio
@@ -146,8 +152,9 @@ async def test_search_knowledge_with_ticker_filter(sqlite_setup: None) -> None:
                         "confidence": 0.8,
                         "tickers": json.dumps(["AAPL"]),
                         "tags": json.dumps(["x"]),
+                        "embedding": json.dumps([0.9, 0.1]),
                         "freshness_date": None,
-                        "created_at": datetime.utcnow().isoformat(),
+                        "created_at": datetime.now(UTC).isoformat(),
                         "deleted_at": None,
                     },
                     {
@@ -158,8 +165,9 @@ async def test_search_knowledge_with_ticker_filter(sqlite_setup: None) -> None:
                         "confidence": 0.8,
                         "tickers": json.dumps(["MSFT"]),
                         "tags": json.dumps(["x"]),
+                        "embedding": json.dumps([0.1, 0.9]),
                         "freshness_date": None,
-                        "created_at": datetime.utcnow().isoformat(),
+                        "created_at": datetime.now(UTC).isoformat(),
                         "deleted_at": None,
                     },
                 ],
@@ -198,8 +206,9 @@ async def test_get_knowledge_entry_found(sqlite_setup: None) -> None:
                 "confidence": 0.9,
                 "tickers": json.dumps(["AAPL"]),
                 "tags": json.dumps(["tag"]),
+                "embedding": json.dumps([0.2, 0.3, 0.4]),
                 "freshness_date": None,
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(UTC).isoformat(),
                 "deleted_at": None,
             },
         )
@@ -230,6 +239,77 @@ async def test_startup_health_check_redis_unavailable(monkeypatch: pytest.Monkey
 @pytest.mark.asyncio
 async def test_startup_health_check_all_ok(sqlite_setup: None) -> None:
     await startup_health_check()
+
+
+@pytest.mark.asyncio
+async def test_search_knowledge_postgres_branch_filters_then_limits(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import rag_retrieval.tools.search as search_module
+
+    row_keep = {
+        "id": str(uuid4()),
+        "content": "AAPL semantic match",
+        "source_type": "brief",
+        "author_agent": "analyst",
+        "confidence": 0.9,
+        "tickers": json.dumps(["AAPL"]),
+        "tags": json.dumps(["tech"]),
+        "freshness_date": "2026-01-01",
+        "distance": 0.10,
+    }
+    row_drop_by_filter = {
+        "id": str(uuid4()),
+        "content": "MSFT semantic match",
+        "source_type": "brief",
+        "author_agent": "analyst",
+        "confidence": 0.8,
+        "tickers": json.dumps(["MSFT"]),
+        "tags": json.dumps(["tech"]),
+        "freshness_date": "2026-01-01",
+        "distance": 0.01,
+    }
+
+    class _FakeResult:
+        def __init__(self, rows: list[dict[str, object]]) -> None:
+            self._rows = rows
+
+        def mappings(self) -> _FakeResult:
+            return self
+
+        def all(self) -> list[dict[str, object]]:
+            return self._rows
+
+    class _FakeSession:
+        def __init__(self, rows: list[dict[str, object]]) -> None:
+            self._rows = rows
+            self.bind = SimpleNamespace(dialect=SimpleNamespace(name="postgresql"))
+
+        async def __aenter__(self) -> _FakeSession:
+            return self
+
+        async def __aexit__(self, exc_type: object, exc: object, tb: object) -> None:
+            return None
+
+        async def execute(self, _stmt: object, _params: object = None) -> _FakeResult:
+            return _FakeResult(self._rows)
+
+    monkeypatch.setattr(
+        search_module,
+        "_session_factory",
+        lambda: _FakeSession([row_drop_by_filter, row_keep]),
+    )
+
+    async def _fake_embed(_query: str) -> list[float]:
+        return [0.1, 0.2, 0.3]
+
+    monkeypatch.setattr(search_module, "_embed", _fake_embed)
+
+    result = await search_module.search_knowledge("apple", limit=1, tickers=["AAPL"])
+    assert result.data is not None
+    assert len(result.data) == 1
+    assert str(result.data[0].id) == row_keep["id"]
+    assert result.data[0].similarity_score is not None
 
 
 
