@@ -1,0 +1,27 @@
+"""SQLAlchemy declarative base and shared ORM mixins."""
+
+from __future__ import annotations
+
+from datetime import datetime
+
+from sqlalchemy import DateTime, MetaData, func
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+metadata = MetaData()
+
+
+class Base(DeclarativeBase):
+    """Base class for all ORM models."""
+
+    metadata = metadata
+
+
+class TimestampMixin:
+    """Reusable timestamp columns."""
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )

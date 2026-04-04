@@ -19,10 +19,10 @@
 **Purpose**: Create all `__init__.py` files and directory structure so imports work before any
 model code is written. No business logic here — pure scaffolding.
 
-- [ ] T001 Create `apps/api-service/src/api/db/__init__.py`, `apps/api-service/src/api/db/models/__init__.py`, and `apps/api-service/src/api/db/repositories/__init__.py` (all empty) to make the db package importable
-- [ ] T002 [P] Create `packages/shared/src/finsight/shared/models/__init__.py` exporting all domain model classes (will be populated as models are written) in `packages/shared/src/finsight/shared/models/__init__.py`
-- [ ] T003 [P] Create `apps/api-service/tests/db/__init__.py` (empty) in `apps/api-service/tests/db/__init__.py`
-- [ ] T004 [P] Add `sqlalchemy[asyncio]>=2.0`, `alembic`, `asyncpg`, `pgvector`, `redis[hiredis]`, `aiosqlite`, `fakeredis` to `apps/api-service/pyproject.toml` dependencies in `apps/api-service/pyproject.toml`
+- [x] T001 Create `apps/api-service/src/api/db/__init__.py`, `apps/api-service/src/api/db/models/__init__.py`, and `apps/api-service/src/api/db/repositories/__init__.py` (all empty) to make the db package importable
+- [x] T002 [P] Create `packages/shared/src/finsight/shared/models/__init__.py` exporting all domain model classes (will be populated as models are written) in `packages/shared/src/finsight/shared/models/__init__.py`
+- [x] T003 [P] Create `apps/api-service/tests/db/__init__.py` (empty) in `apps/api-service/tests/db/__init__.py`
+- [x] T004 [P] Add `sqlalchemy[asyncio]>=2.0`, `alembic`, `asyncpg`, `pgvector`, `redis[hiredis]`, `aiosqlite`, `fakeredis` to `apps/api-service/pyproject.toml` dependencies in `apps/api-service/pyproject.toml`
 
 **Checkpoint**: `uv sync` completes without errors; all package directories importable.
 
@@ -35,19 +35,19 @@ any ORM model or repository can be written. These are shared by all user stories
 
 **⚠️ CRITICAL**: No ORM model or repository work can begin until this phase is complete.
 
-- [ ] T005 Create `apps/api-service/src/api/db/base.py` with `DeclarativeBase` subclass (`Base`), shared `metadata` object, and `TimestampMixin` (provides `created_at: Mapped[datetime]` with `server_default=func.now()` and `updated_at: Mapped[datetime]` with `onupdate=func.now()`) in `apps/api-service/src/api/db/base.py`
-- [ ] T006 Create `apps/api-service/src/api/lib/db.py` with:
+- [x] T005 Create `apps/api-service/src/api/db/base.py` with `DeclarativeBase` subclass (`Base`), shared `metadata` object, and `TimestampMixin` (provides `created_at: Mapped[datetime]` with `server_default=func.now()` and `updated_at: Mapped[datetime]` with `onupdate=func.now()`) in `apps/api-service/src/api/db/base.py`
+- [x] T006 Create `apps/api-service/src/api/lib/db.py` with:
   - `create_async_engine()` from `DATABASE_URL` via `get_settings()`
   - `async_sessionmaker` producing `AsyncSession` instances
-  - `get_session() -> AsyncGenerator[AsyncSession, None]` FastAPI dependency (yields session, commits/rolls back on exit)
+  - `get_session() -> AsyncGenerator[AsyncSession]` FastAPI dependency (yields session, commits/rolls back on exit)
   - Engine created at module level; fails fast with descriptive error on bad URL
   in `apps/api-service/src/api/lib/db.py`
-- [ ] T007 [P] Create `apps/api-service/src/api/lib/redis.py` with:
+- [x] T007 [P] Create `apps/api-service/src/api/lib/redis.py` with:
   - `get_redis() -> Redis` singleton returning `redis.asyncio.Redis.from_url(settings.redis_url)`
   - `CacheClient` wrapper with `get(key)`, `set(key, value, ttl)`, `delete(key)` methods — all typed with `str` keys and `bytes | str` values
   - Raises `CacheError` (custom exception) with message on connection failure (no silent failure)
   in `apps/api-service/src/api/lib/redis.py`
-- [ ] T008 Create `apps/api-service/tests/db/conftest.py` with:
+- [x] T008 Create `apps/api-service/tests/db/conftest.py` with:
   - `async_engine` fixture: creates in-memory SQLite async engine (`sqlite+aiosqlite:///:memory:`)
   - `session` fixture: runs `Base.metadata.create_all(engine)` then yields an `AsyncSession`; drops all tables after test
   - `fake_redis` fixture: returns `fakeredis.aioredis.FakeRedis()` instance

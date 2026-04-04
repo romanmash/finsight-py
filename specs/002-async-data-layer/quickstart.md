@@ -24,8 +24,8 @@ uv run alembic upgrade head
 
 ```bash
 # Connect to the DB and inspect tables
-docker compose exec db psql -U finsight -d finsight -c "\dt"
-# Expected: operator, refresh_token, mission, agent_run, knowledge_entry, watchlist_item, alert
+docker compose exec db psql -U postgres -d finsight -c "\dt"
+# Expected: operators, refresh_tokens, missions, agent_runs, knowledge_entries, watchlist_items, alerts
 ```
 
 ---
@@ -42,7 +42,7 @@ uv run pytest apps/api-service/tests/db/ -v
 Run only repository tests:
 
 ```bash
-uv run pytest apps/api-service/tests/db/test_repositories.py -v
+uv run pytest apps/api-service/tests/db/test_*.py -v
 ```
 
 ---
@@ -54,22 +54,23 @@ With the database running:
 ```bash
 uv run python - <<'EOF'
 import asyncio
-from apps.api.src.api.lib.db import AsyncSessionLocal
-from apps.api.src.api.db.repositories.mission import MissionRepository
-from apps.api.src.api.db.models.mission import MissionStatus, MissionType, MissionSource
+from api.lib.db import SessionLocal
+from api.db.repositories.mission import MissionRepository
 
 async def smoke():
-    async with AsyncSessionLocal() as session:
+    async with SessionLocal() as session:
         repo = MissionRepository(session)
         mission = await repo.create(
-            title="Test mission",
-            query="What is AAPL doing?",
-            mission_type=MissionType.RESEARCH,
-            status=MissionStatus.PENDING,
-            source=MissionSource.OPERATOR,
+            data={
+                "title": "Test mission",
+                "query": "What is AAPL doing?",
+                "mission_type": "research",
+                "status": "pending",
+                "source": "operator",
+            }
         )
         print(f"Created: {mission.id}")
-        fetched = await repo.get(mission.id)
+        fetched = await repo.get_by_id(mission.id)
         assert fetched is not None
         print(f"Retrieved: {fetched.title}")
         await session.commit()
@@ -85,17 +86,31 @@ EOF
 ```bash
 uv run python - <<'EOF'
 import asyncio, random
-from apps.api.src.api.lib.db import AsyncSessionLocal
+from api.lib.db import SessionLocal
 from api.db.repositories.knowledge_entry import KnowledgeEntryRepository
 
 async def test_search():
-    async with AsyncSessionLocal() as session:
+    async with SessionLocal() as session:
         repo = KnowledgeEntryRepository(session)
         # Insert two entries with distinct vectors
         vec_a = [random.random() for _ in range(1536)]
         vec_b = [1.0 - v for v in vec_a]  # roughly opposite
-        await repo.create(content="Apple earnings beat", embedding=vec_a, author_agent="bookkeeper", tickers=["AAPL"])
-        await repo.create(content="Oil prices rise", embedding=vec_b, author_agent="bookkeeper", tickers=["USO"])
+        await repo.create(
+            data={
+                "content": "Apple earnings beat",
+                "embedding": vec_a,
+                "author_agent": "bookkeeper",
+                "tickers": ["AAPL"],
+            }
+        )
+        await repo.create(
+            data={
+                "content": "Oil prices rise",
+                "embedding": vec_b,
+                "author_agent": "bookkeeper",
+                "tickers": ["USO"],
+            }
+        )
         await session.commit()
         # Search with vec_a — should rank Apple first
         results = await repo.search_similar(vector=vec_a, limit=2, filters=None)
