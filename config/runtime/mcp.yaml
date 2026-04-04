@@ -1,13 +1,37 @@
 servers:
   market-data:
-    url: http://market-data-mcp:3001
-    timeout_seconds: 5
-    cache_ttl_seconds: 60
-  news-macro:
-    url: http://news-macro-mcp:3002
-    timeout_seconds: 8
+    url: http://market-data-mcp:8001
+    openbb_provider: yfinance
+    timeout_seconds: 10
     cache_ttl_seconds: 300
+    tools:
+      get_price:
+        cache_ttl_seconds: 60
+      get_ohlcv:
+        cache_ttl_seconds: 300
+      get_fundamentals:
+        cache_ttl_seconds: 3600
+      get_etf_holdings:
+        cache_ttl_seconds: 3600
+      get_options_chain:
+        cache_ttl_seconds: 120
+  news-macro:
+    url: http://news-macro-mcp:8002
+    timeout_seconds: 15
+    cache_ttl_seconds: 300
+    tools:
+      get_news:
+        cache_ttl_seconds: 300
+      get_sentiment:
+        cache_ttl_seconds: 300
+      get_macro_signals:
+        cache_ttl_seconds: 600
   rag-retrieval:
-    url: http://rag-retrieval-mcp:3004
-    timeout_seconds: 3
+    url: http://rag-retrieval-mcp:8003
+    timeout_seconds: 10
     cache_ttl_seconds: 120
+    tools:
+      search_knowledge:
+        cache_ttl_seconds: 60
+      get_knowledge_entry:
+        cache_ttl_seconds: 300

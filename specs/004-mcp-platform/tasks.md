@@ -1,4 +1,4 @@
-# Tasks: MCP Platform
+﻿# Tasks: MCP Platform
 
 **Input**: Design documents from `/specs/004-mcp-platform/`
 **Prerequisites**: plan.md ✅ | spec.md ✅ | data-model.md ✅ | research.md ✅ | quickstart.md ✅
@@ -19,13 +19,13 @@
 **Purpose**: Create all `pyproject.toml` files with correct dependencies, all `__init__.py` stubs,
 and a consistent per-server `ToolResponse[T]` Pydantic envelope. No tool logic yet.
 
-- [ ] T001 Update `apps/mcp-servers/market-data/pyproject.toml` with dependencies: `fastmcp>=0.4`, `openbb>=4.0`, `openbb-yfinance`, `httpx`, `redis[hiredis]`, `pydantic>=2.0`, `pyyaml>=6.0`, `structlog>=24.1`, `fakeredis` (dev) in `apps/mcp-servers/market-data/pyproject.toml`
-- [ ] T002 [P] Update `apps/mcp-servers/news-macro/pyproject.toml` with dependencies: `fastmcp>=0.4`, `finnhub-python`, `httpx`, `redis[hiredis]`, `pydantic>=2.0`, `pyyaml>=6.0`, `structlog>=24.1`, `fakeredis` (dev) in `apps/mcp-servers/news-macro/pyproject.toml`
-- [ ] T003 [P] Update `apps/mcp-servers/rag-retrieval/pyproject.toml` with dependencies: `fastmcp>=0.4`, `sqlalchemy[asyncio]>=2.0`, `asyncpg`, `pgvector`, `httpx`, `redis[hiredis]`, `pydantic>=2.0`, `pyyaml>=6.0`, `structlog>=24.1`, `fakeredis`, `aiosqlite` (dev) in `apps/mcp-servers/rag-retrieval/pyproject.toml`
-- [ ] T004 [P] Add `respx` to root `pyproject.toml` `[dependency-groups.dev]` (used across all MCP server tests) in `pyproject.toml`
-- [ ] T005 [P] Create all package `__init__.py` stubs: `apps/mcp-servers/market-data/src/market_data/__init__.py`, `apps/mcp-servers/market-data/src/market_data/tools/__init__.py`, `apps/mcp-servers/news-macro/src/news_macro/__init__.py`, `apps/mcp-servers/news-macro/src/news_macro/tools/__init__.py`, `apps/mcp-servers/rag-retrieval/src/rag_retrieval/__init__.py`, `apps/mcp-servers/rag-retrieval/src/rag_retrieval/tools/__init__.py`, `apps/api-service/src/api/mcp/__init__.py` (all empty)
-- [ ] T006 [P] Create test directories: `apps/mcp-servers/market-data/tests/__init__.py`, `apps/mcp-servers/news-macro/tests/__init__.py`, `apps/mcp-servers/rag-retrieval/tests/__init__.py`, `apps/api-service/tests/mcp/__init__.py` (all empty)
-- [ ] T007 Create per-server `ToolResponse[T]` generic Pydantic model (one independent copy per server) in each server `models.py`:
+- [X] T001 Update `apps/mcp-servers/market-data/pyproject.toml` with dependencies: `fastmcp>=0.4`, `openbb>=4.0`, `openbb-yfinance`, `httpx`, `redis[hiredis]`, `pydantic>=2.0`, `pyyaml>=6.0`, `structlog>=24.1`, `fakeredis` (dev) in `apps/mcp-servers/market-data/pyproject.toml`
+- [X] T002 [P] Update `apps/mcp-servers/news-macro/pyproject.toml` with dependencies: `fastmcp>=0.4`, `finnhub-python`, `httpx`, `redis[hiredis]`, `pydantic>=2.0`, `pyyaml>=6.0`, `structlog>=24.1`, `fakeredis` (dev) in `apps/mcp-servers/news-macro/pyproject.toml`
+- [X] T003 [P] Update `apps/mcp-servers/rag-retrieval/pyproject.toml` with dependencies: `fastmcp>=0.4`, `sqlalchemy[asyncio]>=2.0`, `asyncpg`, `pgvector`, `httpx`, `redis[hiredis]`, `pydantic>=2.0`, `pyyaml>=6.0`, `structlog>=24.1`, `fakeredis`, `aiosqlite` (dev) in `apps/mcp-servers/rag-retrieval/pyproject.toml`
+- [X] T004 [P] Add `respx` to root `pyproject.toml` `[dependency-groups.dev]` (used across all MCP server tests) in `pyproject.toml`
+- [X] T005 [P] Create all package `__init__.py` stubs: `apps/mcp-servers/market-data/src/market_data/__init__.py`, `apps/mcp-servers/market-data/src/market_data/tools/__init__.py`, `apps/mcp-servers/news-macro/src/news_macro/__init__.py`, `apps/mcp-servers/news-macro/src/news_macro/tools/__init__.py`, `apps/mcp-servers/rag-retrieval/src/rag_retrieval/__init__.py`, `apps/mcp-servers/rag-retrieval/src/rag_retrieval/tools/__init__.py`, `apps/api-service/src/api/mcp/__init__.py` (all empty)
+- [X] T006 [P] Create test directories: `apps/mcp-servers/market-data/tests/__init__.py`, `apps/mcp-servers/news-macro/tests/__init__.py`, `apps/mcp-servers/rag-retrieval/tests/__init__.py`, `apps/api-service/tests/mcp/__init__.py` (all empty)
+- [X] T007 Create per-server `ToolResponse[T]` generic Pydantic model (one independent copy per server) in each server `models.py`:
   ```python
   class ToolResponse(BaseModel, Generic[T]):
       data: T | None
@@ -46,7 +46,7 @@ all three servers. Must exist before any tool implementation.
 
 **⚠️ CRITICAL**: All MCP server user stories depend on this phase.
 
-- [ ] T008 Extend `config/runtime/mcp.yaml` to add per-tool TTL structure:
+- [X] T008 Extend `config/runtime/mcp.yaml` to add per-tool TTL structure:
   ```yaml
   servers:
     market-data:
@@ -74,15 +74,15 @@ all three servers. Must exist before any tool implementation.
         get_knowledge_entry: {cache_ttl_seconds: 300}
   ```
   in `config/runtime/mcp.yaml`
-- [ ] T009 Update `config/schemas/mcp.py` to extend `McpServerConfig` with `openbb_provider: str = "yfinance"` and `tools: dict[str, ToolCacheConfig]` where `ToolCacheConfig(BaseModel)` has `cache_ttl_seconds: int`; update `McpConfig` accordingly — `frozen=True` in `config/schemas/mcp.py`
-- [ ] T010 [P] Create `apps/mcp-servers/market-data/src/market_data/cache.py` with:
+- [X] T009 Update `config/schemas/mcp.py` to extend `McpServerConfig` with `openbb_provider: str = "yfinance"` and `tools: dict[str, ToolCacheConfig]` where `ToolCacheConfig(BaseModel)` has `cache_ttl_seconds: int`; update `McpConfig` accordingly — `frozen=True` in `config/schemas/mcp.py`
+- [X] T010 [P] Create `apps/mcp-servers/market-data/src/market_data/cache.py` with:
   - `CacheHelper` class wrapping `redis.asyncio.Redis`
   - `get(key: str) -> dict | None` — deserialise JSON
   - `set(key: str, value: dict, ttl: int) -> None` — serialise JSON + EXPIRE
   - `make_key(server: str, tool: str, params: dict) -> str` — `f"{server}:{tool}:{hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest()[:16]}"`
   in `apps/mcp-servers/market-data/src/market_data/cache.py`
-- [ ] T011 [P] Create identical `cache.py` for news-macro server in `apps/mcp-servers/news-macro/src/news_macro/cache.py`
-- [ ] T012 [P] Create identical `cache.py` for rag-retrieval server in `apps/mcp-servers/rag-retrieval/src/rag_retrieval/cache.py`
+- [X] T011 [P] Create identical `cache.py` for news-macro server in `apps/mcp-servers/news-macro/src/news_macro/cache.py`
+- [X] T012 [P] Create identical `cache.py` for rag-retrieval server in `apps/mcp-servers/rag-retrieval/src/rag_retrieval/cache.py`
 
 **Checkpoint**: All three `cache.py` files importable; `CacheHelper` type-checks under mypy --strict.
 
@@ -95,7 +95,7 @@ all three servers. Must exist before any tool implementation.
 
 **Independent Test**: `uv run pytest apps/mcp-servers/market-data/tests/test_tools.py` — all pass offline.
 
-- [ ] T013 [US1] Create response Pydantic types in `apps/mcp-servers/market-data/src/market_data/models.py`:
+- [X] T013 [US1] Create response Pydantic types in `apps/mcp-servers/market-data/src/market_data/models.py`:
   - `PriceData`: symbol, price (Decimal), change_pct (float), volume (int), timestamp (datetime)
   - `OHLCVBar`: date (date), open, high, low, close (all Decimal), volume (int)
   - `OHLCVData`: symbol, bars (list[OHLCVBar])
@@ -105,24 +105,24 @@ all three servers. Must exist before any tool implementation.
   - `OptionsContract`: strike (Decimal), expiry (date), call_put (Literal["call","put"]), bid (Decimal), ask (Decimal), iv (float | None), open_interest (int | None)
   - `OptionsData`: symbol, contracts (list[OptionsContract])
   in `apps/mcp-servers/market-data/src/market_data/models.py`
-- [ ] T014 [US1] Implement `apps/mcp-servers/market-data/src/market_data/tools/price.py` with `async def get_price(symbol: str) -> ToolResponse[PriceData]`:
+- [X] T014 [US1] Implement `apps/mcp-servers/market-data/src/market_data/tools/price.py` with `async def get_price(symbol: str) -> ToolResponse[PriceData]`:
   - Check cache (`CacheHelper.get`) → if hit return with `cache_hit=True`
   - Call `httpx.AsyncClient` to fetch from OpenBB HTTP endpoint (or mock-friendly URL pattern); map response to `PriceData`
   - On any `httpx.HTTPError` or OpenBB error → return `ToolResponse(data=None, error="description")`
   - Cache result with TTL from config; return with `cache_hit=False`, `latency_ms` measured
   in `apps/mcp-servers/market-data/src/market_data/tools/price.py`
-- [ ] T015 [P] [US1] Implement `apps/mcp-servers/market-data/src/market_data/tools/history.py` with `async def get_ohlcv(symbol: str, period: str = "1mo") -> ToolResponse[OHLCVData]` — same cache/error pattern as get_price in `apps/mcp-servers/market-data/src/market_data/tools/history.py`
-- [ ] T016 [P] [US1] Implement `apps/mcp-servers/market-data/src/market_data/tools/fundamentals.py` with `async def get_fundamentals(symbol: str) -> ToolResponse[FundamentalsData]` in `apps/mcp-servers/market-data/src/market_data/tools/fundamentals.py`
-- [ ] T017 [P] [US1] Implement `apps/mcp-servers/market-data/src/market_data/tools/etf.py` with `async def get_etf_holdings(symbol: str) -> ToolResponse[ETFData]` in `apps/mcp-servers/market-data/src/market_data/tools/etf.py`
-- [ ] T018 [P] [US1] Implement `apps/mcp-servers/market-data/src/market_data/tools/options.py` with `async def get_options_chain(symbol: str, expiry: str | None = None) -> ToolResponse[OptionsData]` in `apps/mcp-servers/market-data/src/market_data/tools/options.py`
-- [ ] T019 [US1] Create `apps/mcp-servers/market-data/src/market_data/server.py` with:
+- [X] T015 [P] [US1] Implement `apps/mcp-servers/market-data/src/market_data/tools/history.py` with `async def get_ohlcv(symbol: str, period: str = "1mo") -> ToolResponse[OHLCVData]` — same cache/error pattern as get_price in `apps/mcp-servers/market-data/src/market_data/tools/history.py`
+- [X] T016 [P] [US1] Implement `apps/mcp-servers/market-data/src/market_data/tools/fundamentals.py` with `async def get_fundamentals(symbol: str) -> ToolResponse[FundamentalsData]` in `apps/mcp-servers/market-data/src/market_data/tools/fundamentals.py`
+- [X] T017 [P] [US1] Implement `apps/mcp-servers/market-data/src/market_data/tools/etf.py` with `async def get_etf_holdings(symbol: str) -> ToolResponse[ETFData]` in `apps/mcp-servers/market-data/src/market_data/tools/etf.py`
+- [X] T018 [P] [US1] Implement `apps/mcp-servers/market-data/src/market_data/tools/options.py` with `async def get_options_chain(symbol: str, expiry: str | None = None) -> ToolResponse[OptionsData]` in `apps/mcp-servers/market-data/src/market_data/tools/options.py`
+- [X] T019 [US1] Create `apps/mcp-servers/market-data/src/market_data/server.py` with:
   - `mcp = FastMCP("market-data")` app instance
   - Register all 5 tools via `@mcp.tool()` decorators (import from tools/*)
   - Startup health check: attempt Redis ping + OpenBB provider check; `sys.exit(1)` with error on failure
   - `GET /health` route returning `{"status": "healthy"|"unhealthy", "provider": str, "cache": str}`
   - Config loaded from `config/runtime/mcp.yaml` at module level; `sys.exit(1)` on validation error
   in `apps/mcp-servers/market-data/src/market_data/server.py`
-- [ ] T020 [US1] Write `apps/mcp-servers/market-data/tests/test_tools.py` with respx fixtures:
+- [X] T020 [US1] Write `apps/mcp-servers/market-data/tests/test_tools.py` with respx fixtures:
   - `test_get_price_success` — respx mocks OpenBB HTTP response → assert `PriceData` fields correct
   - `test_get_price_cache_hit` — call once (respx returns data), call again (respx raises `ConnectError` — must not fire because cache serves it) → assert `cache_hit=True`
   - `test_get_price_invalid_symbol` — respx returns 404/error → assert `ToolResponse(data=None, error=...)`
@@ -145,19 +145,19 @@ Redis cache, and offline tests via respx. All external HTTP via httpx (no Finnhu
 
 **Independent Test**: `uv run pytest apps/mcp-servers/news-macro/tests/test_tools.py` — all pass offline.
 
-- [ ] T021 [US2] Create response Pydantic types in `apps/mcp-servers/news-macro/src/news_macro/models.py`:
+- [X] T021 [US2] Create response Pydantic types in `apps/mcp-servers/news-macro/src/news_macro/models.py`:
   - `NewsItem`: headline (str), source (str), url (str | None), published_at (datetime), relevance_score (float | None), summary (str | None)
   - `SentimentData`: symbol (str), score (float), label (Literal["bullish","bearish","neutral"]), as_of (datetime)
   - `MacroSignals`: market_sentiment (float), volatility_regime (Literal["low","medium","high"]), geopolitical_risk_index (float | None), updated_at (datetime)
   in `apps/mcp-servers/news-macro/src/news_macro/models.py`
-- [ ] T022 [US2] Implement `apps/mcp-servers/news-macro/src/news_macro/tools/news.py` with `async def get_news(query: str, limit: int = 10) -> ToolResponse[list[NewsItem]]`:
+- [X] T022 [US2] Implement `apps/mcp-servers/news-macro/src/news_macro/tools/news.py` with `async def get_news(query: str, limit: int = 10) -> ToolResponse[list[NewsItem]]`:
   - httpx GET to Finnhub `/news` endpoint (URL from config, API key from env)
   - Cache with `get_news` TTL from mcp.yaml; structured error on any HTTP failure
   in `apps/mcp-servers/news-macro/src/news_macro/tools/news.py`
-- [ ] T023 [P] [US2] Implement `apps/mcp-servers/news-macro/src/news_macro/tools/sentiment.py` with `async def get_sentiment(symbol: str) -> ToolResponse[SentimentData]` — httpx GET to Finnhub sentiment endpoint in `apps/mcp-servers/news-macro/src/news_macro/tools/sentiment.py`
-- [ ] T024 [P] [US2] Implement `apps/mcp-servers/news-macro/src/news_macro/tools/macro.py` with `async def get_macro_signals() -> ToolResponse[MacroSignals]` — httpx GET to GDELT API; map to `MacroSignals`; cache with TTL in `apps/mcp-servers/news-macro/src/news_macro/tools/macro.py`
-- [ ] T025 [US2] Create `apps/mcp-servers/news-macro/src/news_macro/server.py` — same pattern as market-data server: FastMCP instance, register 3 tools, startup health check, `/health` endpoint, sys.exit(1) on bad config in `apps/mcp-servers/news-macro/src/news_macro/server.py`
-- [ ] T026 [US2] Write `apps/mcp-servers/news-macro/tests/test_tools.py`:
+- [X] T023 [P] [US2] Implement `apps/mcp-servers/news-macro/src/news_macro/tools/sentiment.py` with `async def get_sentiment(symbol: str) -> ToolResponse[SentimentData]` — httpx GET to Finnhub sentiment endpoint in `apps/mcp-servers/news-macro/src/news_macro/tools/sentiment.py`
+- [X] T024 [P] [US2] Implement `apps/mcp-servers/news-macro/src/news_macro/tools/macro.py` with `async def get_macro_signals() -> ToolResponse[MacroSignals]` — httpx GET to GDELT API; map to `MacroSignals`; cache with TTL in `apps/mcp-servers/news-macro/src/news_macro/tools/macro.py`
+- [X] T025 [US2] Create `apps/mcp-servers/news-macro/src/news_macro/server.py` — same pattern as market-data server: FastMCP instance, register 3 tools, startup health check, `/health` endpoint, sys.exit(1) on bad config in `apps/mcp-servers/news-macro/src/news_macro/server.py`
+- [X] T026 [US2] Write `apps/mcp-servers/news-macro/tests/test_tools.py`:
   - `test_get_news_success` — respx mocks Finnhub response → assert list of NewsItem
   - `test_get_news_cache_hit` — second call hits fakeredis → `cache_hit=True`
   - `test_get_news_source_unavailable` — respx returns 503 → `ToolResponse(data=None, error=...)`
@@ -177,18 +177,18 @@ read-only DB access (SQLAlchemy async), Redis cache, and offline tests (SQLite +
 
 **Independent Test**: `uv run pytest apps/mcp-servers/rag-retrieval/tests/test_tools.py` — all pass offline.
 
-- [ ] T027 [US3] Create response Pydantic types in `apps/mcp-servers/rag-retrieval/src/rag_retrieval/models.py`:
+- [X] T027 [US3] Create response Pydantic types in `apps/mcp-servers/rag-retrieval/src/rag_retrieval/models.py`:
   - `KnowledgeResult`: id (UUID), content (str), source_type (str | None), author_agent (str), confidence (float), tickers (list[str]), tags (list[str]), freshness_date (date | None), similarity_score (float | None)
   in `apps/mcp-servers/rag-retrieval/src/rag_retrieval/models.py`
-- [ ] T028 [US3] Implement `apps/mcp-servers/rag-retrieval/src/rag_retrieval/tools/search.py` with `async def search_knowledge(query: str, limit: int = 10, tickers: list[str] | None = None, tags: list[str] | None = None) -> ToolResponse[list[KnowledgeResult]]`:
+- [X] T028 [US3] Implement `apps/mcp-servers/rag-retrieval/src/rag_retrieval/tools/search.py` with `async def search_knowledge(query: str, limit: int = 10, tickers: list[str] | None = None, tags: list[str] | None = None) -> ToolResponse[list[KnowledgeResult]]`:
   - Generate query embedding via httpx POST to OpenAI embeddings API (allows respx mocking)
   - SQLAlchemy async session → `SELECT ... ORDER BY embedding <=> :vec LIMIT :limit WHERE embedding IS NOT NULL AND deleted_at IS NULL` with optional ticker/tag filters
   - Cache result keyed on query+filters+limit
   - On empty DB → return `ToolResponse(data=[], error=None)` (not an error)
   in `apps/mcp-servers/rag-retrieval/src/rag_retrieval/tools/search.py`
-- [ ] T029 [P] [US3] Implement `apps/mcp-servers/rag-retrieval/src/rag_retrieval/tools/retrieve.py` with `async def get_knowledge_entry(entry_id: str) -> ToolResponse[KnowledgeResult]` — simple SELECT by PK; cache with TTL in `apps/mcp-servers/rag-retrieval/src/rag_retrieval/tools/retrieve.py`
-- [ ] T030 [US3] Create `apps/mcp-servers/rag-retrieval/src/rag_retrieval/server.py` — FastMCP instance, register 2 tools, startup health check (DB ping + Redis ping), `/health` endpoint, sys.exit(1) on bad config in `apps/mcp-servers/rag-retrieval/src/rag_retrieval/server.py`
-- [ ] T031 [US3] Write `apps/mcp-servers/rag-retrieval/tests/test_tools.py` with in-memory SQLite fixtures (same pattern as Feature 002 test conftest):
+- [X] T029 [P] [US3] Implement `apps/mcp-servers/rag-retrieval/src/rag_retrieval/tools/retrieve.py` with `async def get_knowledge_entry(entry_id: str) -> ToolResponse[KnowledgeResult]` — simple SELECT by PK; cache with TTL in `apps/mcp-servers/rag-retrieval/src/rag_retrieval/tools/retrieve.py`
+- [X] T030 [US3] Create `apps/mcp-servers/rag-retrieval/src/rag_retrieval/server.py` — FastMCP instance, register 2 tools, startup health check (DB ping + Redis ping), `/health` endpoint, sys.exit(1) on bad config in `apps/mcp-servers/rag-retrieval/src/rag_retrieval/server.py`
+- [X] T031 [US3] Write `apps/mcp-servers/rag-retrieval/tests/test_tools.py` with in-memory SQLite fixtures (same pattern as Feature 002 test conftest):
   - `test_search_knowledge_returns_results` — insert 3 KnowledgeEntry rows with embeddings, respx mocks OpenAI embeddings API, assert results non-empty and fields correct
   - `test_search_knowledge_empty_db` — empty DB → `ToolResponse(data=[], error=None)` (no exception)
   - `test_search_knowledge_with_ticker_filter` — insert entries for AAPL and MSFT, filter `tickers=["AAPL"]`, assert only AAPL entries returned
@@ -208,16 +208,16 @@ when Redis or the required provider is unreachable. Tested via patching.
 
 **Independent Test**: Patch Redis to raise `ConnectionError`; assert `SystemExit` raised by `startup_health_check()`.
 
-- [ ] T032 [US4] Add `startup_health_check()` function to each server's `server.py` — already partially in T019/T025/T030; ensure all three implementations:
+- [X] T032 [US4] Add `startup_health_check()` function to each server's `server.py` — already partially in T019/T025/T030; ensure all three implementations:
   - Attempt `redis_client.ping()` — on `ConnectionError` → `sys.exit(1)` with `"Redis unavailable: {detail}"`
   - Attempt provider-specific probe (OpenBB: small test call; Finnhub: API status; rag-retrieval: `SELECT 1`) — on failure → `sys.exit(1)` with provider name + detail
   - On success → log "startup health check passed" via structlog
   Update all three server files: `apps/mcp-servers/market-data/src/market_data/server.py`, `apps/mcp-servers/news-macro/src/news_macro/server.py`, `apps/mcp-servers/rag-retrieval/src/rag_retrieval/server.py`
-- [ ] T033 [P] [US4] Add startup health check tests to `apps/mcp-servers/market-data/tests/test_tools.py`:
+- [X] T033 [P] [US4] Add startup health check tests to `apps/mcp-servers/market-data/tests/test_tools.py`:
   - `test_startup_health_check_redis_unavailable` — patch `redis_client.ping` to raise `ConnectionError` → assert `SystemExit`
   - `test_startup_health_check_all_ok` — patch both probes to succeed → assert no exception
   in `apps/mcp-servers/market-data/tests/test_tools.py`
-- [ ] T034 [P] [US4] Add equivalent startup health check tests to `apps/mcp-servers/news-macro/tests/test_tools.py` and `apps/mcp-servers/rag-retrieval/tests/test_tools.py`
+- [X] T034 [P] [US4] Add equivalent startup health check tests to `apps/mcp-servers/news-macro/tests/test_tools.py` and `apps/mcp-servers/rag-retrieval/tests/test_tools.py`
 
 **Checkpoint**: `uv run pytest apps/mcp-servers/` — all startup tests pass; each server exits on bad deps.
 
@@ -228,14 +228,14 @@ when Redis or the required provider is unreachable. Tested via patching.
 **Purpose**: `MCPClient` in `apps/api-service` routes tool calls to correct server by name prefix,
 handles timeouts, and discovers tool manifests at startup. Tests use respx to mock `POST /mcp/`.
 
-- [ ] T035 Create `apps/api-service/src/api/mcp/client.py` with `MCPClient`:
+- [X] T035 Create `apps/api-service/src/api/mcp/client.py` with `MCPClient`:
   - `__init__(self, configs: McpConfig)` — builds `{prefix: base_url}` routing map from config
   - `async def discover(self) -> dict[str, list[str]]` — for each server sends JSON-RPC `{"method":"tools/list","params":{}}` to `POST /mcp/`; caches manifest; raises `MCPToolError` if unreachable
   - `async def call_tool(self, tool_name: str, params: dict) -> dict` — selects server URL by prefix match, sends JSON-RPC `{"method":"tools/call","params":{"name":tool_name,"arguments":params}}` to `POST /mcp/`; raises `MCPToolError` on timeout, connection error, or JSON-RPC error field
   - `MCPToolError(Exception)` with `tool_name: str`, `detail: str` fields
   - Timeout loaded from per-server `timeout_seconds` in McpConfig
   in `apps/api-service/src/api/mcp/client.py`
-- [ ] T036 Write `apps/api-service/tests/mcp/test_client.py`:
+- [X] T036 Write `apps/api-service/tests/mcp/test_client.py`:
   - `test_call_tool_routes_to_correct_server` — assert market.* tool sends POST to `market-data-mcp:8001/mcp/`; assert news.* sends to `news-macro-mcp:8002/mcp/`
   - `test_call_tool_success` — respx mocks POST /mcp/ returning JSON-RPC result → assert result dict returned
   - `test_call_tool_timeout` — respx raises `httpx.ConnectTimeout` → assert `MCPToolError` raised with tool_name
@@ -248,9 +248,9 @@ handles timeouts, and discovers tool manifests at startup. Tests use respx to mo
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T037 [P] Run `uv run mypy --strict apps/mcp-servers/market-data/src apps/mcp-servers/news-macro/src apps/mcp-servers/rag-retrieval/src apps/api-service/src/api/mcp/` — fix all type errors until zero errors remain
-- [ ] T038 [P] Run `uv run ruff check apps/mcp-servers/ apps/api-service/src/api/mcp/` — fix all warnings; run `uv run ruff format` for consistent formatting
-- [ ] T039 Run full test suite: `uv run pytest apps/mcp-servers/ apps/api-service/tests/mcp/` — all offline, all pass; confirm zero network calls escape (no `respx.mock` leaks)
+- [X] T037 [P] Run `uv run mypy --strict apps/mcp-servers/market-data/src apps/mcp-servers/news-macro/src apps/mcp-servers/rag-retrieval/src apps/api-service/src/api/mcp/` — fix all type errors until zero errors remain
+- [X] T038 [P] Run `uv run ruff check apps/mcp-servers/ apps/api-service/src/api/mcp/` — fix all warnings; run `uv run ruff format` for consistent formatting
+- [X] T039 Run full test suite: `uv run pytest apps/mcp-servers/ apps/api-service/tests/mcp/` — all offline, all pass; confirm zero network calls escape (no `respx.mock` leaks)
 
 ---
 
@@ -334,3 +334,4 @@ Workstream D: MCPClient in apps/api-service — routing + tests
 - `startup_health_check()` is called in FastMCP lifespan, not at import time — tests call it directly
 - When running SpecKit from `main`, set `SPECIFY_FEATURE=004-mcp-platform` first so scripts do not resolve to `specs/main`
 - RAG retrieval requires `knowledge_entries` in Postgres; if absent, `startup_health_check()` must `sys.exit(1)` with explicit dependency error
+
