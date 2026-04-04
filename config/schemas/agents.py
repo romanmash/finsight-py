@@ -15,6 +15,8 @@ class AgentConfig(BaseModel):
     max_retries: int
     timeout_seconds: int
     base_url: str | None = None
+    fallback_model: str | None = None
+    fallback_provider: str | None = None
 
     @field_validator("temperature")
     @classmethod
