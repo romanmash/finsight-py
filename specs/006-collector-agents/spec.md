@@ -108,8 +108,8 @@ theme, run the Watchdog, verify an alert is raised at the appropriate severity.
   no analysis, interpretations, or recommendations.
 - **FR-007**: Both agents MUST record their runs via the agent infrastructure (tokens, cost,
   duration) and MUST be traceable in the observability platform.
-- **FR-008**: Both agents MUST be testable offline with mocked tool responses and mocked LLM
-  calls.
+- **FR-008**: Both agents MUST be testable offline with mocked tool responses and mocked
+  repository interactions (no real network or LLM runtime).
 - **FR-009**: Watchdog run frequency and alert thresholds MUST be configurable in YAML without
   code changes.
 

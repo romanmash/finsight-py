@@ -1,51 +1,16 @@
 # Data Model: Collector Agents
 
-## ResearchPacket
+## Prerequisite Entities (Feature 002)
 
-**Type**: Pydantic model (shared)
-**Location**: `packages/shared/src/finsight/shared/models/data_packet.py`
+Collector agents depend on these existing data-layer entities and repositories:
 
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| mission_id | UUID | Mission this packet belongs to | required |
-| target_symbol | str \| None | Primary ticker symbol under investigation | nullable |
-| target_theme | str \| None | Theme/keyword if not symbol-specific | at least one of symbol/theme required |
-| price_history | list[PriceBar] | OHLCV bars from market-data server | may be empty |
-| current_price | Decimal \| None | Latest price snapshot | nullable |
-| fundamentals | FundamentalData \| None | Fundamental data snapshot | nullable |
-| news_items | list[NewsItem] | Recent news articles | may be empty |
-| knowledge_entries | list[KnowledgeEntry] | Relevant past KB entries | may be empty |
-| tool_errors | list[ToolError] | Errors from any failed tool calls | may be empty |
-| collected_at | datetime | UTC timestamp of packet assembly | auto-set |
-| researcher_run_id | UUID \| None | AgentRun.id for this Researcher execution | nullable |
+- `WatchlistItem` (read by Watchdog)
+- `Alert` (written by Watchdog)
+- `Mission` (written by Watchdog)
+- `AgentRun` (written by Watchdog + Researcher)
 
-**Note**: `PriceBar`, `FundamentalData`, `NewsItem`, `KnowledgeEntry`, `ToolError` are shared models defined in Feature 004 (`packages/shared`).
-
-**Validation rules**:
-- `model_validator(mode="after")`: at least one of `target_symbol` or `target_theme` must be non-None.
-- An absent data section (e.g., empty `news_items`) is valid; a corresponding `ToolError` entry should explain the absence if it was due to a failure.
-
----
-
-## Alert
-
-**Type**: SQLAlchemy 2.x ORM model (defined in Feature 002; Watchdog writes to it)
-**Location**: `apps/api-service/src/api/db/models/alert.py` (Feature 002)
-
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| id | UUID | Primary key | auto-generated |
-| watchlist_item_id | UUID | FK to watchlist_items.id | non-null, FK |
-| condition_type | str | "price_move", "volume_spike", "news_spike" | enum-like |
-| observed_value | Decimal | The value that triggered the alert | |
-| threshold_value | Decimal | The configured threshold that was breached | |
-| severity | str | "LOW", "MEDIUM", "HIGH", "CRITICAL" | enum-like |
-| description | str | Human-readable description of the breach | non-empty |
-| mission_id | UUID \| None | FK to missions.id; set when mission is opened | nullable, FK |
-| created_at | datetime | UTC creation timestamp | server_default=now() |
-| acknowledged_at | datetime \| None | UTC timestamp when operator acknowledged | nullable |
-
-**Indexes**: `(watchlist_item_id, condition_type, created_at)` — used for deduplication query.
+If any of the above are absent in the active branch, 006 adds minimal compatible ORM/repository
+implementations locally so collector agents can run and be tested.
 
 ---
 
@@ -54,103 +19,109 @@
 **Type**: Pydantic v2 BaseModel
 **Location**: `config/schemas/watchdog.py`
 
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| schedule_cron | str | Celery beat cron expression | non-empty |
-| deduplication_window_minutes | int | Window for suppressing duplicate alerts | > 0, default 60 |
-| price_thresholds | list[PriceThresholdRule] | Price-move alert rules | |
-| volume_threshold | VolumeThresholdConfig | Volume spike configuration | |
-| news_threshold | NewsThresholdConfig | News spike configuration | |
+### Existing fields (already present)
 
-**YAML path**: `config/runtime/watchdog.yaml`
+| Field | Type |
+|---|---|
+| `poll_interval_seconds` | `int` |
+| `alert_cooldown_seconds` | `int` |
+| `default_thresholds.price_change_pct` | `float` |
+| `default_thresholds.volume_spike_multiplier` | `float` |
+| `default_thresholds.rsi_overbought` | `float` |
 
-### PriceThresholdRule (nested)
+### Fields added by 006
 
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| pct_change_min | Decimal | Minimum absolute % change to trigger | > 0 |
-| pct_change_max | Decimal \| None | Upper bound (exclusive) for this severity band | nullable |
-| severity | str | Alert severity for this band | "LOW","MEDIUM","HIGH","CRITICAL" |
-
-### VolumeThresholdConfig (nested)
-
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| spike_multiplier | Decimal | Ratio of current to 20-day avg volume to trigger | > 1.0, default 3.0 |
-| severity | str | Fixed severity for volume spikes | non-empty |
-
-### NewsThresholdConfig (nested)
-
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| window_minutes | int | Time window to count news articles | > 0, default 60 |
-| article_count_threshold | int | Article count within window to trigger | > 0, default 5 |
-| severity | str | Fixed severity for news spikes | non-empty |
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `news_spike_rate_per_hour` | `int` | `5` | News volume trigger threshold |
+| `news_fetch_limit` | `int` | `100` | Max news items fetched per watchlist item run |
+| `dedup_window_hours` | `int` | `4` | Duplicate-alert suppression window |
 
 ---
 
-## WatchdogInput
+## ResearcherConfig
 
-**Type**: Pydantic model (agent input schema)
+**Type**: Pydantic v2 BaseModel
+**Location**: `config/schemas/researcher.py`
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `ohlcv_period` | `str` | `"1mo"` | OHLCV lookback period passed to MCP |
+| `news_limit` | `int` | `10` | Max news items per run |
+| `kb_limit` | `int` | `5` | Max KB entries per run |
+
+---
+
+## ResearchPacket
+
+**Type**: Shared Pydantic model
+**Location**: `packages/shared/src/finsight/shared/models/research_packet.py`
+
+| Field | Type | Description |
+|---|---|---|
+| `ticker` | `str` | Target ticker symbol |
+| `mission_id` | `UUID` | Mission identifier |
+| `price_history` | `list[OHLCVBar] \| None` | Historical bars from market MCP |
+| `fundamentals` | `FundamentalsSnapshot \| None` | Fundamentals snapshot |
+| `news_items` | `list[NewsItem]` | Recent news records |
+| `kb_entries` | `list[KnowledgeSnippet]` | Retrieved knowledge items |
+| `data_gaps` | `list[str]` | Explicit missing-data notes |
+
+### Supporting shared models
+
+- `OHLCVBar`
+- `FundamentalsSnapshot`
+- `NewsItem`
+- `KnowledgeSnippet`
+
+All defined in `research_packet.py` for strict typing and offline validation.
+
+---
+
+## WatchdogResult
+
+**Type**: Pydantic model
 **Location**: `apps/api-service/src/api/agents/watchdog_agent.py`
 
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| watchlist_items | list[WatchlistItemSnapshot] | Active watchlist items to evaluate | non-empty |
-| run_id | UUID | Identifier for this Watchdog cycle | auto-generated |
-
-### WatchlistItemSnapshot (nested, from shared models)
-
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| id | UUID | WatchlistItem PK | |
-| symbol | str \| None | Ticker symbol | |
-| theme | str \| None | Theme keyword | |
-| owner_user_id | UUID | Owning user | |
+| Field | Type | Description |
+|---|---|---|
+| `alerts_created` | `int` | Number of new alerts created |
+| `missions_opened` | `int` | Number of missions opened |
+| `items_evaluated` | `int` | Watchlist items processed |
+| `dedup_skipped` | `int` | Alerts skipped by dedup window |
 
 ---
 
-## WatchdogOutput
+## ResearchInput
 
-**Type**: Pydantic model (agent output schema, validated by BaseAgent)
-**Location**: `apps/api-service/src/api/agents/watchdog_agent.py`
-
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| alerts_created | list[AlertCreatedRecord] | Summary of alerts raised this cycle | may be empty |
-| items_evaluated | int | Total watchlist items checked | >= 0 |
-| items_skipped | int | Items skipped due to data unavailability | >= 0 |
-
-### AlertCreatedRecord (nested)
-
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| alert_id | UUID | ID of the created Alert record | |
-| watchlist_item_id | UUID | Which item triggered it | |
-| condition_type | str | "price_move", "volume_spike", "news_spike" | |
-| severity | str | Alert severity | |
-
----
-
-## ResearcherInput
-
-**Type**: Pydantic model (agent input schema)
+**Type**: Pydantic model
 **Location**: `apps/api-service/src/api/agents/researcher_agent.py`
 
-| Field | Type | Description | Constraints |
-|-------|------|-------------|-------------|
-| mission_id | UUID | Mission to research | required |
-| target_symbol | str \| None | Primary ticker | |
-| target_theme | str \| None | Theme if not symbol-specific | |
-| price_history_days | int | Number of days of OHLCV to fetch | 1–365, default 30 |
-| news_lookback_hours | int | Hours of news history to fetch | 1–168, default 24 |
-| knowledge_top_k | int | Max knowledge entries to retrieve | 1–50, default 10 |
+| Field | Type |
+|---|---|
+| `ticker` | `str` |
+| `mission_id` | `UUID` |
 
 ---
 
-## ResearcherOutput
+## AgentRun recording policy
 
-**Type**: `ResearchPacket` (see above)
-**Location**: `packages/shared/src/finsight/shared/models/data_packet.py`
+Both collector agents are deterministic and make no LLM calls.
 
-The Researcher's `output_type` is `ResearchPacket`. BaseAgent validates the output against this schema before returning.
+- `tokens_in = 0`
+- `tokens_out = 0`
+- `cost_usd = Decimal("0.00")`
+- `status = "completed"` on success, `"failed"` on unrecoverable errors
+
+This aligns 006 with the 005 observability contract while avoiding fake token accounting.
+
+---
+
+## Alert Dedup Key
+
+`Alert.condition_type` stores structured condition identifiers:
+- `price_move`
+- `volume_spike`
+- `news_spike`
+
+Watchdog dedup queries use `condition_type` + `ticker` + time window, not free-text matching.

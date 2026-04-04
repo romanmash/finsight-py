@@ -15,6 +15,7 @@ from config.schemas.agents import AgentsConfig
 from config.schemas.api import ApiConfig
 from config.schemas.mcp import McpConfig
 from config.schemas.pricing import PricingConfig
+from config.schemas.researcher import ResearcherConfig
 from config.schemas.scheduler import SchedulerConfig
 from config.schemas.watchdog import WatchdogConfig
 
@@ -45,6 +46,7 @@ class AllConfigs:
     mcp: McpConfig
     pricing: PricingConfig
     watchdog: WatchdogConfig
+    researcher: ResearcherConfig
     scheduler: SchedulerConfig
     api: ApiConfig
 
@@ -78,6 +80,7 @@ def load_all_configs(config_dir: Path = Path("config/runtime")) -> AllConfigs:
         mcp=load_yaml_config(config_dir / "mcp.yaml", McpConfig),
         pricing=load_yaml_config(config_dir / "pricing.yaml", PricingConfig),
         watchdog=load_yaml_config(config_dir / "watchdog.yaml", WatchdogConfig),
+        researcher=load_yaml_config(config_dir / "researcher.yaml", ResearcherConfig),
         scheduler=load_yaml_config(config_dir / "scheduler.yaml", SchedulerConfig),
         api=load_yaml_config(config_dir / "api.yaml", ApiConfig),
     )

@@ -1,0 +1,2 @@
+"""FinSight shared package root."""
+

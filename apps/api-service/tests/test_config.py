@@ -11,6 +11,7 @@ from config.schemas.agents import AgentsConfig
 from config.schemas.api import ApiConfig
 from config.schemas.mcp import McpConfig
 from config.schemas.pricing import ModelPricing, PricingConfig
+from config.schemas.researcher import ResearcherConfig
 
 
 def _write(path: Path, content: str) -> None:
@@ -200,9 +201,18 @@ rate_limit_login: "10/minute"
 rate_limit_refresh: "30/minute"
 """.strip(),
     )
+    _write(
+        tmp_config_dir / "researcher.yaml",
+        """
+ohlcv_period: 1mo
+news_limit: 10
+kb_limit: 5
+""".strip(),
+    )
 
     configs = load_all_configs(tmp_config_dir)
     assert isinstance(configs.api, ApiConfig)
+    assert isinstance(configs.researcher, ResearcherConfig)
 
 
 def test_mcp_config_rejects_http_url(tmp_config_dir: Path) -> None:
