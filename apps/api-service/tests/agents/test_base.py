@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+import sys
 from decimal import Decimal
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
-from api.agents.base import AgentOutputError, BaseAgent
+from api.agents.base import AgentOutputError, BaseAgent, LLMProviderError
 from api.agents.shared.prompts import SYSTEM_ROLE_PREAMBLE
 from api.agents.stub_agent import StubAgent
 from api.lib.tracing import TracingClient
@@ -374,6 +376,135 @@ async def test_primary_provider_failure_uses_fallback(
     payload = mock_agent_run_repo.create.await_args.args[0]
     assert payload["provider"] == "openai"
     assert payload["model"] == "gpt-4o-mini"
+
+
+@pytest.mark.asyncio
+async def test_fallback_failure_records_failed_run_with_fallback_provider(
+    mock_agent_run_repo: AsyncMock,
+    mock_mcp_client: AsyncMock,
+    pricing_registry: Any,
+    session_mock: Any,
+) -> None:
+    tracer = MagicMock(spec=TracingClient)
+    tracer.create_run.return_value = "trace-id"
+    config = _build_config(model="claude-sonnet-4-20250514", provider="anthropic")
+    config = config.model_copy(
+        update={"fallback_provider": "openai", "fallback_model": "gpt-4o-mini"}
+    )
+    agent = DemoAgent(
+        config=config,
+        session=session_mock,
+        agent_run_repo=mock_agent_run_repo,
+        mcp_client=mock_mcp_client,
+        pricing=pricing_registry,
+        tracer=tracer,
+    )
+    primary = AsyncMock()
+    primary.ainvoke = AsyncMock(side_effect=Exception("primary unavailable"))
+    fallback = AsyncMock()
+    fallback.ainvoke = AsyncMock(side_effect=Exception("fallback unavailable"))
+
+    def _fake_build_chain(provider: str, model: str, base_url: str | None) -> AsyncMock:
+        if provider == "anthropic":
+            return primary
+        return fallback
+
+    agent._build_chain = MagicMock(side_effect=_fake_build_chain)  # type: ignore[method-assign]
+
+    with pytest.raises(LLMProviderError):
+        await agent.run(AgentTestInput(query="q"), uuid4())
+
+    assert mock_agent_run_repo.create.await_count == 1
+    payload = mock_agent_run_repo.create.await_args.args[0]
+    assert payload["status"] == "failed"
+    assert payload["provider"] == "openai"
+    assert payload["model"] == "gpt-4o-mini"
+    assert payload["error_message"] == "fallback unavailable"
+    tracer.end_run.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_usage_metadata_extracted_from_raw_structured_output(
+    mock_agent_run_repo: AsyncMock,
+    mock_mcp_client: AsyncMock,
+    pricing_registry: Any,
+    session_mock: Any,
+) -> None:
+    agent = DemoAgent(
+        config=_build_config(),
+        session=session_mock,
+        agent_run_repo=mock_agent_run_repo,
+        mcp_client=mock_mcp_client,
+        pricing=pricing_registry,
+        tracer=MagicMock(spec=TracingClient),
+    )
+    chain = AsyncMock()
+    chain.ainvoke = AsyncMock(
+        return_value={
+            "parsed": {"answer": "ok"},
+            "raw": {"usage_metadata": {"input_tokens": 7, "output_tokens": 3}},
+        }
+    )
+    agent._build_chain = MagicMock(return_value=chain)  # type: ignore[method-assign]
+
+    await agent.run(AgentTestInput(query="q"), uuid4())
+
+    payload = mock_agent_run_repo.create.await_args.args[0]
+    assert payload["tokens_in"] == 7
+    assert payload["tokens_out"] == 3
+
+
+@pytest.mark.asyncio
+async def test_usage_metadata_extracted_from_raw_message_object(
+    mock_agent_run_repo: AsyncMock,
+    mock_mcp_client: AsyncMock,
+    pricing_registry: Any,
+    session_mock: Any,
+) -> None:
+    class RawMessage:
+        def __init__(self) -> None:
+            self.usage_metadata = {"input_tokens": 9, "output_tokens": 4}
+            self.response_metadata = {"token_usage": {"prompt_tokens": 9, "completion_tokens": 4}}
+
+    agent = DemoAgent(
+        config=_build_config(),
+        session=session_mock,
+        agent_run_repo=mock_agent_run_repo,
+        mcp_client=mock_mcp_client,
+        pricing=pricing_registry,
+        tracer=MagicMock(spec=TracingClient),
+    )
+    chain = AsyncMock()
+    chain.ainvoke = AsyncMock(return_value={"parsed": {"answer": "ok"}, "raw": RawMessage()})
+    agent._build_chain = MagicMock(return_value=chain)  # type: ignore[method-assign]
+
+    await agent.run(AgentTestInput(query="q"), uuid4())
+
+    payload = mock_agent_run_repo.create.await_args.args[0]
+    assert payload["tokens_in"] == 9
+    assert payload["tokens_out"] == 4
+
+
+def test_build_chat_model_supports_anthropic(monkeypatch: pytest.MonkeyPatch) -> None:
+    class DummyChatAnthropic:
+        def __init__(self, **kwargs: Any) -> None:
+            self.kwargs = kwargs
+
+    module = ModuleType("langchain_anthropic")
+    module.ChatAnthropic = DummyChatAnthropic  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "langchain_anthropic", module)
+
+    agent = DemoAgent(
+        config=_build_config(model="claude-sonnet-4-20250514", provider="anthropic"),
+        session=AsyncMock(),
+        agent_run_repo=AsyncMock(),
+        mcp_client=AsyncMock(),
+        pricing=MagicMock(),
+        tracer=MagicMock(spec=TracingClient),
+    )
+    model = agent._build_chat_model("anthropic", "claude-sonnet-4-20250514", None)
+    assert isinstance(model, DummyChatAnthropic)
+    assert model.kwargs["model_name"] == "claude-sonnet-4-20250514"
 
 
 def test_prompt_file_colocated_with_agent() -> None:
