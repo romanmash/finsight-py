@@ -35,14 +35,14 @@ docker compose exec db psql -U finsight -d finsight -c "\dt"
 No Docker needed for tests — they use an in-memory SQLite database.
 
 ```bash
-uv run pytest apps/api/tests/db/ -v
+uv run pytest apps/api-service/tests/db/ -v
 # Expected: all tests pass
 ```
 
 Run only repository tests:
 
 ```bash
-uv run pytest apps/api/tests/db/test_repositories.py -v
+uv run pytest apps/api-service/tests/db/test_repositories.py -v
 ```
 
 ---

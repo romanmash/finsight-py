@@ -41,22 +41,22 @@ news_threshold:
 
 ```bash
 # All collector agent tests (offline, ~30s)
-uv run pytest apps/api/tests/agents/test_watchdog.py apps/api/tests/agents/test_researcher.py -v
+uv run pytest apps/api-service/tests/agents/test_watchdog.py apps/api-service/tests/agents/test_researcher.py -v
 
 # Watchdog only
-uv run pytest apps/api/tests/agents/test_watchdog.py -v
+uv run pytest apps/api-service/tests/agents/test_watchdog.py -v
 
 # Researcher only
-uv run pytest apps/api/tests/agents/test_researcher.py -v
+uv run pytest apps/api-service/tests/agents/test_researcher.py -v
 
 # Shared model tests
 uv run pytest packages/shared/tests/models/test_data_packet.py -v
 
 # Type check
-uv run mypy --strict apps/api/src/api/agents/watchdog_agent.py apps/api/src/api/agents/researcher_agent.py packages/shared/src/finsight/shared/models/data_packet.py
+uv run mypy --strict apps/api-service/src/api/agents/watchdog_agent.py apps/api-service/src/api/agents/researcher_agent.py packages/shared/src/finsight/shared/models/data_packet.py
 
 # Lint
-uv run ruff check apps/api/src/api/agents/watchdog_agent.py apps/api/src/api/agents/researcher_agent.py
+uv run ruff check apps/api-service/src/api/agents/watchdog_agent.py apps/api-service/src/api/agents/researcher_agent.py
 ```
 
 ## Running the Watchdog manually (requires running DB + MCP servers)

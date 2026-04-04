@@ -59,7 +59,7 @@ pulumi up
 
 ```bash
 # Seed idempotency test (offline, SQLite)
-uv run pytest apps/api/tests/seeds/ -v
+uv run pytest apps/api-service/tests/seeds/ -v
 
 # Deploy script dry run
 bash scripts/deploy.sh --dry-run

@@ -23,8 +23,8 @@ and the shared `ToolResponse[T]` Pydantic envelope used by all three servers. No
 - [ ] T002 [P] Update `apps/mcp-servers/news-macro/pyproject.toml` with dependencies: `fastmcp>=0.4`, `finnhub-python`, `httpx`, `redis[hiredis]`, `pydantic>=2.0`, `pyyaml>=6.0`, `structlog>=24.1`, `fakeredis` (dev) in `apps/mcp-servers/news-macro/pyproject.toml`
 - [ ] T003 [P] Update `apps/mcp-servers/rag-retrieval/pyproject.toml` with dependencies: `fastmcp>=0.4`, `sqlalchemy[asyncio]>=2.0`, `asyncpg`, `pgvector`, `httpx`, `redis[hiredis]`, `pydantic>=2.0`, `pyyaml>=6.0`, `structlog>=24.1`, `fakeredis`, `aiosqlite` (dev) in `apps/mcp-servers/rag-retrieval/pyproject.toml`
 - [ ] T004 [P] Add `respx` to root `pyproject.toml` `[dependency-groups.dev]` (used across all MCP server tests) in `pyproject.toml`
-- [ ] T005 [P] Create all package `__init__.py` stubs: `apps/mcp-servers/market-data/src/market_data/__init__.py`, `apps/mcp-servers/market-data/src/market_data/tools/__init__.py`, `apps/mcp-servers/news-macro/src/news_macro/__init__.py`, `apps/mcp-servers/news-macro/src/news_macro/tools/__init__.py`, `apps/mcp-servers/rag-retrieval/src/rag_retrieval/__init__.py`, `apps/mcp-servers/rag-retrieval/src/rag_retrieval/tools/__init__.py`, `apps/api/src/api/mcp/__init__.py` (all empty)
-- [ ] T006 [P] Create test directories: `apps/mcp-servers/market-data/tests/__init__.py`, `apps/mcp-servers/news-macro/tests/__init__.py`, `apps/mcp-servers/rag-retrieval/tests/__init__.py`, `apps/api/tests/mcp/__init__.py` (all empty)
+- [ ] T005 [P] Create all package `__init__.py` stubs: `apps/mcp-servers/market-data/src/market_data/__init__.py`, `apps/mcp-servers/market-data/src/market_data/tools/__init__.py`, `apps/mcp-servers/news-macro/src/news_macro/__init__.py`, `apps/mcp-servers/news-macro/src/news_macro/tools/__init__.py`, `apps/mcp-servers/rag-retrieval/src/rag_retrieval/__init__.py`, `apps/mcp-servers/rag-retrieval/src/rag_retrieval/tools/__init__.py`, `apps/api-service/src/api/mcp/__init__.py` (all empty)
+- [ ] T006 [P] Create test directories: `apps/mcp-servers/market-data/tests/__init__.py`, `apps/mcp-servers/news-macro/tests/__init__.py`, `apps/mcp-servers/rag-retrieval/tests/__init__.py`, `apps/api-service/tests/mcp/__init__.py` (all empty)
 - [ ] T007 Create per-server `ToolResponse[T]` generic Pydantic model (one independent copy per server) — since each server is independent, define it inline in each server's `server.py` (or a shared `models.py` per server):
   ```python
   class ToolResponse(BaseModel, Generic[T]):
@@ -225,32 +225,32 @@ when Redis or the required provider is unreachable. Tested via patching.
 
 ## Phase 7: MCP Client (Cross-Story — Used by Feature 005)
 
-**Purpose**: `MCPClient` in `apps/api` routes tool calls to correct server by name prefix,
+**Purpose**: `MCPClient` in `apps/api-service` routes tool calls to correct server by name prefix,
 handles timeouts, and discovers tool manifests at startup. Tests use respx to mock `POST /mcp/`.
 
-- [ ] T035 Create `apps/api/src/api/mcp/client.py` with `MCPClient`:
+- [ ] T035 Create `apps/api-service/src/api/mcp/client.py` with `MCPClient`:
   - `__init__(self, configs: McpConfig)` — builds `{prefix: base_url}` routing map from config
   - `async def discover(self) -> dict[str, list[str]]` — for each server sends JSON-RPC `{"method":"tools/list","params":{}}` to `POST /mcp/`; caches manifest; raises `MCPToolError` if unreachable
   - `async def call_tool(self, tool_name: str, params: dict) -> dict` — selects server URL by prefix match, sends JSON-RPC `{"method":"tools/call","params":{"name":tool_name,"arguments":params}}` to `POST /mcp/`; raises `MCPToolError` on timeout, connection error, or JSON-RPC error field
   - `MCPToolError(Exception)` with `tool_name: str`, `detail: str` fields
   - Timeout loaded from per-server `timeout_seconds` in McpConfig
-  in `apps/api/src/api/mcp/client.py`
-- [ ] T036 Write `apps/api/tests/mcp/test_client.py`:
+  in `apps/api-service/src/api/mcp/client.py`
+- [ ] T036 Write `apps/api-service/tests/mcp/test_client.py`:
   - `test_call_tool_routes_to_correct_server` — assert market.* tool sends POST to `market-data-mcp:8001/mcp/`; assert news.* sends to `news-macro-mcp:8002/mcp/`
   - `test_call_tool_success` — respx mocks POST /mcp/ returning JSON-RPC result → assert result dict returned
   - `test_call_tool_timeout` — respx raises `httpx.ConnectTimeout` → assert `MCPToolError` raised with tool_name
   - `test_call_tool_jsonrpc_error` — respx returns `{"error":{"code":-1,"message":"tool failed"}}` → assert `MCPToolError`
   - `test_discover_caches_manifest` — respx returns `{"result":{"tools":[...]}}` → assert manifest dict keyed by server name
   - `test_discover_server_unreachable` — respx raises `ConnectError` → assert `MCPToolError`
-  in `apps/api/tests/mcp/test_client.py`
+  in `apps/api-service/tests/mcp/test_client.py`
 
 ---
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T037 [P] Run `uv run mypy --strict apps/mcp-servers/market-data/src apps/mcp-servers/news-macro/src apps/mcp-servers/rag-retrieval/src apps/api/src/api/mcp/` — fix all type errors until zero errors remain
-- [ ] T038 [P] Run `uv run ruff check apps/mcp-servers/ apps/api/src/api/mcp/` — fix all warnings; run `uv run ruff format` for consistent formatting
-- [ ] T039 Run full test suite: `uv run pytest apps/mcp-servers/ apps/api/tests/mcp/` — all offline, all pass; confirm zero network calls escape (no `respx.mock` leaks)
+- [ ] T037 [P] Run `uv run mypy --strict apps/mcp-servers/market-data/src apps/mcp-servers/news-macro/src apps/mcp-servers/rag-retrieval/src apps/api-service/src/api/mcp/` — fix all type errors until zero errors remain
+- [ ] T038 [P] Run `uv run ruff check apps/mcp-servers/ apps/api-service/src/api/mcp/` — fix all warnings; run `uv run ruff format` for consistent formatting
+- [ ] T039 Run full test suite: `uv run pytest apps/mcp-servers/ apps/api-service/tests/mcp/` — all offline, all pass; confirm zero network calls escape (no `respx.mock` leaks)
 
 ---
 
@@ -296,7 +296,7 @@ Phase 8: [T037, T038] → T039
 Workstream A (US1): market-data server — 5 tools + tests
 Workstream B (US2): news-macro server — 3 tools + tests
 Workstream C (US3): rag-retrieval server — 2 tools + tests
-Workstream D: MCPClient in apps/api — routing + tests
+Workstream D: MCPClient in apps/api-service — routing + tests
 ```
 
 ---

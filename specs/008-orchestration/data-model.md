@@ -3,7 +3,7 @@
 ## GraphState (LangGraph TypedDict)
 
 **Type**: TypedDict (LangGraph state)
-**Location**: `apps/api/src/api/graphs/state.py`
+**Location**: `apps/api-service/src/api/graphs/state.py`
 
 | Field | Python Type | Description |
 |-------|-------------|-------------|
@@ -12,7 +12,7 @@
 | ticker | str \| None | Target asset (if applicable) |
 | research_packet | ResearchPacket \| None | Researcher output |
 | assessment | Assessment \| None | Analyst output |
-| pattern_report | PatternReport \| None | Pattern Specialist output |
+| pattern_report | PatternReport \| None | Technician (Pattern Specialist) output |
 | formatted_summary | str \| None | Reporter output |
 | error | str \| None | Last error message |
 | completed_nodes | list[str] | For checkpoint/resume tracking |
@@ -62,7 +62,7 @@ Stored in `missions.status` column (Feature 002).
 ## PipelineClassification (Manager LLM output)
 
 **Type**: Pydantic v2 model
-**Location**: `apps/api/src/api/agents/manager_agent.py`
+**Location**: `apps/api-service/src/api/agents/manager_agent.py`
 
 | Field | Python Type | Description |
 |-------|-------------|-------------|

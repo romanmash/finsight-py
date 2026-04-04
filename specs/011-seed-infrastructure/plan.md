@@ -42,7 +42,7 @@ scripts/
 ├── deploy.sh            # rsync + SSH migrate + docker compose restart
 └── logs.sh              # SSH + docker compose logs -f <service>
 
-apps/api/src/api/seeds/
+apps/api-service/src/api/seeds/
 ├── __init__.py
 ├── seed.py              # Main entry point: run all seeders
 ├── constants.py         # Fixed demo UUIDs
@@ -61,7 +61,7 @@ infra/pulumi/
 .github/workflows/
 └── ci-cd.yml            # uv sync + mypy + ruff + pytest on push to main
 
-apps/api/tests/seeds/
+apps/api-service/tests/seeds/
 └── test_seed.py         # idempotency test: run seed twice, assert identical state
 ```
 
@@ -95,7 +95,7 @@ apps/api/tests/seeds/
 
 ### Phase 3: Seed Constants + Entry Point
 
-**Files**: `apps/api/src/api/seeds/constants.py`, `seeds/seed.py`
+**Files**: `apps/api-service/src/api/seeds/constants.py`, `seeds/seed.py`
 
 **Key decisions**:
 - All demo UUIDs as module-level constants (never random)
@@ -104,7 +104,7 @@ apps/api/tests/seeds/
 
 ### Phase 4: Individual Seeders
 
-**Files**: `apps/api/src/api/seeds/operators.py` + `watchlist.py` + `missions.py` + `knowledge.py` + `alerts.py`
+**Files**: `apps/api-service/src/api/seeds/operators.py` + `watchlist.py` + `missions.py` + `knowledge.py` + `alerts.py`
 
 **Key decisions**:
 - Passwords hashed with bcrypt at seed time (not stored as plain text)
@@ -112,7 +112,7 @@ apps/api/tests/seeds/
   ```
   TELEGRAM_SERVICE_TOKEN=<generated-value>   # add to .env on server
   ```
-  Uses `create_access_token(sub="service:telegram-bot", role="service")` from `apps/api/lib/auth.py`.
+  Uses `create_access_token(sub="service:telegram-bot", role="service")` from `apps/api-service/lib/auth.py`.
   Token is printed to stdout — never written to any file automatically.
 - Knowledge entries use `embedding=NULL` — seed entries carry no vector; the Bookkeeper writes real embeddings when missions run. Similarity search queries use `WHERE embedding IS NOT NULL` so seed rows are never returned as search results.
 - All `created_at`/`updated_at` fields set to fixed past timestamps for realistic dashboard display
@@ -143,7 +143,7 @@ apps/api/tests/seeds/
 
 ### Phase 7: Seed Idempotency Test
 
-**Files**: `apps/api/tests/seeds/test_seed.py`
+**Files**: `apps/api-service/tests/seeds/test_seed.py`
 
 **Key decisions**:
 - Uses in-memory SQLite async engine (same pattern as Feature 002 tests)

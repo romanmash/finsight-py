@@ -39,7 +39,7 @@ uv run pytest apps/mcp-servers/news-macro/tests/ -v
 uv run pytest apps/mcp-servers/rag-retrieval/tests/ -v
 
 # MCP client tests (in api app)
-uv run pytest apps/api/tests/mcp/ -v
+uv run pytest apps/api-service/tests/mcp/ -v
 
 # Type check all MCP servers
 uv run mypy --strict apps/mcp-servers/

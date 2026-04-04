@@ -23,13 +23,13 @@ uv run uvicorn api.main:app --reload --port 8000
 
 ```bash
 # All auth tests (offline, no server needed)
-uv run pytest apps/api/tests/routes/test_auth.py -v
+uv run pytest apps/api-service/tests/routes/test_auth.py -v
 
 # Type check
-uv run mypy apps/api/src/ --strict
+uv run mypy apps/api-service/src/ --strict
 
 # Lint
-uv run ruff check apps/api/src/
+uv run ruff check apps/api-service/src/
 ```
 
 ## Manual Verification

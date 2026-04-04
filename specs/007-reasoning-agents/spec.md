@@ -34,9 +34,9 @@ calls were made during the run.
 
 ---
 
-### User Story 2 — Pattern Specialist Identifies Technical Patterns in Price Data (Priority: P1)
+### User Story 2 — Technician (Pattern Specialist) Identifies Technical Patterns in Price Data (Priority: P1)
 
-The Pattern Specialist receives historical price and volume data for an asset (from the Research
+The Technician (Pattern Specialist) receives historical price and volume data for an asset (from the Research
 Packet) and analyses the technical structure. It identifies any notable patterns (trend, reversal,
 accumulation, breakout) and reports them with a confidence level and supporting observations. It
 explicitly does not provide investment advice — it describes what the pattern data shows.
@@ -45,7 +45,7 @@ explicitly does not provide investment advice — it describes what the pattern 
 complements the Analyst's fundamental and news-based reasoning.
 
 **Independent Test**: Provide a price history with a recognisable technical pattern, verify the
-Pattern Specialist identifies and names the pattern, verify confidence levels are included, and
+Technician (Pattern Specialist) identifies and names the pattern, verify confidence levels are included, and
 verify no investment recommendations appear in the output.
 
 **Acceptance Scenarios**:
@@ -53,10 +53,10 @@ verify no investment recommendations appear in the output.
 1. **Given** price history containing a recognisable technical pattern, **When** the Pattern
    Specialist runs, **Then** it returns a Pattern Report naming the pattern, describing the
    supporting observations, and assigning a confidence level.
-2. **Given** price history with no clear pattern, **When** the Pattern Specialist runs, **Then**
+2. **Given** price history with no clear pattern, **When** the Technician (Pattern Specialist) runs, **Then**
    it returns a Pattern Report noting the absence of a clear pattern rather than forcing an
    identification.
-3. **Given** a Pattern Specialist output, **When** inspected, **Then** it contains no investment
+3. **Given** a Technician (Pattern Specialist) output, **When** inspected, **Then** it contains no investment
    advice or buy/sell signals — only technical observations.
 
 ---
@@ -91,7 +91,7 @@ produces a single updated entry rather than a duplicate.
 
 ### User Story 4 — Reporter Formats Agent Outputs for Delivery (Priority: P2)
 
-The Reporter receives structured outputs from the Analyst, Pattern Specialist, and Bookkeeper
+The Reporter receives structured outputs from the Analyst, Technician (Pattern Specialist), and Bookkeeper
 and formats them into human-readable summaries for delivery via Telegram or display on the
 dashboard. The Reporter does not analyse or interpret — it only formats the content it receives.
 
@@ -114,7 +114,7 @@ readable summary containing all key points, and verify no new analytical content
 
 - What happens when the Analyst receives a Research Packet with critical fields missing?
 - How does the Bookkeeper handle a knowledge base write failure mid-transaction?
-- What if the Pattern Specialist receives price history that is too short to identify patterns?
+- What if the Technician (Pattern Specialist) receives price history that is too short to identify patterns?
 - How does the Reporter handle an empty or minimal input (e.g., a mission with no findings)?
 - What if the Bookkeeper detects that an incoming update directly contradicts a high-confidence
   existing entry?
@@ -127,10 +127,10 @@ readable summary containing all key points, and verify no new analytical content
   external tool calls; it reasons only from the provided data.
 - **FR-002**: The Analyst MUST produce a typed Assessment containing: a significance explanation,
   a thesis impact rating (supports/contradicts/neutral), identified risks, and a confidence level.
-- **FR-003**: The Pattern Specialist MUST accept price and volume history as input and return a
+- **FR-003**: The Technician (Pattern Specialist) MUST accept price and volume history as input and return a
   typed Pattern Report containing: identified pattern name (or absence indicator), supporting
   observations, and a confidence level.
-- **FR-004**: The Pattern Specialist MUST NOT include investment advice, buy/sell signals, or
+- **FR-004**: The Technician (Pattern Specialist) MUST NOT include investment advice, buy/sell signals, or
   price targets in its output.
 - **FR-005**: The Bookkeeper MUST be the only agent that writes to the knowledge base; all other
   agents are read-only with respect to the knowledge base.
@@ -149,7 +149,7 @@ readable summary containing all key points, and verify no new analytical content
 
 - **Assessment**: The Analyst's typed output. Contains significance explanation, thesis impact
   rating, risk summary, and confidence level.
-- **PatternReport**: The Pattern Specialist's typed output. Contains identified pattern (or
+- **PatternReport**: The Technician (Pattern Specialist)'s typed output. Contains identified pattern (or
   absence), supporting technical observations, and confidence level.
 - **KnowledgeEntry**: Written by the Bookkeeper to the shared knowledge base. Contains curated
   content, provenance metadata, confidence, freshness, and conflict markers.
@@ -162,13 +162,13 @@ readable summary containing all key points, and verify no new analytical content
 
 - **SC-001**: The Analyst produces a complete, typed Assessment for any Research Packet in under
   60 seconds.
-- **SC-002**: The Pattern Specialist produces a Pattern Report for any price history input in
+- **SC-002**: The Technician (Pattern Specialist) produces a Pattern Report for any price history input in
   under 30 seconds.
 - **SC-003**: The Bookkeeper writes or updates a knowledge entry in under 5 seconds, verified
   in integration tests.
 - **SC-004**: Zero duplicate knowledge entries exist after the Bookkeeper processes the same
   entity twice, verified by test cases.
-- **SC-005**: 100% of Pattern Specialist outputs contain no investment advice, verified by
+- **SC-005**: 100% of Technician (Pattern Specialist) outputs contain no investment advice, verified by
   automated schema validation in tests.
 - **SC-006**: All reasoning agent tests pass offline in under 90 seconds.
 
@@ -176,7 +176,7 @@ readable summary containing all key points, and verify no new analytical content
 
 - All four agents are invoked by the Manager (Feature 008); they are never triggered directly
   by the operator.
-- The Analyst and Pattern Specialist operate on the Research Packet assembled by the Researcher
+- The Analyst and Technician (Pattern Specialist) operate on the Research Packet assembled by the Researcher
   (Feature 006); they do not call MCP tools directly.
 - The Bookkeeper's write operations use the data access layer from Feature 002; it does not call
   MCP tools for knowledge base writes.

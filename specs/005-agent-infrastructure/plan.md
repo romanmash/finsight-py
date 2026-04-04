@@ -4,7 +4,7 @@
 
 ## Summary
 
-Build the shared agent infrastructure that all 7 agents extend: a `BaseAgent` abstract class
+Build the shared agent infrastructure that all 9 agents extend: a `BaseAgent` abstract class
 handling LLM invocation, output validation with retry-once, AgentRun cost recording
 (tokens_in/out/cost_usd/provider/model/duration_ms), LangSmith tracing, provider fallback, and
 the shared MCP client wrapper. Establish the colocated prompt file pattern and the pricing
@@ -17,10 +17,10 @@ registry loaded from pricing.yaml. All tested offline with mocked LLM responses.
 **Storage**: PostgreSQL (AgentRun records via Feature 002 repositories)
 **Testing**: pytest + pytest-asyncio + unittest.mock (offline)
 **Target Platform**: Linux server (Docker) + Windows dev (Podman)
-**Project Type**: Python monorepo sub-package (apps/api)
+**Project Type**: Python monorepo sub-package (apps/api-service)
 **Performance Goals**: AgentRun record created within 100 ms of run completion
 **Constraints**: mypy --strict; offline tests; no real LLM calls in tests; unknown model → cost=0 + warning
-**Scale/Scope**: 7 agents all inherit from BaseAgent
+**Scale/Scope**: 9 agents all inherit from BaseAgent
 
 ## Constitution Check
 
@@ -37,17 +37,17 @@ registry loaded from pricing.yaml. All tested offline with mocked LLM responses.
 ### Source Code
 
 ```text
-apps/api/src/api/agents/
+apps/api-service/src/api/agents/
 ├── __init__.py
 ├── base.py              # BaseAgent abstract class
 └── shared/
     └── prompts.py       # Shared prompt fragments (system role, formatting)
 
-apps/api/src/api/lib/
+apps/api-service/src/api/lib/
 ├── pricing.py           # PricingRegistry: cost from pricing.yaml
 └── tracing.py           # LangSmith client wrapper (optional in test env)
 
-apps/api/src/api/mcp/
+apps/api-service/src/api/mcp/
 └── client.py            # MCPClient (created in Feature 004, referenced here)
 
 config/runtime/
@@ -58,7 +58,7 @@ config/schemas/
 ├── agents.py            # Pydantic schema for agents.yaml
 └── pricing.py           # Pydantic schema for pricing.yaml
 
-apps/api/tests/agents/
+apps/api-service/tests/agents/
 ├── conftest.py          # Fixtures: mock AgentRunRepo, mock LLM, mock MCPClient
 └── test_base.py         # Tests: cost recording, retry, fallback, unknown model
 ```
@@ -75,7 +75,7 @@ apps/api/tests/agents/
 
 ### Phase 2: Pricing Registry
 
-**Files**: `apps/api/src/api/lib/pricing.py`
+**Files**: `apps/api-service/src/api/lib/pricing.py`
 
 **Key decisions**:
 - `PricingRegistry.compute_cost(model, tokens_in, tokens_out) -> Decimal`
@@ -83,7 +83,7 @@ apps/api/tests/agents/
 
 ### Phase 3: LangSmith Wrapper
 
-**Files**: `apps/api/src/api/lib/tracing.py`
+**Files**: `apps/api-service/src/api/lib/tracing.py`
 
 **Key decisions**:
 - Wraps `langsmith.Client`; no-ops when `LANGCHAIN_TRACING_V2` env var is absent
@@ -91,7 +91,7 @@ apps/api/tests/agents/
 
 ### Phase 4: BaseAgent
 
-**Files**: `apps/api/src/api/agents/base.py`
+**Files**: `apps/api-service/src/api/agents/base.py`
 
 **Key decisions**:
 - `BaseAgent` is an abstract class with `async def run(self, input: InputT) -> OutputT`
@@ -102,7 +102,7 @@ apps/api/tests/agents/
 
 ### Phase 5: Colocated Prompt Pattern
 
-**Files**: `apps/api/src/api/agents/shared/prompts.py`
+**Files**: `apps/api-service/src/api/agents/shared/prompts.py`
 
 **Key decisions**:
 - Shared fragments: `SYSTEM_ROLE_PREAMBLE`, `OUTPUT_FORMAT_INSTRUCTIONS`
@@ -110,7 +110,7 @@ apps/api/tests/agents/
 
 ### Phase 6: Tests
 
-**Files**: `apps/api/tests/agents/test_base.py`
+**Files**: `apps/api-service/tests/agents/test_base.py`
 
 - Mock LLM returns pre-set JSON; verify AgentRun record created with correct costs
 - Mock LLM returns invalid JSON on first call, valid on second; verify single retry triggered

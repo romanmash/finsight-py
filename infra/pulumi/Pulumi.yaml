@@ -1,4 +1,4 @@
 name: finsight-011-seed-infra
-runtime: nodejs
-main: index.ts
+runtime: python
+main: __main__.py
 description: Pulumi baseline stack for FinSight feature 011 seed & infrastructure readiness.

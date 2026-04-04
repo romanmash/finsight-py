@@ -116,7 +116,7 @@ as the agent code, modify the prompt, and verify the change is picked up on the 
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST provide a base agent abstraction that all 7 agents extend, handling
+- **FR-001**: The system MUST provide a base agent abstraction that all 9 agents extend, handling
   LLM call execution, output validation, cost recording, and error handling consistently.
 - **FR-002**: Every LLM call MUST be recorded with provider, model, tokens consumed (input and
   output), cost in USD, and duration in milliseconds, linked to the triggering AgentRun record.
@@ -167,7 +167,7 @@ as the agent code, modify the prompt, and verify the change is picked up on the 
 
 ## Assumptions
 
-- All 7 agents share the same base abstraction; no agent bypasses the infrastructure for LLM
+- all 9 agents share the same base abstraction; no agent bypasses the infrastructure for LLM
   calls, tool calls, or output handling.
 - The MCP client configuration (server addresses, timeouts) is loaded from YAML at startup.
 - LLM provider credentials are loaded from `.env`; no credentials appear in agent code or YAML.

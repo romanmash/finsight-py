@@ -38,7 +38,7 @@
 
 ## FastAPI app structure
 
-**Chosen**: Single `FastAPI()` instance in `apps/api/src/api/main.py`; routers registered via `app.include_router()`; middleware stack: CORSMiddleware, TrustedHostMiddleware (prod), SlowAPI middleware.
+**Chosen**: Single `FastAPI()` instance in `apps/api-service/src/api/main.py`; routers registered via `app.include_router()`; middleware stack: CORSMiddleware, TrustedHostMiddleware (prod), SlowAPI middleware.
 **Rationale**: Single app instance is the FastAPI standard; router-per-feature keeps concerns separated; middleware order matters (CORS before rate limiting).
 **Alternatives considered**: Multiple FastAPI apps mounted via `app.mount()` (not needed at this scale)
 

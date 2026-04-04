@@ -3,7 +3,7 @@
 ## AgentRun
 
 **Type**: SQLAlchemy 2.x ORM model (defined in Feature 002 data layer; Feature 005 writes to it)
-**Location**: `apps/api/src/api/db/models/agent_run.py` (Feature 002)
+**Location**: `apps/api-service/src/api/db/models/agent_run.py` (Feature 002)
 
 | Field | Type | Description | Constraints |
 |-------|------|-------------|-------------|
@@ -75,7 +75,7 @@
 ## LLMCallRecord
 
 **Type**: Pydantic model (in-memory, accumulated during a run, flushed to AgentRun on completion)
-**Location**: `apps/api/src/api/agents/base.py`
+**Location**: `apps/api-service/src/api/agents/base.py`
 
 | Field | Type | Description | Constraints |
 |-------|------|-------------|-------------|
@@ -94,7 +94,7 @@
 ## BaseAgent (abstract class interface)
 
 **Type**: Python abstract class
-**Location**: `apps/api/src/api/agents/base.py`
+**Location**: `apps/api-service/src/api/agents/base.py`
 
 ### Key method signatures
 
@@ -129,7 +129,7 @@ class BaseAgent(ABC):
 **Type**: Section within `Mcp.servers` in `config/schemas/mcp.py` (shared with Feature 004)
 **Location**: `config/runtime/mcp.yaml`
 
-Consumed by `apps/api/src/api/mcp/client.py`. The client reads `servers` (URL + timeout per server) and `tool_routing` (tool name → server name mapping) at startup.
+Consumed by `apps/api-service/src/api/mcp/client.py`. The client reads `servers` (URL + timeout per server) and `tool_routing` (tool name → server name mapping) at startup.
 
 ### ToolRouting entry (in mcp.yaml)
 

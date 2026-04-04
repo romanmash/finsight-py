@@ -5,7 +5,7 @@ Instructions for AI coding assistants working on the FinSight AI Hub repository.
 ## Project Overview
 
 FinSight AI Hub is a **Python-first** multi-agent fintech market intelligence platform built with
-FastAPI, LangGraph, SQLAlchemy, Celery, OpenBB, and Dash. 7 specialist agents collaborate through
+FastAPI, LangGraph, SQLAlchemy, Celery, OpenBB, and Dash. 9 specialist agents collaborate through
 a LangGraph supervisor graph. Data flows through 3 independent FastMCP tool servers. Users interact
 via Telegram (text + voice); the operator monitors via a Dash dashboard on the local Linux laptop.
 
@@ -24,14 +24,14 @@ via Telegram (text + voice); the operator monitors via a Dash dashboard on the l
 
 ```
 packages/shared/               → shared Pydantic models and domain types (zero external deps)
-apps/api/                      → FastAPI app + all 7 agents + Celery workers
-apps/api/src/agents/           → 7 agent implementations + colocated prompts (*.prompt.py)
-apps/api/src/agents/shared/    → Shared prompt fragments
-apps/api/src/graphs/           → LangGraph supervisor graph + node definitions
-apps/api/src/mcp/              → MCP client (tool registration + routing)
-apps/api/src/routes/           → FastAPI routers (auth, admin, chat, missions, kb, etc.)
-apps/api/src/lib/              → Singletons: db.py, redis.py, queues.py, config.py, pricing.py
-apps/api/src/workers/          → Celery workers: watchdog, screener, brief, earnings, alert
+apps/api-service/                      → FastAPI app + all 9 agents + Celery workers
+apps/api-service/src/api/agents/       → 9 agent implementations + colocated prompts (*.prompt.py)
+apps/api-service/src/api/agents/shared/→ Shared prompt fragments
+apps/api-service/src/api/graphs/       → LangGraph supervisor graph + node definitions
+apps/api-service/src/api/mcp/          → MCP client (tool registration + routing)
+apps/api-service/src/api/routes/       → FastAPI routers (auth, admin, chat, missions, kb, etc.)
+apps/api-service/src/api/lib/          → Singletons: db.py, redis.py, queues.py, config.py, pricing.py
+apps/api-service/src/api/workers/      → Celery workers: watchdog, screener, brief, earnings, alert
 apps/mcp-servers/              → 3 independent FastMCP servers
 apps/mcp-servers/market-data/  → OpenBB-backed: stocks, ETFs, fundamentals, options
 apps/mcp-servers/news-macro/   → Finnhub + GDELT: news, sentiment, macro signals
@@ -71,8 +71,8 @@ scripts/                       → deploy.sh, logs.sh
    exact Pydantic error path. Never start with bad config.
 10. **Cost tracking** — every LLM call must record `tokens_in`, `tokens_out`, `cost_usd`,
     `provider`, `model`, `duration_ms` in an `AgentRun` record.
-11. **Colocated prompts** — agent prompts live at `agents/x_agent.prompt.py` alongside
-    `agents/x_agent.py`. Shared prompts in `agents/shared/`.
+11. **Colocated prompts** — agent prompts live at `apps/api-service/src/api/agents/x_agent.prompt.py`
+    alongside `apps/api-service/src/api/agents/x_agent.py`. Shared prompts in `apps/api-service/src/api/agents/shared/`.
 
 ## Development Workflow
 
@@ -95,13 +95,13 @@ set the `SPECIFY_FEATURE` environment variable first.
 **Set before invoking any SpecKit skill:**
 
 ```bash
-export SPECIFY_FEATURE=001-foundation-config   # matches the specs/ directory name
+export SPECIFY_FEATURE=001-python-foundation-config   # matches the specs/ directory name
 ```
 
 **Full workflow for each feature (spec.md exists, need plan + tasks + implement):**
 
 ```bash
-export SPECIFY_FEATURE=002-data-layer   # adjust per feature
+export SPECIFY_FEATURE=002-async-data-layer   # adjust per feature
 /speckit.plan                           # generates plan.md, research.md, data-model.md, contracts/
 /speckit.tasks                          # generates tasks.md
 /speckit.implement                      # executes all tasks
@@ -135,6 +135,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # Dev mode
 | `docs/CONTEXT.md` | Architecture decisions and environment constraints | Reference only |
 | `config/runtime/*.yaml` | Runtime configuration (Everything-as-Code) | Update values as needed |
 | `CLAUDE.md` | Claude Code entry point — imports `@AGENTS.md` | Do not edit directly |
+| `.codex/hooks/python-quality-check.*` | Codex-local Python quality gate hooks (`ruff`, `mypy`, `pytest`) | Keep aligned with constitution quality gates |
 
 ## Technology Stack (Locked)
 

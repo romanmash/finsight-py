@@ -1,98 +1,81 @@
 # FinSight AI Hub
 
-> Multi-agent fintech market intelligence platform — 9 specialist agents, 6 MCP tool servers, real-time admin dashboard.
+Python-first multi-agent fintech market intelligence platform.
 
 ## Quick Start
 
 ```bash
-# Prerequisites: Node.js 20 LTS, pnpm 9, Docker/Podman
-pnpm install
-cp .env.example .env             # Configure API keys
-docker compose up -d postgres redis
-pnpm prisma migrate dev --name init
-pnpm prisma db seed
-pnpm -r test                     # Verify offline tests pass
-docker compose up -d             # Start all 12 containers
+# Prerequisites: Python 3.13, uv, Docker/Podman
+uv sync
+cp .env.example .env
+uv run alembic upgrade head
+uv run python -m scripts.seed
+uv run pytest
 ```
-
-## Architecture
-
-```
-┌─────────────────────── Telegram Bot ───────────────────────┐
-│                      (user interface)                      │
-└───────────────────────────┬────────────────────────────────┘
-                            │
-┌───────────────────────────▼────────────────────────────────┐
-│                     Hono API + Manager                     │
-│            (auth, routing, orchestration)                   │
-├──────────────┬──────────────┬──────────────┬───────────────┤
-│  Researcher  │   Analyst    │  Bookkeeper  │   Reporter    │
-│  Watchdog    │  Technician  │    Trader    │   Screener    │
-└──────┬───────┴──────────────┴──────┬───────┴───────────────┘
-       │                             │
-┌──────▼─────────────────────────────▼───────────────────────┐
-│              6 MCP Tool Servers (Hono)                     │
-│  market-data │ macro-signals │ news │ rag │ enterprise │   │
-│              │               │      │     │ trader-plat │  │
-└──────────────┴───────────────┴──────┴─────┴────────────────┘
-       │                             │
-┌──────▼─────────────────────────────▼───────────────────────┐
-│         PostgreSQL (pgvector)  │  Redis + BullMQ           │
-└────────────────────────────────┴───────────────────────────┘
-```
-
-## Repository Structure
-
-| Directory | Purpose |
-|---|---|
-| `packages/shared-types/` | `@finsight/shared-types` — domain types, zero runtime deps |
-| `apps/api/` | Hono API, 9 agents, BullMQ workers |
-| `apps/mcp-servers/` | 6 independent MCP tool servers |
-| `apps/dashboard/` | React admin dashboard (Vite) |
-| `apps/telegram-bot/` | Telegraf polling bot |
-| `config/runtime/` | 11 YAML config files |
-| `config/types/` | Zod validation schemas |
-| `prisma/` | Schema, migrations, seed |
-| `infra/` | Pulumi IaC |
-| `specs/` | Feature specs (SpecKit methodology) |
-| `docs/` | System specification + architecture docs |
-
-## Development
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow, commit conventions, and PR checklist.
 
-### Key Commands
+## Repository Structure
+
+- `packages/shared/` - shared Python domain models
+- `apps/api-service/` - FastAPI app, agents, workers
+- `apps/mcp-servers/` - Python MCP servers
+- `apps/dashboard/` - Dash operator console
+- `apps/telegram-bot/` - python-telegram-bot app
+- `config/runtime/` - YAML runtime config
+- `config/schemas/` - Pydantic validation models
+- `specs/` - feature specs and execution order
+
+## Development Workflow
+
+1. Read `.specify/memory/constitution.md`
+2. Read `specs/README.md` and the target `specs/NNN-*/spec.md` + `plan.md`
+3. Implement only in current spec scope
+4. Run quality gates and commit with Conventional Commits
+
+## Quality Gates
 
 ```bash
-pnpm -r typecheck     # TypeScript strict (zero errors)
-pnpm -r lint          # ESLint (zero warnings)
-pnpm -r test          # All tests (offline, no Docker)
+uv run mypy --strict
+uv run ruff check
+uv run pytest
 ```
 
-## Documentation
+Codex hook equivalents:
 
-| Document | Purpose |
-|---|---|
-| [Constitution](/.specify/memory/constitution.md) | Non-negotiable project principles |
-| [Feature Specs](/specs/README.md) | SpecKit feature catalogue |
-| [System Spec](/docs/CASE.md) | Full system specification |
-| [Architecture](/docs/CONTEXT.md) | Decisions + constraints |
-| [Dashboard Reference](/docs/dashboard-reference.html) | Visual spec for admin UI |
+```bash
+bash .codex/hooks/python-quality-check.sh
+pwsh .codex/hooks/python-quality-check.ps1
+```
+
+## Git Hooks
+
+Install repo-managed hooks once per clone:
+
+```bash
+pwsh scripts/setup-git-hooks.ps1
+# or
+bash scripts/setup-git-hooks.sh
+```
+
+`setup-git-hooks.ps1` also sets user-level `UV_CACHE_DIR` and `PYTHONPYCACHEPREFIX` to this repo's `.cache/` paths.
+`setup-git-hooks.sh` prints equivalent `export` lines for your shell profile.
+
+Hooks installed:
+- `pre-commit`: `uv run ruff check` + `uv run mypy --strict`
+- `pre-push`: `uv run pytest`
 
 ## AI Agent Support
 
-This repo is configured for AI-assisted development:
+- `AGENTS.md` is the universal source of agent instructions (Codex-primary).
+- `CLAUDE.md` stays as a thin entrypoint for Claude tooling.
+- `.codex/hooks/` contains local Codex quality helper scripts.
 
-| Agent | Config | Instructions |
-|---|---|---|
-| **Claude Code** | `CLAUDE.md` + `.claude/commands/` | 4 slash commands: `/implement`, `/review`, `/commit`, `/plan` |
-| **Codex CLI** | `.codex/config.toml` | Reads `AGENTS.md` |
-| **Any agent** | `AGENTS.md` | Universal instructions |
+## Core References
 
-## Tech Stack
-
-Node.js 20 · TypeScript 5 strict · pnpm · Hono · Prisma · pgvector · BullMQ · Redis · Vercel AI SDK · Telegraf · React · Vite · Pulumi · Docker
-
-## License
-
-Private — portfolio demonstration project.
+- `AGENTS.md`
+- `.codex/README.md`
+- `.specify/memory/constitution.md`
+- `docs/CONTEXT.md`
+- `docs/STACK.md`
+- `specs/README.md`

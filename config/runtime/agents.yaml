@@ -1,24 +1,73 @@
-manager:
-  primary: { provider: anthropic, model: claude-sonnet-4-20250514, temperature: 0.2, maxTokens: 2048 }
-  fallback: { provider: azure, model: gpt-4o, temperature: 0.2, maxTokens: 2048 }
-watchdog:
-  primary: { provider: openai, model: gpt-4o-mini, temperature: 0.1, maxTokens: 2048 }
-screener:
-  primary: { provider: openai, model: gpt-4o-mini, temperature: 0.2, maxTokens: 2048 }
-researcher:
-  primary: { provider: openai, model: gpt-4o, temperature: 0.2, maxTokens: 8192 }
-analyst:
-  primary: { provider: anthropic, model: claude-sonnet-4-20250514, temperature: 0.3, maxTokens: 4096 }
-  fallback: { provider: azure, model: gpt-4o, temperature: 0.3, maxTokens: 4096 }
-  devilAdvocateTemperature: 0.7
-technician:
-  primary: { provider: openai, model: gpt-4o, temperature: 0.2, maxTokens: 2048 }
-bookkeeper:
-  primary: { provider: openai, model: gpt-4o-mini, temperature: 0.1, maxTokens: 1024 }
-reporter:
-  primary: { provider: lmstudio, model: llama-3.2-8b-instruct, temperature: 0.5, maxTokens: 4096 }
-  fallback: { provider: openai, model: gpt-4o-mini, temperature: 0.5, maxTokens: 4096 }
-trader:
-  primary: { provider: openai, model: gpt-4o-mini, temperature: 0.1, maxTokens: 1024 }
-confidence:
-  reDispatchOnLow: true
+agents:
+  manager:
+    model: claude-sonnet-4-20250514
+    provider: anthropic
+    temperature: 0.2
+    max_tokens: 2048
+    max_retries: 2
+    timeout_seconds: 30
+    base_url: null
+  watchdog:
+    model: gpt-4o-mini
+    provider: openai
+    temperature: 0.1
+    max_tokens: 2048
+    max_retries: 2
+    timeout_seconds: 30
+    base_url: null
+  screener:
+    model: gpt-4o-mini
+    provider: openai
+    temperature: 0.2
+    max_tokens: 2048
+    max_retries: 2
+    timeout_seconds: 30
+    base_url: null
+  researcher:
+    model: gpt-4o
+    provider: openai
+    temperature: 0.2
+    max_tokens: 8192
+    max_retries: 2
+    timeout_seconds: 45
+    base_url: null
+  analyst:
+    model: claude-sonnet-4-20250514
+    provider: anthropic
+    temperature: 0.3
+    max_tokens: 4096
+    max_retries: 2
+    timeout_seconds: 45
+    base_url: null
+  technician:
+    model: gpt-4o
+    provider: openai
+    temperature: 0.2
+    max_tokens: 2048
+    max_retries: 2
+    timeout_seconds: 30
+    base_url: null
+  bookkeeper:
+    model: gpt-4o-mini
+    provider: openai
+    temperature: 0.1
+    max_tokens: 1024
+    max_retries: 2
+    timeout_seconds: 30
+    base_url: null
+  reporter:
+    model: llama-3.2-8b-instruct
+    provider: lmstudio
+    temperature: 0.5
+    max_tokens: 4096
+    max_retries: 2
+    timeout_seconds: 45
+    base_url: null
+  trader:
+    model: gpt-4o-mini
+    provider: openai
+    temperature: 0.1
+    max_tokens: 1024
+    max_retries: 2
+    timeout_seconds: 30
+    base_url: null

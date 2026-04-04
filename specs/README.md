@@ -3,7 +3,6 @@
 > **Methodology:** [Spec-Driven Development](https://github.com/github/spec-kit)
 > **Constitution:** [`.specify/memory/constitution.md`](../.specify/memory/constitution.md)
 > **Stack:** Python 3.13 · FastAPI · LangGraph · SQLAlchemy · Celery · OpenBB · Dash
-> **Archive:** [`_archive/typescript-v1/`](./_archive/typescript-v1/) — original TypeScript specs
 
 ## Feature Catalogue
 

@@ -8,7 +8,7 @@
 ## Notes for Implementors
 
 - **Separate uv workspace package**: The dashboard is `apps/dashboard/` — its own `pyproject.toml`.
-  Never imports from `apps/api` or any other app directly. All data via HTTP through `ApiClient`.
+  Never imports from `apps/api-service` or any other app directly. All data via HTTP through `ApiClient`.
 - **No direct DB access**: The dashboard is a pure HTTP consumer of the FastAPI backend.
 - **Offline testing strategy**: Callbacks are split into thin Dash wrappers + pure helper functions.
   Tests import the pure functions directly and mock all HTTP calls via respx. No `dash.testing`,
@@ -39,7 +39,7 @@
 ## Phase 2: Foundational
 
 - [ ] T004 Create `config/runtime/dashboard.yaml` with: `api_base_url: "http://api:8000"`, `poll_interval_ms: 5000`, `auth_bypass_localhost: true`, `page_size_missions: 20`, `page_size_kb: 10`, `stale_threshold_seconds: 30`
-- [ ] T005 Create `config/schemas/dashboard.py` with `DashboardConfig(BaseModel)`: `api_base_url: str`, `poll_interval_ms: int = 5000`, `auth_bypass_localhost: bool = True`, `page_size_missions: int = 20`, `page_size_kb: int = 10`, `stale_threshold_seconds: int = 30`; add `dashboard: DashboardConfig` to `AllConfigs` in `apps/api/src/api/lib/config.py` and load `config/runtime/dashboard.yaml` in `load_all_configs()`; add an inline comment in `config.py` noting API startup now requires `dashboard.yaml` to be present (fail-fast by design)
+- [ ] T005 Create `config/schemas/dashboard.py` with `DashboardConfig(BaseModel)`: `api_base_url: str`, `poll_interval_ms: int = 5000`, `auth_bypass_localhost: bool = True`, `page_size_missions: int = 20`, `page_size_kb: int = 10`, `stale_threshold_seconds: int = 30`; add `dashboard: DashboardConfig` to `AllConfigs` in `apps/api-service/src/api/lib/config.py` and load `config/runtime/dashboard.yaml` in `load_all_configs()`; add an inline comment in `config.py` noting API startup now requires `dashboard.yaml` to be present (fail-fast by design)
 - [ ] T006 Create `apps/dashboard/src/dashboard/api_client.py` with `ApiClient` class wrapping `httpx.AsyncClient`; methods: `get_missions(status_filter, limit)`, `get_mission(id)`, `get_watchlist()`, `upsert_watchlist_item(data)`, `delete_watchlist_item(id)`, `get_kb_entries(query, page)`, `get_alerts(unacknowledged_only)`, `acknowledge_alert(id)`, `get_health()`; all methods return data dict or `ApiError(status_code: int, message: str)` dataclass — never raise
 - [ ] T007 Create `apps/dashboard/src/dashboard/auth.py` with `get_token(store_data: dict | None, request_ip: str, bypass_localhost: bool) -> str | None`: returns `None` (bypass sentinel) when `bypass_localhost=True` and `request_ip == "127.0.0.1"`, otherwise extracts token from `store_data`; `refresh_if_needed(store_data, api_client)` calls `/auth/refresh` if token expiry within 30 seconds
 - [ ] T008 Create `apps/dashboard/src/dashboard/assets/styles.css` with CSS custom property `--touch-target: 48px`; rules for `button`, `.card`, `.nav-link`, `.mission-card`, `.alert-badge` setting `min-height: var(--touch-target)` and padding for tap comfort

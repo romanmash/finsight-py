@@ -26,7 +26,7 @@ verify the mission is marked complete.
    a Mission is created, the Researcher and Analyst are invoked in sequence, and a formatted
    response is returned to the operator.
 2. **Given** a mission that requires pattern analysis, **When** the Manager orchestrates it,
-   **Then** the Pattern Specialist is included in the agent sequence.
+   **Then** the Technician (Pattern Specialist) is included in the agent sequence.
 3. **Given** a completed mission, **When** the Manager has a formatted response, **Then** the
    mission status is updated to complete and the response is available for delivery.
 

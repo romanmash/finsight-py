@@ -1,15 +1,4 @@
 # --------------------------------------------------
-# Dependencies, build output, caches
-# --------------------------------------------------
-node_modules/
-dist/
-build/
-coverage/
-.turbo/
-.next/
-.pnpm-store/
-
-# --------------------------------------------------
 # VCS, editor, local tooling
 # --------------------------------------------------
 .git/
@@ -30,20 +19,10 @@ specs/
 .tmp/
 
 # --------------------------------------------------
-# Tests and local-only source artifacts
-# --------------------------------------------------
-**/__tests__/
-**/*.test.ts
-**/*.spec.ts
-
-# --------------------------------------------------
 # Logs, temp files, OS noise
 # --------------------------------------------------
 *.log
 *.log*
-*.tmp
-tmp/
-temp/
 .DS_Store
 Thumbs.db
 Desktop.ini
@@ -58,3 +37,30 @@ Desktop.ini
 # Docker self-reference
 # --------------------------------------------------
 Dockerfile*
+
+# --------------------------------------------------
+# Python caches and virtualenv
+# --------------------------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+.tox/
+.nox/
+*.egg-info/
+.eggs/
+build/
+dist/
+pip-wheel-metadata/
+__pypackages__/
+
+# Local uv caches
+.uv-cache/
+.uv-python/

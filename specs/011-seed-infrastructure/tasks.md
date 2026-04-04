@@ -28,15 +28,15 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Create `apps/api/src/api/seeds/__init__.py` as empty stub
-- [ ] T002 Create `apps/api/tests/seeds/__init__.py` as empty stub
+- [ ] T001 Create `apps/api-service/src/api/seeds/__init__.py` as empty stub
+- [ ] T002 Create `apps/api-service/tests/seeds/__init__.py` as empty stub
 
 ---
 
 ## Phase 2: Foundational — Seed Constants and Entry Point
 
-- [ ] T003 Create `apps/api/src/api/seeds/constants.py` with all demo UUIDs as module-level constants: `ADMIN_OPERATOR_ID`, `VIEWER_OPERATOR_ID`, `WATCHLIST_AAPL_ID`, `WATCHLIST_NVDA_ID`, `WATCHLIST_MSFT_ID`, `WATCHLIST_SPY_ID`, `WATCHLIST_QQQ_ID`, `MISSION_INVESTIGATION_ID`, `MISSION_DAILY_BRIEF_ID`, `MISSION_SCREENER_ID`, `AGENT_RUN_RESEARCHER_ID`, `AGENT_RUN_ANALYST_ID`, `AGENT_RUN_REPORTER_ID`, `KB_ENTRY_AAPL_ID`, `KB_ENTRY_NVDA_ID`, `KB_ENTRY_MARKET_ID`, `ALERT_AAPL_ID`, `ALERT_NVDA_ID`, `ALERT_SPY_ID`; all as `uuid.UUID` literals; never generated with `uuid4()` at runtime
-- [ ] T004 Create `apps/api/src/api/seeds/seed.py` as main entry point: `async def seed(session: AsyncSession) -> None` calls all seeders in dependency order: operators → watchlist → missions (with agent_runs) → knowledge → alerts; each seeder is imported and awaited; after all seeders complete, generates and prints `TELEGRAM_SERVICE_TOKEN` via `create_access_token(sub="service:telegram-bot", role="service", ttl_days=365)` from `apps/api/src/api/lib/auth.py`; `if __name__ == "__main__": asyncio.run(main())` entry point connects to PostgreSQL from env
+- [ ] T003 Create `apps/api-service/src/api/seeds/constants.py` with all demo UUIDs as module-level constants: `ADMIN_OPERATOR_ID`, `VIEWER_OPERATOR_ID`, `WATCHLIST_AAPL_ID`, `WATCHLIST_NVDA_ID`, `WATCHLIST_MSFT_ID`, `WATCHLIST_SPY_ID`, `WATCHLIST_QQQ_ID`, `MISSION_INVESTIGATION_ID`, `MISSION_DAILY_BRIEF_ID`, `MISSION_SCREENER_ID`, `AGENT_RUN_RESEARCHER_ID`, `AGENT_RUN_ANALYST_ID`, `AGENT_RUN_REPORTER_ID`, `KB_ENTRY_AAPL_ID`, `KB_ENTRY_NVDA_ID`, `KB_ENTRY_MARKET_ID`, `ALERT_AAPL_ID`, `ALERT_NVDA_ID`, `ALERT_SPY_ID`; all as `uuid.UUID` literals; never generated with `uuid4()` at runtime
+- [ ] T004 Create `apps/api-service/src/api/seeds/seed.py` as main entry point: `async def seed(session: AsyncSession) -> None` calls all seeders in dependency order: operators → watchlist → missions (with agent_runs) → knowledge → alerts; each seeder is imported and awaited; after all seeders complete, generates and prints `TELEGRAM_SERVICE_TOKEN` via `create_access_token(sub="service:telegram-bot", role="service", ttl_days=365)` from `apps/api-service/src/api/lib/auth.py`; `if __name__ == "__main__": asyncio.run(main())` entry point connects to PostgreSQL from env
 
 ---
 
@@ -47,12 +47,12 @@
 
 **Independent test**: SQLite in-memory engine → `seed()` called twice → row counts identical; no duplicate PKs; `password_hash` starts with `$2b$`.
 
-- [ ] T005 [US2] Create `apps/api/src/api/seeds/operators.py` with `async def seed_operators(session: AsyncSession) -> None`: creates admin operator (`username="admin"`, `role="admin"`, `telegram_user_id=<fixed int>`, `telegram_chat_id=<fixed int>`, password hashed with bcrypt) and viewer operator (`username="viewer"`, `role="viewer"`) using `session.merge()`; all timestamps fixed to past datetime
-- [ ] T006 [P] [US2] Create `apps/api/src/api/seeds/watchlist.py` with `async def seed_watchlist(session: AsyncSession) -> None`: creates 5 WatchlistItem records (AAPL, NVDA, MSFT as stock watchlist; SPY, QQQ as ETF watchlist) with realistic thresholds (`price_change_threshold`, `volume_spike_threshold`), all `active=True`, using `session.merge()` with fixed UUIDs
-- [ ] T007 [P] [US2] Create `apps/api/src/api/seeds/missions.py` with `async def seed_missions(session: AsyncSession) -> None`: creates 3 Mission records (investigation COMPLETED, daily_brief COMPLETED, screener_scan FAILED) using `session.merge()`; creates 3 AgentRun records (researcher, analyst, reporter) attached to the investigation mission with realistic `tokens_in`, `tokens_out`, `cost_usd`, `model`, `provider`, `duration_ms` values; all timestamps fixed to past datetimes
-- [ ] T008 [P] [US2] Create `apps/api/src/api/seeds/knowledge.py` with `async def seed_knowledge(session: AsyncSession) -> None`: creates 3 KnowledgeEntry records (AAPL Q4 earnings analysis, NVDA chip demand outlook, broad market macro context) using `session.merge()`; `embedding=None` on all entries; `source_agent="bookkeeper"`, `confidence=0.85`; `conflict_markers=[]`; one entry has `conflict_markers=["Contradicts prior Q3 assessment"]` to demonstrate the conflict indicator in the dashboard
-- [ ] T009 [P] [US2] Create `apps/api/src/api/seeds/alerts.py` with `async def seed_alerts(session: AsyncSession) -> None`: creates 3 Alert records — one `acknowledged=False` (AAPL price spike), two `acknowledged=True` (NVDA volume anomaly, SPY threshold breach) — using `session.merge()` with fixed UUIDs and fixed past timestamps
-- [ ] T010 [US2] Create `apps/api/tests/seeds/test_seed.py` with 4 tests using in-memory SQLite async engine (same aiosqlite pattern as Feature 002): (1) first `seed()` call → all entity types have correct row counts (2 operators, 5 watchlist items, 3 missions, 3 agent runs, 3 KB entries, 3 alerts), (2) second `seed()` call → identical row counts (idempotency verified), (3) admin operator `password_hash` starts with `$2b$` (bcrypt confirmed), (4) all KB entries have `embedding IS NULL`
+- [ ] T005 [US2] Create `apps/api-service/src/api/seeds/operators.py` with `async def seed_operators(session: AsyncSession) -> None`: creates admin operator (`username="admin"`, `role="admin"`, `telegram_user_id=<fixed int>`, `telegram_chat_id=<fixed int>`, password hashed with bcrypt) and viewer operator (`username="viewer"`, `role="viewer"`) using `session.merge()`; all timestamps fixed to past datetime
+- [ ] T006 [P] [US2] Create `apps/api-service/src/api/seeds/watchlist.py` with `async def seed_watchlist(session: AsyncSession) -> None`: creates 5 WatchlistItem records (AAPL, NVDA, MSFT as stock watchlist; SPY, QQQ as ETF watchlist) with realistic thresholds (`price_change_threshold`, `volume_spike_threshold`), all `active=True`, using `session.merge()` with fixed UUIDs
+- [ ] T007 [P] [US2] Create `apps/api-service/src/api/seeds/missions.py` with `async def seed_missions(session: AsyncSession) -> None`: creates 3 Mission records (investigation COMPLETED, daily_brief COMPLETED, screener_scan FAILED) using `session.merge()`; creates 3 AgentRun records (researcher, analyst, reporter) attached to the investigation mission with realistic `tokens_in`, `tokens_out`, `cost_usd`, `model`, `provider`, `duration_ms` values; all timestamps fixed to past datetimes
+- [ ] T008 [P] [US2] Create `apps/api-service/src/api/seeds/knowledge.py` with `async def seed_knowledge(session: AsyncSession) -> None`: creates 3 KnowledgeEntry records (AAPL Q4 earnings analysis, NVDA chip demand outlook, broad market macro context) using `session.merge()`; `embedding=None` on all entries; `source_agent="bookkeeper"`, `confidence=0.85`; `conflict_markers=[]`; one entry has `conflict_markers=["Contradicts prior Q3 assessment"]` to demonstrate the conflict indicator in the dashboard
+- [ ] T009 [P] [US2] Create `apps/api-service/src/api/seeds/alerts.py` with `async def seed_alerts(session: AsyncSession) -> None`: creates 3 Alert records — one `acknowledged=False` (AAPL price spike), two `acknowledged=True` (NVDA volume anomaly, SPY threshold breach) — using `session.merge()` with fixed UUIDs and fixed past timestamps
+- [ ] T010 [US2] Create `apps/api-service/tests/seeds/test_seed.py` with 4 tests using in-memory SQLite async engine (same aiosqlite pattern as Feature 002): (1) first `seed()` call → all entity types have correct row counts (2 operators, 5 watchlist items, 3 missions, 3 agent runs, 3 KB entries, 3 alerts), (2) second `seed()` call → identical row counts (idempotency verified), (3) admin operator `password_hash` starts with `$2b$` (bcrypt confirmed), (4) all KB entries have `embedding IS NULL`
 
 ---
 
@@ -96,14 +96,14 @@
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T021 Add `if __name__ == "__main__"` block to `apps/api/src/api/seeds/seed.py` that creates async SQLAlchemy engine from `DATABASE_URL` env var, creates session, calls `seed(session)`, closes connection; register as `uv run python -m api.seeds.seed` entrypoint in `apps/api/pyproject.toml` `[project.scripts]` as `finsight-seed`
+- [ ] T021 Add `if __name__ == "__main__"` block to `apps/api-service/src/api/seeds/seed.py` that creates async SQLAlchemy engine from `DATABASE_URL` env var, creates session, calls `seed(session)`, closes connection; register as `uv run python -m api.seeds.seed` entrypoint in `apps/api-service/pyproject.toml` `[project.scripts]` as `finsight-seed`
 - [ ] T022 Verify all 6 seeder modules are imported and called in correct dependency order in `seed.py`: operators first (no foreign key deps), watchlist second (no FK deps), missions third (depends on operators via `created_by`), agent_runs within missions seeder (depends on missions), knowledge fourth (standalone), alerts fifth (depends on watchlist items via `ticker`)
 - [ ] T023 Verify `scripts/deploy.sh` handles the migration-before-restart invariant: add a comment block and explicit `set -e` guard around the migration SSH call so any non-zero exit stops the script before `docker compose up -d --build` is reached
 - [ ] T024 Verify `infra/pulumi/__main__.py` has no hardcoded credentials: grep for `HCLOUD_TOKEN` — must appear only in `.env.example`, never in `__main__.py`; token is consumed by Pulumi CLI automatically from env
-- [ ] T025 Export `seed` function from `apps/api/src/api/seeds/__init__.py` for test import
-- [ ] T026 Run `uv run mypy --strict apps/api/src/api/seeds/` — zero errors required
-- [ ] T027 Run `uv run ruff check apps/api/src/api/seeds/` — zero warnings required
-- [ ] T028 Run `uv run pytest apps/api/tests/seeds/ -v` — all 4 seed tests must pass offline without PostgreSQL or network access
+- [ ] T025 Export `seed` function from `apps/api-service/src/api/seeds/__init__.py` for test import
+- [ ] T026 Run `uv run mypy --strict apps/api-service/src/api/seeds/` — zero errors required
+- [ ] T027 Run `uv run ruff check apps/api-service/src/api/seeds/` — zero warnings required
+- [ ] T028 Run `uv run pytest apps/api-service/tests/seeds/ -v` — all 4 seed tests must pass offline without PostgreSQL or network access
 
 ---
 
@@ -120,7 +120,7 @@ All phases → Phase 8 (T021–T028)
 
 **External dependencies (all prior features must be complete)**:
 - Feature 002: All ORM models (`Operator`, `WatchlistItem`, `Mission`, `AgentRun`, `KnowledgeEntry`, `Alert`)
-- Feature 003: `create_access_token()` in `apps/api/src/api/lib/auth.py` (for service JWT generation)
+- Feature 003: `create_access_token()` in `apps/api-service/src/api/lib/auth.py` (for service JWT generation)
 - Feature 007: `KnowledgeEntry.conflict_markers: list[str]` field; `embedding: list[float] | None = None`
 
 ---

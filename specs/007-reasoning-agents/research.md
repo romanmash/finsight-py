@@ -32,7 +32,7 @@
 
 ## KnowledgeEntry Storage Backend
 
-**Chosen**: SQLAlchemy 2.x async ORM on PostgreSQL 16 + pgvector extension. `KnowledgeEntry` is a full ORM model with a `pgvector` column (`embedding: Vector(1536)`) for future semantic retrieval (Feature 004 compatibility). The Bookkeeper writes via the async session from `apps/api/src/api/lib/db.py`.
+**Chosen**: SQLAlchemy 2.x async ORM on PostgreSQL 16 + pgvector extension. `KnowledgeEntry` is a full ORM model with a `pgvector` column (`embedding: Vector(1536)`) for future semantic retrieval (Feature 004 compatibility). The Bookkeeper writes via the async session from `apps/api-service/src/api/lib/db.py`.
 **Rationale**: Consistent with Feature 002 data layer. pgvector column is additive — populated by a separate embedding step (Feature 004) and nullable in 007.
 **Alternatives considered**: Redis for fast K/V store (no SQL query support, no vector), separate SQLite for KB (splits infra).
 

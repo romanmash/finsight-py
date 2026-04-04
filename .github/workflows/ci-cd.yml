@@ -14,15 +14,12 @@ jobs:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-python@v5
         with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm -r typecheck
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v3
+      - run: uv sync --dev
+      - run: uv run mypy --strict
       - name: Typecheck summary
         if: always()
         run: echo "- typecheck: completed" >> "$GITHUB_STEP_SUMMARY"
@@ -33,15 +30,12 @@ jobs:
     needs: typecheck
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-python@v5
         with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm -r lint
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v3
+      - run: uv sync --dev
+      - run: uv run ruff check
       - name: Lint summary
         if: always()
         run: echo "- lint: completed" >> "$GITHUB_STEP_SUMMARY"
@@ -52,15 +46,12 @@ jobs:
     needs: lint
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-python@v5
         with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm -r test -- --pool=threads
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v3
+      - run: uv sync --dev
+      - run: uv run pytest
       - name: Test summary
         if: always()
         run: echo "- test: completed" >> "$GITHUB_STEP_SUMMARY"
@@ -71,15 +62,8 @@ jobs:
     needs: test
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm -r --if-present build
+      - name: Validate compose files
+        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml config >/dev/null
       - name: Build summary
         if: always()
         run: echo "- build: completed" >> "$GITHUB_STEP_SUMMARY"

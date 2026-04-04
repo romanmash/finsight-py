@@ -35,16 +35,16 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/):
 
 | Scope | Area |
 |---|---|
-| `types` | `@finsight/shared-types` package |
-| `config` | Config loader, YAML files, Zod schemas |
-| `api` | Hono routes, middleware, auth |
+| `shared` | Shared Python package |
+| `config` | Config loader, YAML files, Pydantic schemas |
+| `api` | FastAPI routes, middleware, auth |
 | `mcp` | MCP servers or MCP client |
 | `agents` | Any of the 9 agents |
 | `manager` | Manager agent specifically |
 | `kb` | Knowledge Base / Bookkeeper |
-| `dashboard` | React admin dashboard |
+| `dashboard` | Dash operator dashboard |
 | `telegram` | Telegram bot |
-| `prisma` | Schema, migrations, seed |
+| `db` | SQLAlchemy models and Alembic migrations |
 | `infra` | Docker, Pulumi, CI/CD, scripts |
 | `spec` | Specs directory changes |
 
@@ -76,30 +76,29 @@ refactor(api): extract JWT validation into reusable middleware
 4. **Plan** — if `plan.md` does not yet exist, run `/plan NNN-feature-name` to generate it
 5. **Read** the implementation plan: `specs/NNN-feature-name/plan.md`
 6. **Implement** only the files listed in the plan (use `/implement NNN-feature-name`)
-7. **Test** with `pnpm -r test` — all tests must pass offline
-8. **Typecheck** with `pnpm -r typecheck` — zero errors
-9. **Lint** with `pnpm -r lint` — zero warnings
+7. **Test** with `uv run pytest` — all tests must pass offline
+8. **Typecheck** with `uv run mypy --strict` — zero errors (required)
+9. **Lint** with `uv run ruff check` — zero warnings (required)
 10. **Commit** using conventional commit format
 
 ## Setup
 
 ```bash
-# Prerequisites: Node.js 20 LTS, pnpm 9
-pnpm install                     # Install all workspace dependencies
+# Prerequisites: Python 3.13, uv
+uv sync                          # Install all workspace dependencies
 cp .env.example .env             # Configure environment variables
 docker compose up -d postgres redis  # Start database + cache
-pnpm prisma migrate dev          # Apply migrations
-pnpm prisma db seed              # Load demo data
-pnpm -r test                     # Verify everything works
+uv run alembic upgrade head      # Apply migrations
+uv run python -m scripts.seed    # Load demo data
+uv run pytest                    # Verify everything works
 ```
 
 ## Pull Request Checklist
 
-- [ ] Typecheck passes: `pnpm -r typecheck` (zero errors)
-- [ ] Lint passes: `pnpm -r lint` (zero warnings)
-- [ ] Tests pass offline: `pnpm -r test` (no network, no Docker)
-- [ ] No `any` types, explicit return types on all functions
-- [ ] All interfaces and exported functions have JSDoc comments
+- [ ] Typecheck passes: `uv run mypy --strict` (zero errors)
+- [ ] Lint passes: `uv run ruff check` (zero warnings)
+- [ ] Tests pass offline: `uv run pytest` (no network, no Docker)
+- [ ] Explicit return types on all Python functions
 - [ ] All config from YAML — no hardcoded values
 - [ ] Agent boundaries respected — no cross-domain leaks
 - [ ] Cost tracking — every LLM call records tokens, cost, duration in `AgentRun`

@@ -34,16 +34,16 @@ This creates the `knowledge_entries` table with pgvector column (nullable at thi
 
 ```bash
 # All reasoning agent tests (offline — no network, no Docker required)
-uv run pytest apps/api/tests/agents/test_analyst.py apps/api/tests/agents/test_pattern.py apps/api/tests/agents/test_bookkeeper.py apps/api/tests/agents/test_reporter.py -v
+uv run pytest apps/api-service/tests/agents/test_analyst.py apps/api-service/tests/agents/test_pattern.py apps/api-service/tests/agents/test_bookkeeper.py apps/api-service/tests/agents/test_reporter.py -v
 
 # With coverage
-uv run pytest apps/api/tests/agents/ --cov=apps/api/src/api/agents --cov-report=term-missing -v
+uv run pytest apps/api-service/tests/agents/ --cov=apps/api-service/src/api/agents --cov-report=term-missing -v
 
 # Type check
-uv run mypy --strict apps/api/src/api/agents/ packages/shared/src/finsight/shared/models/
+uv run mypy --strict apps/api-service/src/api/agents/ packages/shared/src/finsight/shared/models/
 
 # Lint
-uv run ruff check apps/api/src/api/agents/ packages/shared/src/finsight/shared/models/
+uv run ruff check apps/api-service/src/api/agents/ packages/shared/src/finsight/shared/models/
 ```
 
 ## Verifying Deduplication (Manual Smoke Test)
@@ -57,7 +57,7 @@ uv run python -m scripts.test_bookkeeper_dedup
 
 | Variable | Purpose | Required |
 |----------|---------|----------|
-| `OPENAI_API_KEY` | LLM calls (Analyst, Pattern Specialist, Reporter) | Yes |
+| `OPENAI_API_KEY` | LLM calls (Analyst, Technician (Pattern Specialist), Reporter) | Yes |
 | `LLM_BASE_URL` | Override for local LM Studio endpoint | No |
 | `DATABASE_URL` | Async PostgreSQL DSN | Yes |
 

@@ -1,6 +1,0 @@
-watchdogScan: { cron: "*/30 * * * *", concurrency: 1, retryAttempts: 3, retryBackoffMs: 5000 }
-screenerScan: { cron: "0 7 * * 1-5", concurrency: 1, retryAttempts: 3, retryBackoffMs: 5000 }
-dailyBrief: { cron: "0 6 * * *", concurrency: 1, retryAttempts: 2, retryBackoffMs: 5000 }
-earningsCheck: { cron: "30 7 * * 1-5", concurrency: 1, retryAttempts: 3, retryBackoffMs: 5000 }
-ticketExpiry: { cron: "0 * * * *", concurrency: 1, retryAttempts: 2, retryBackoffMs: 3000 }
-alertPipeline: { concurrency: 2, retryAttempts: 3, retryBackoffMs: 5000 }

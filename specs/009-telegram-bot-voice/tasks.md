@@ -8,10 +8,10 @@
 ## Notes for Implementors
 
 - **Separate uv workspace package**: The telegram-bot is `apps/telegram-bot/` — its own
-  `pyproject.toml`, own `Celery` app instance in `notifier.py`. No imports from `apps/api`.
+  `pyproject.toml`, own `Celery` app instance in `notifier.py`. No imports from `apps/api-service`.
 - **Celery multi-app**: `notifier.py` defines `celery_app = Celery("telegram_bot", ...)`.
   This registers tasks under `telegram_bot.notifier.deliver_to_telegram` — exactly the name
-  that `apps/api/workers/mission_worker.py` uses in `send_task(...)`.
+  that `apps/api-service/workers/mission_worker.py` uses in `send_task(...)`.
 - **Telegram worker command**: `celery -A telegram_bot.notifier worker -Q telegram`
 - **Auth is HTTP, not direct DB**: `authenticate_operator()` calls `GET /operators?telegram_user_id={id}`
   with service JWT. The bot never imports SQLAlchemy or repository classes.
@@ -38,7 +38,7 @@
 ## Phase 2: Foundational
 
 - [ ] T005 Create `config/runtime/telegram.yaml` with `whisper_model: "whisper-1"`, `confidence_threshold: 0.6`, `ack_message: "Processing your request... I'll reply when done."`, `max_message_length: 4096`, `poll_timeout_seconds: 30`
-- [ ] T006 Create `config/schemas/telegram.py` with `TelegramConfig(BaseModel)` (whisper_model: str, confidence_threshold: float, ack_message: str, max_message_length: int = 4096, poll_timeout_seconds: int = 30); add `telegram: TelegramConfig` to `AllConfigs` in `apps/api/src/api/lib/config.py` and load `config/runtime/telegram.yaml` in `load_all_configs()`; add an inline comment in `config.py` noting API startup now requires `telegram.yaml` to be present (fail-fast by design)
+- [ ] T006 Create `config/schemas/telegram.py` with `TelegramConfig(BaseModel)` (whisper_model: str, confidence_threshold: float, ack_message: str, max_message_length: int = 4096, poll_timeout_seconds: int = 30); add `telegram: TelegramConfig` to `AllConfigs` in `apps/api-service/src/api/lib/config.py` and load `config/runtime/telegram.yaml` in `load_all_configs()`; add an inline comment in `config.py` noting API startup now requires `telegram.yaml` to be present (fail-fast by design)
 - [ ] T007 Create `apps/telegram-bot/src/telegram_bot/message_utils.py` with `split_long_message(text: str, limit: int = 4096) -> list[str]` — splits on newline boundaries where possible; never splits in the middle of a word
 - [ ] T008 Populate `apps/telegram-bot/tests/conftest.py` with: `make_update(text: str, user_id: int, chat_id: int) -> Update` fixture that builds a PTB `Update` from a dict, `mock_bot` fixture (AsyncMock with `send_message` stubbed), `mock_api_client` respx fixture returning mock operator JSON for registered user IDs and 404 for unknown user IDs
 

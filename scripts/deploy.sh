@@ -41,7 +41,7 @@ rsync -az --delete \
   --exclude '.git/' \
   --exclude 'node_modules/' \
   --exclude '.env' \
-  docker-compose.yml docker-compose.dev.yml package.json pnpm-lock.yaml "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
+  docker-compose.yml docker-compose.dev.yml pyproject.toml uv.lock "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
 
 echo "[deploy] restarting compose stack"
 ssh "${DEPLOY_USER}@${DEPLOY_HOST}" "cd ${DEPLOY_PATH} && docker compose pull && docker compose up -d"

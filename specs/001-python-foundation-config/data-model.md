@@ -14,7 +14,7 @@ SQLAlchemy dependency. They are loaded at startup and immutable at runtime.
 
 ### AgentsConfig (`config/schemas/agents.py`)
 
-Governs all 7 agent definitions: model selection, temperature, token limits, retry policy.
+Governs all 9 agent definitions: model selection, temperature, token limits, retry policy.
 
 ```
 AgentsConfig
@@ -89,7 +89,7 @@ SchedulerConfig
 
 ---
 
-## Environment Config Model (`apps/api/src/api/lib/config.py`)
+## Environment Config Model (`apps/api-service/src/api/lib/config.py`)
 
 This is a `pydantic-settings` `BaseSettings` class that reads from `.env`. It holds only secrets
 and environment-specific values — nothing behavioural.

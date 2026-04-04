@@ -3,7 +3,7 @@
 ## Operator (additions for Telegram)
 
 **Type**: SQLAlchemy ORM + Pydantic domain model additions
-**Location**: `apps/api/src/api/db/models/operator.py` (extend Feature 002)
+**Location**: `apps/api-service/src/api/db/models/operator.py` (extend Feature 002)
 
 New fields added to Operator:
 | Field | Python Type | Description |

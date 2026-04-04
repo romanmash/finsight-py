@@ -1,3 +1,0 @@
-accessTokenExpiryMinutes: 15
-refreshTokenExpiryDays: 7
-bcryptRounds: 12

@@ -3,7 +3,7 @@
 ## AccessToken (in-memory, not persisted)
 
 **Type**: Pydantic model (JWT payload)
-**Location**: `apps/api/src/api/lib/auth.py`
+**Location**: `apps/api-service/src/api/lib/auth.py`
 
 | Field | Python Type | Description |
 |-------|-------------|-------------|
@@ -19,7 +19,7 @@
 ## RefreshToken (persisted in DB)
 
 **Type**: SQLAlchemy ORM (see Feature 002 for full ORM model)
-**Location**: `apps/api/src/api/db/models/refresh_token.py`
+**Location**: `apps/api-service/src/api/db/models/refresh_token.py`
 
 | Field | Python Type | Description |
 |-------|-------------|-------------|

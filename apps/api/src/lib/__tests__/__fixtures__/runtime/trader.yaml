@@ -1,8 +1,0 @@
-ticketExpiryHours: 24
-minConfidenceToCreateTicket: medium
-maxPendingTicketsPerUser: 5
-mockExecutionSlippagePct: 0.05
-mockBasePrice: 100
-allowedRoles: [admin, analyst]
-requireTechnicianAlignment: false
-platform: mock

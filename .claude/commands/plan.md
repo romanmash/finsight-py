@@ -4,10 +4,10 @@ description: "Create a plan.md (SDD) for a feature spec"
 
 Create a technical implementation plan (SDD) for the specified feature:
 
-1. Read `.specify/memory/constitution.md` for project principles
-2. Read the spec: `specs/$ARGUMENTS/spec.md`
-3. Read `docs/CASE.md` and `docs/CONTEXT.md` for architectural context
-4. Verify all dependency specs are complete: each must have both `plan.md` and `tasks.md` with all items checked off. Do not write a plan for a spec whose dependencies are unresolved.
+1. Read `.specify/memory/constitution.md`
+2. Read `specs/$ARGUMENTS/spec.md`
+3. Read `docs/CONTEXT.md` and `docs/STACK.md`
+4. Confirm dependency specs are complete before planning
 
 Generate `specs/$ARGUMENTS/plan.md` with this structure:
 
@@ -15,28 +15,25 @@ Generate `specs/$ARGUMENTS/plan.md` with this structure:
 # Implementation Plan: [Feature Name]
 
 ## Technical Context
-- Dependencies (which specs must be complete first)
-- Key technical decisions and rationale
+- Dependencies and readiness
+- Key decisions and rationale
 - Constitution compliance notes
 
 ## Project Structure
-- Exact file paths to create or modify
-- Package dependencies to add
+- Exact file paths to create/modify
+- Python package/module boundaries
 
 ## Implementation Details
 ### [Component 1]
-- File: `path/to/file.ts`
+- File: `path/to/file.py`
 - Purpose and key logic
-- Interfaces/types used
-- Error handling approach
-
-### [Component N]
-...
+- Types/interfaces and contracts
+- Error handling strategy
 
 ## Testing Strategy
-- Unit tests (what to test, what to mock)
+- Unit tests (what to mock and why)
 - Integration tests (if applicable)
-- Test commands
+- Commands: mypy/ruff/pytest
 
 ## Complexity Assessment
 - Estimated effort
@@ -44,8 +41,8 @@ Generate `specs/$ARGUMENTS/plan.md` with this structure:
 - Open questions
 ```
 
-RULES:
-- File paths must match the architecture in CLAUDE.md
-- All types must come from @finsight/shared-types
-- Must specify exact npm dependencies needed
-- Must identify what to mock in tests
+Rules:
+- File paths must align with AGENTS.md architecture
+- Keep everything Python-first
+- Include validation and rollback strategy where relevant
+- Explicitly list what external services are mocked in tests

@@ -17,7 +17,7 @@ no Docker, no network required.
 **Storage**: PostgreSQL 16 + pgvector (prod) / SQLite in-memory (test)
 **Testing**: pytest + pytest-asyncio (asyncio_mode=auto) + aiosqlite + fakeredis (offline)
 **Target Platform**: Linux server (Docker) / Windows 11 dev (Podman)
-**Project Type**: Python monorepo sub-package (apps/api)
+**Project Type**: Python monorepo sub-package (apps/api-service)
 **Performance Goals**: Single entity CRUD < 50 ms; pgvector similarity search over 10k entries < 500 ms
 **Constraints**: mypy --strict zero errors; ruff zero warnings; all tests offline; no Docker
 **Scale/Scope**: 7 entity types, initial migration, offline test suite
@@ -58,7 +58,7 @@ packages/shared/src/finsight/shared/models/
 ├── alert.py             # Alert + AlertSeverity domain model
 └── refresh_token.py     # RefreshToken domain model
 
-apps/api/src/api/db/
+apps/api-service/src/api/db/
 ├── __init__.py
 ├── base.py              # DeclarativeBase, metadata
 ├── models/
@@ -79,16 +79,16 @@ apps/api/src/api/db/
     ├── alert.py
     └── refresh_token.py
 
-apps/api/src/api/lib/
+apps/api-service/src/api/lib/
 ├── db.py                # async engine + get_session() FastAPI dependency
 └── redis.py             # Redis client singleton
 
-apps/api/alembic/
+apps/api-service/alembic/
 ├── env.py               # async-compatible
 └── versions/
     └── 001_initial_schema.py
 
-apps/api/tests/db/
+apps/api-service/tests/db/
 ├── conftest.py          # SQLite async engine + session fixtures
 ├── test_operator.py
 ├── test_mission.py
@@ -114,7 +114,7 @@ apps/api/tests/db/
 
 ### Phase 2: SQLAlchemy ORM Models
 
-**Files**: `apps/api/src/api/db/base.py` + `apps/api/src/api/db/models/*.py`
+**Files**: `apps/api-service/src/api/db/base.py` + `apps/api-service/src/api/db/models/*.py`
 
 **Key decisions**:
 - UUID PKs with `server_default=text("gen_random_uuid()")`
@@ -124,7 +124,7 @@ apps/api/tests/db/
 
 ### Phase 3: Repository Layer
 
-**Files**: `apps/api/src/api/db/repositories/*.py`
+**Files**: `apps/api-service/src/api/db/repositories/*.py`
 
 **Key decisions**:
 - `BaseRepository[T]` provides `get_by_id`, `create`, `update`, `list`, `delete`
@@ -134,11 +134,11 @@ apps/api/tests/db/
 
 ### Phase 4: Engine + Redis Singletons
 
-**Files**: `apps/api/src/api/lib/db.py`, `apps/api/src/api/lib/redis.py`
+**Files**: `apps/api-service/src/api/lib/db.py`, `apps/api-service/src/api/lib/redis.py`
 
 ### Phase 5: Alembic Migration
 
-**Files**: `apps/api/alembic/env.py`, `apps/api/alembic/versions/001_initial_schema.py`
+**Files**: `apps/api-service/alembic/env.py`, `apps/api-service/alembic/versions/001_initial_schema.py`
 
 **Key decisions**:
 - `env.py` uses `run_sync` with async engine
@@ -146,7 +146,7 @@ apps/api/tests/db/
 
 ### Phase 6: Tests
 
-**Files**: `apps/api/tests/db/conftest.py` + `test_*.py`
+**Files**: `apps/api-service/tests/db/conftest.py` + `test_*.py`
 
 ## Key Design Decisions
 

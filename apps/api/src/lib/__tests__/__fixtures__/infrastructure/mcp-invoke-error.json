@@ -1,9 +1,0 @@
-{
-  "error": {
-    "code": "UPSTREAM_ERROR",
-    "message": "upstream failure",
-    "sourceServer": "marketData",
-    "retryable": true
-  },
-  "durationMs": 42
-}

@@ -33,10 +33,10 @@ curl -X POST http://localhost:8000/missions \
 
 ```bash
 # Celery tasks run synchronously in tests (task_always_eager=True)
-uv run pytest apps/api/tests/orchestration/ -v
+uv run pytest apps/api-service/tests/orchestration/ -v
 
 # Type check
-uv run mypy apps/api/src/api/graphs/ apps/api/src/api/workers/ --strict
+uv run mypy apps/api-service/src/api/graphs/ apps/api-service/src/api/workers/ --strict
 ```
 
 ## Verifying

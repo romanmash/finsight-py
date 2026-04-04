@@ -85,7 +85,7 @@ uv run pytest
 Run with coverage:
 
 ```bash
-uv run pytest --cov=apps/api/src --cov=packages/shared/src --cov-report=term-missing
+uv run pytest --cov=apps/api-service/src --cov=packages/shared/src --cov-report=term-missing
 ```
 
 ---

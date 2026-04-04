@@ -30,7 +30,7 @@
 ## Alert
 
 **Type**: SQLAlchemy 2.x ORM model (defined in Feature 002; Watchdog writes to it)
-**Location**: `apps/api/src/api/db/models/alert.py` (Feature 002)
+**Location**: `apps/api-service/src/api/db/models/alert.py` (Feature 002)
 
 | Field | Type | Description | Constraints |
 |-------|------|-------------|-------------|
@@ -92,7 +92,7 @@
 ## WatchdogInput
 
 **Type**: Pydantic model (agent input schema)
-**Location**: `apps/api/src/api/agents/watchdog_agent.py`
+**Location**: `apps/api-service/src/api/agents/watchdog_agent.py`
 
 | Field | Type | Description | Constraints |
 |-------|------|-------------|-------------|
@@ -113,7 +113,7 @@
 ## WatchdogOutput
 
 **Type**: Pydantic model (agent output schema, validated by BaseAgent)
-**Location**: `apps/api/src/api/agents/watchdog_agent.py`
+**Location**: `apps/api-service/src/api/agents/watchdog_agent.py`
 
 | Field | Type | Description | Constraints |
 |-------|------|-------------|-------------|
@@ -135,7 +135,7 @@
 ## ResearcherInput
 
 **Type**: Pydantic model (agent input schema)
-**Location**: `apps/api/src/api/agents/researcher_agent.py`
+**Location**: `apps/api-service/src/api/agents/researcher_agent.py`
 
 | Field | Type | Description | Constraints |
 |-------|------|-------------|-------------|

@@ -16,7 +16,7 @@ establishes the shared middleware stack and router registration pattern for all 
 **Storage**: PostgreSQL 16 (Operator + RefreshToken tables from Feature 002)
 **Testing**: pytest + pytest-asyncio + httpx.AsyncClient (offline)
 **Target Platform**: Linux server (Docker) / Windows 11 dev (Podman)
-**Project Type**: FastAPI web service (apps/api)
+**Project Type**: FastAPI web service (apps/api-service)
 **Performance Goals**: Login response < 2 s; health endpoint < 200 ms
 **Constraints**: mypy --strict zero errors; ruff zero warnings; all tests offline; no real server
 **Scale/Scope**: Single-tenant personal tool; 2 roles; ~5 auth endpoints
@@ -36,7 +36,7 @@ establishes the shared middleware stack and router registration pattern for all 
 ### Source Code
 
 ```text
-apps/api/src/api/
+apps/api-service/src/api/
 ├── main.py                  # FastAPI app, middleware, router registration
 ├── routes/
 │   ├── __init__.py
@@ -51,7 +51,7 @@ config/runtime/
 config/schemas/
 └── api.py                   # Pydantic v2 schema for api.yaml
 
-apps/api/tests/routes/
+apps/api-service/tests/routes/
 ├── conftest.py              # httpx.AsyncClient fixture, mock Operator
 ├── test_auth.py             # login, refresh, logout, me, rate limiting
 └── test_health.py           # health endpoint
@@ -70,7 +70,7 @@ apps/api/tests/routes/
 
 ### Phase 2: Auth Library
 
-**Files**: `apps/api/src/api/lib/auth.py`
+**Files**: `apps/api-service/src/api/lib/auth.py`
 
 **Key decisions**:
 - `create_access_token(operator_id, role)` → signed JWT (HS256)
@@ -81,7 +81,7 @@ apps/api/tests/routes/
 
 ### Phase 3: Auth Routes
 
-**Files**: `apps/api/src/api/routes/auth.py`
+**Files**: `apps/api-service/src/api/routes/auth.py`
 
 **Key decisions**:
 - `POST /auth/login`: verify credentials via OperatorRepository → issue access token + set refresh cookie
@@ -92,7 +92,7 @@ apps/api/tests/routes/
 
 ### Phase 4: Health Route
 
-**Files**: `apps/api/src/api/routes/health.py`
+**Files**: `apps/api-service/src/api/routes/health.py`
 
 **Key decisions**:
 - No auth required
@@ -101,7 +101,7 @@ apps/api/tests/routes/
 
 ### Phase 5: App Instance + Middleware
 
-**Files**: `apps/api/src/api/main.py`
+**Files**: `apps/api-service/src/api/main.py`
 
 **Key decisions**:
 - `CORSMiddleware(allow_origins=settings.cors_origins, allow_credentials=True)`
@@ -111,7 +111,7 @@ apps/api/tests/routes/
 
 ### Phase 6: Tests
 
-**Files**: `apps/api/tests/routes/conftest.py`, `test_auth.py`, `test_health.py`
+**Files**: `apps/api-service/tests/routes/conftest.py`, `test_auth.py`, `test_health.py`
 
 **Key decisions**:
 - `httpx.AsyncClient(app=app, base_url="http://test")` — no real server
@@ -149,7 +149,7 @@ apps/api/tests/routes/
 > - A long-lived JWT is signed with `SECRET_KEY`, carrying `sub="service:telegram-bot"` and
 >   `role="service"`. It has no expiry (or a very long one — configurable in `api.yaml` as
 >   `service_token_ttl_days`, default 3650).
-> - `require_role()` in `apps/api/src/api/lib/auth.py` is extended to accept the `service` role
+> - `require_role()` in `apps/api-service/src/api/lib/auth.py` is extended to accept the `service` role
 >   for endpoints that the bot calls (specifically `GET /operators?telegram_user_id=...` and
 >   `PATCH /operators/{id}` to store `telegram_chat_id`).
 > - The token is **pre-generated once** by the seed script (Feature 011) using
@@ -161,7 +161,7 @@ apps/api/tests/routes/
 > extend `require_role("service")` in `lib/auth.py`. Feature 011 generates the token value.
 
 > **Cross-feature note: load_all_configs() extension**: Feature 001 establishes `load_all_configs()` in
-> `apps/api/src/api/lib/config.py` which loads exactly 5 YAML files at startup. This feature
+> `apps/api-service/src/api/lib/config.py` which loads exactly 5 YAML files at startup. This feature
 > introduces a 6th YAML file (`api.yaml`). As part of **Phase 1**, extend `load_all_configs()`
 > to also load and validate `config/runtime/api.yaml` using `ApiConfig`. The `AllConfigs`
 > dataclass gains an `api: ApiConfig` field. All callers that need auth/CORS settings access

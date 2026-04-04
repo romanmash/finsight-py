@@ -43,22 +43,22 @@ models:
 
 ```bash
 # All agent infrastructure tests (offline, ~30s)
-uv run pytest apps/api/tests/agents/ -v
+uv run pytest apps/api-service/tests/agents/ -v
 
 # Just the base agent tests
-uv run pytest apps/api/tests/agents/test_base.py -v
+uv run pytest apps/api-service/tests/agents/test_base.py -v
 
 # Pricing registry tests
-uv run pytest apps/api/tests/lib/test_pricing.py -v
+uv run pytest apps/api-service/tests/lib/test_pricing.py -v
 
 # MCP client tests
-uv run pytest apps/api/tests/mcp/test_client.py -v
+uv run pytest apps/api-service/tests/mcp/test_client.py -v
 
 # Type check
-uv run mypy --strict apps/api/src/api/agents/base.py apps/api/src/api/lib/pricing.py apps/api/src/api/lib/tracing.py apps/api/src/api/mcp/client.py
+uv run mypy --strict apps/api-service/src/api/agents/base.py apps/api-service/src/api/lib/pricing.py apps/api-service/src/api/lib/tracing.py apps/api-service/src/api/mcp/client.py
 
 # Lint
-uv run ruff check apps/api/src/api/agents/ apps/api/src/api/lib/ apps/api/src/api/mcp/
+uv run ruff check apps/api-service/src/api/agents/ apps/api-service/src/api/lib/ apps/api-service/src/api/mcp/
 ```
 
 ## Verifying

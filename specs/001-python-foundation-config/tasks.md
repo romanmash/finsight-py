@@ -23,11 +23,11 @@ just scaffolding.
 - [ ] T001 Create root `pyproject.toml` with uv workspace declaration, all member paths, mypy --strict config, ruff rules (E, F, I, UP, B, SIM), and pytest asyncio_mode = "auto" in `pyproject.toml`
 - [ ] T002 [P] Create `.python-version` containing `3.13` in `.python-version`
 - [ ] T003 [P] Create `packages/shared/pyproject.toml` declaring package `finsight-shared` with src layout and zero external dependencies in `packages/shared/pyproject.toml`
-- [ ] T004 [P] Create `apps/api/pyproject.toml` declaring package `finsight-api` with all API dependencies: pydantic>=2.7, pydantic-settings>=2.3, pyyaml>=6.0, structlog>=24.1, alembic>=1.13, sqlalchemy[asyncio]>=2.0, asyncpg>=0.29, croniter>=1.4, fastapi, uvicorn[standard] in `apps/api/pyproject.toml`
+- [ ] T004 [P] Create `apps/api-service/pyproject.toml` declaring package `finsight-api` with all API dependencies: pydantic>=2.7, pydantic-settings>=2.3, pyyaml>=6.0, structlog>=24.1, alembic>=1.13, sqlalchemy[asyncio]>=2.0, asyncpg>=0.29, croniter>=1.4, fastapi, uvicorn[standard] in `apps/api-service/pyproject.toml`
 - [ ] T005 [P] Create stub `pyproject.toml` files for all remaining packages: `apps/mcp-servers/market-data/pyproject.toml`, `apps/mcp-servers/news-macro/pyproject.toml`, `apps/mcp-servers/rag-retrieval/pyproject.toml`, `apps/dashboard/pyproject.toml`, `apps/telegram-bot/pyproject.toml` — each with correct package name and minimal metadata
-- [ ] T006 [P] Create all `__init__.py` files to make packages importable: `packages/shared/src/finsight/shared/__init__.py`, `apps/api/src/api/__init__.py`, `apps/api/src/api/lib/__init__.py`, `apps/api/src/api/routes/__init__.py`, `config/schemas/__init__.py`
+- [ ] T006 [P] Create all `__init__.py` files to make packages importable: `packages/shared/src/finsight/shared/__init__.py`, `apps/api-service/src/api/__init__.py`, `apps/api-service/src/api/lib/__init__.py`, `apps/api-service/src/api/routes/__init__.py`, `config/schemas/__init__.py`
 - [ ] T007 [P] Create root `conftest.py` with `asyncio_mode = "auto"` in `pytest.ini_options` and shared fixtures: `tmp_config_dir` (creates temp YAML via `tmp_path`), `mock_env` (monkeypatches env vars) in `conftest.py`
-- [ ] T008 [P] Create `apps/api/tests/__init__.py` (empty) in `apps/api/tests/__init__.py`
+- [ ] T008 [P] Create `apps/api-service/tests/__init__.py` (empty) in `apps/api-service/tests/__init__.py`
 
 **Checkpoint**: All package directories exist; `uv sync` completes without errors; no implementation yet.
 
@@ -42,7 +42,7 @@ can be implemented.
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
 - [ ] T009 Create `packages/shared/src/finsight/shared/types.py` with domain type aliases: `AgentName = str`, `MissionID = UUID`, `Timestamp = datetime`, `CostUSD = Decimal` — all exported from `__init__.py` in `packages/shared/src/finsight/shared/types.py`
-- [ ] T010 [P] Create `config/runtime/agents.yaml` with all 7 agent definitions (manager, watchdog, researcher, analyst, pattern_specialist, bookkeeper, reporter) — each with model, provider, temperature, max_tokens, max_retries, timeout_seconds, base_url fields in `config/runtime/agents.yaml`
+- [ ] T010 [P] Create `config/runtime/agents.yaml` with all 9 agent definitions (manager, watchdog, screener, researcher, analyst, technician, bookkeeper, reporter, trader) — each with model, provider, temperature, max_tokens, max_retries, timeout_seconds, base_url fields in `config/runtime/agents.yaml`
 - [ ] T011 [P] Create `config/schemas/agents.py` with `AgentConfig` (all fields typed, temperature validator 0.0–2.0, `base_url: str | None = None`) and `AgentsConfig(agents: dict[str, AgentConfig])` — `model_config = ConfigDict(frozen=True)` on both in `config/schemas/agents.py`
 - [ ] T012 [P] Create `config/runtime/mcp.yaml` with 3 MCP server entries (market-data, news-macro, rag-retrieval) each with url, timeout_seconds, cache_ttl_seconds in `config/runtime/mcp.yaml`
 - [ ] T013 [P] Create `config/schemas/mcp.py` with `McpServerConfig(url, timeout_seconds, cache_ttl_seconds)` and `McpConfig(servers: dict[str, McpServerConfig])` — `frozen=True` in `config/schemas/mcp.py`
@@ -52,7 +52,7 @@ can be implemented.
 - [ ] T017 [P] Create `config/schemas/watchdog.py` with `ThresholdDefaults` and `WatchdogConfig` — `frozen=True` in `config/schemas/watchdog.py`
 - [ ] T018 [P] Create `config/runtime/scheduler.yaml` with screener_cron, brief_cron, earnings_lookback_days, timezone in `config/runtime/scheduler.yaml`
 - [ ] T019 [P] Create `config/schemas/scheduler.py` with `SchedulerConfig` — validate cron expressions using `croniter.is_valid()`, raise `ValueError` on invalid cron so Pydantic rejects it — `frozen=True` in `config/schemas/scheduler.py`
-- [ ] T020 [P] Create `apps/api/src/api/lib/logging.py` with `configure_logging(level: str) -> None` that sets up structlog with JSON renderer and ISO timestamps in `apps/api/src/api/lib/logging.py`
+- [ ] T020 [P] Create `apps/api-service/src/api/lib/logging.py` with `configure_logging(level: str) -> None` that sets up structlog with JSON renderer and ISO timestamps in `apps/api-service/src/api/lib/logging.py`
 
 **Checkpoint**: All YAML + schema pairs exist; `from config.schemas.agents import AgentsConfig` works; mypy --strict passes on all schema files.
 
@@ -62,16 +62,16 @@ can be implemented.
 
 **Goal**: The complete config loading system: `Settings` (env vars), `load_yaml_config()` (single-file loader with fail-fast), `load_all_configs()` (loads all 5 YAML files and returns `AllConfigs`), and `get_settings()` (cached singleton).
 
-**Independent Test**: `uv run pytest apps/api/tests/test_config.py::test_valid_config_loads` passes; `test_settings_loads_from_env` passes.
+**Independent Test**: `uv run pytest apps/api-service/tests/test_config.py::test_valid_config_loads` passes; `test_settings_loads_from_env` passes.
 
-- [ ] T021 [US1] Create `apps/api/src/api/lib/config.py` with:
+- [ ] T021 [US1] Create `apps/api-service/src/api/lib/config.py` with:
   - `Settings(BaseSettings)` — all fields from data-model.md; `model_config = SettingsConfigDict(env_file=".env", extra="ignore")`
   - `AllConfigs` dataclass with fields: `agents: AgentsConfig`, `mcp: McpConfig`, `pricing: PricingConfig`, `watchdog: WatchdogConfig`, `scheduler: SchedulerConfig`
   - `load_yaml_config(path: Path, model: type[T]) -> T` — loads YAML, validates against model, calls `sys.exit(1)` with filename + Pydantic error path + violation description on `ValidationError` or `yaml.YAMLError`
   - `load_all_configs(config_dir: Path = Path("config/runtime")) -> AllConfigs` — loads all 5 YAML files; returns `AllConfigs`
   - `get_settings() -> Settings` — `functools.lru_cache` singleton
-  in `apps/api/src/api/lib/config.py`
-- [ ] T022 [US1] Write `apps/api/tests/test_config.py` with all 7 tests from the plan:
+  in `apps/api-service/src/api/lib/config.py`
+- [ ] T022 [US1] Write `apps/api-service/tests/test_config.py` with all 7 tests from the plan:
   - `test_valid_config_loads` — writes valid YAML to `tmp_path`, calls `load_yaml_config`, asserts fields
   - `test_invalid_yaml_type_exits` — wrong type → asserts `SystemExit`
   - `test_missing_required_field_exits` — omitted required field → asserts `SystemExit`
@@ -79,9 +79,9 @@ can be implemented.
   - `test_settings_loads_from_env` — monkeypatches env vars, calls `get_settings()`, asserts values
   - `test_extra_env_vars_ignored` — extra unknown env var → no error
   - `test_unknown_pricing_model_returns_zero` — calls `PricingConfig.get_cost()` with unknown model → asserts (0.0, 0.0)
-  in `apps/api/tests/test_config.py`
+  in `apps/api-service/tests/test_config.py`
 
-**Checkpoint**: `uv run pytest apps/api/tests/test_config.py` — all 7 tests pass offline.
+**Checkpoint**: `uv run pytest apps/api-service/tests/test_config.py` — all 7 tests pass offline.
 
 ---
 
@@ -91,13 +91,13 @@ can be implemented.
 This phase verifies all four failure modes are tested and the `sys.exit(1)` messages contain
 actionable information (filename + field path + violation).
 
-**Independent Test**: `uv run pytest apps/api/tests/test_config.py -k "exits"` — all sys.exit tests pass.
+**Independent Test**: `uv run pytest apps/api-service/tests/test_config.py -k "exits"` — all sys.exit tests pass.
 
 *Note*: The core implementation lives in `load_yaml_config()` (T021). This phase adds the
 `.env.example` file and validates the error message quality.
 
 - [ ] T023 [US2] Create `.env.example` documenting every required environment variable with description and placeholder: DATABASE_URL, REDIS_URL, OPENAI_API_KEY, ANTHROPIC_API_KEY (optional), FINNHUB_API_KEY (optional), TELEGRAM_BOT_TOKEN (optional), SECRET_KEY, ENVIRONMENT, LOG_LEVEL, LANGCHAIN_TRACING_V2, LANGCHAIN_API_KEY (optional) in `.env.example`
-- [ ] T024 [US2] Verify `sys.exit(1)` error messages in `test_config.py` contain all three parts — filename, Pydantic field path (e.g. `agents.manager.temperature`), and violation description — by asserting on `SystemExit.args[0]` or captured stderr; update assertions in existing tests if messages are not yet specific enough in `apps/api/tests/test_config.py`
+- [ ] T024 [US2] Verify `sys.exit(1)` error messages in `test_config.py` contain all three parts — filename, Pydantic field path (e.g. `agents.manager.temperature`), and violation description — by asserting on `SystemExit.args[0]` or captured stderr; update assertions in existing tests if messages are not yet specific enough in `apps/api-service/tests/test_config.py`
 
 **Checkpoint**: All sys.exit tests pass; error messages contain filename + field path + violation text.
 
@@ -111,7 +111,7 @@ actionable information (filename + field path + violation).
 
 - [ ] T025 [US3] Expand root `conftest.py` fixtures to cover all YAML config types: `agents_yaml_fixture`, `mcp_yaml_fixture`, `pricing_yaml_fixture`, `watchdog_yaml_fixture`, `scheduler_yaml_fixture` — each returns a valid dict for that schema, written to `tmp_path`, usable across feature test suites in `conftest.py`
 - [ ] T026 [P] [US3] Add `pytest` and `pytest-asyncio` to root `pyproject.toml` `[dependency-groups.dev]` alongside mypy, ruff — confirm `asyncio_mode = "auto"` is in `[tool.pytest.ini_options]` in `pyproject.toml`
-- [ ] T027 [P] [US3] Run `uv run mypy --strict apps/api/src config/schemas packages/shared/src` and fix any type errors until zero errors remain (document any `type: ignore` with justification inline) in `apps/api/src/api/lib/config.py`, `config/schemas/*.py`, `packages/shared/src/finsight/shared/types.py`
+- [ ] T027 [P] [US3] Run `uv run mypy --strict apps/api-service/src config/schemas packages/shared/src` and fix any type errors until zero errors remain (document any `type: ignore` with justification inline) in `apps/api-service/src/api/lib/config.py`, `config/schemas/*.py`, `packages/shared/src/finsight/shared/types.py`
 - [ ] T028 [P] [US3] Run `uv run ruff check` and fix all warnings; run `uv run ruff format` to ensure consistent formatting across all Python files created so far in all `.py` files in the feature
 
 **Checkpoint**: `uv run pytest` passes; `uv run mypy --strict` passes; `uv run ruff check` passes — all offline.
@@ -127,7 +127,7 @@ actionable information (filename + field path + violation).
 - [ ] T029 [US4] Create `docker-compose.yml` with all services:
   - `db`: `pgvector/pgvector:pg16`, port 5432, healthcheck (`pg_isready`), named volume `pgdata`
   - `redis`: `redis:7-alpine`, port 6379, healthcheck (`redis-cli ping`)
-  - `api`: builds from `apps/api/`, port 8000, depends_on db+redis, env_file `.env`
+  - `api`: builds from `apps/api-service/`, port 8000, depends_on db+redis, env_file `.env`
   - `market-data-mcp`: builds from `apps/mcp-servers/market-data/`, port 8001
   - `news-macro-mcp`: builds from `apps/mcp-servers/news-macro/`, port 8002
   - `rag-retrieval-mcp`: builds from `apps/mcp-servers/rag-retrieval/`, port 8003
@@ -136,10 +136,10 @@ actionable information (filename + field path + violation).
   - All containers: `env_file: .env`; `config/runtime/` mounted `:ro`
   - Note: Feature 008 extends this file with `celery-beat`, `worker-mission`, `worker-alert`, `worker-screener`; Feature 009 adds `telegram-bot` + `telegram-worker`; Feature 010 adds `dashboard`
   in `docker-compose.yml`
-- [ ] T030 [P] [US4] Create `docker-compose.dev.yml` override: volume-mount `apps/api/src` into api container; set `RELOAD=true`; `config/runtime/` still `:ro` in `docker-compose.dev.yml`
-- [ ] T031 [P] [US4] Create `alembic.ini` pointing `script_location = apps/api/alembic`; leave `sqlalchemy.url` as placeholder (overridden in env.py) in `alembic.ini`
-- [ ] T032 [P] [US4] Create `apps/api/alembic/env.py` with async migration runner — reads `DATABASE_URL` from environment via `os.environ`, uses `asyncio.run(run_async_migrations())` pattern, imports `Base.metadata` inside a try/except (Feature 002 will populate it), runs with `asyncpg` dialect in `apps/api/alembic/env.py`
-- [ ] T033 [P] [US4] Create empty `apps/api/alembic/versions/` directory with a `.gitkeep` placeholder; first migration added by Feature 002 in `apps/api/alembic/versions/.gitkeep`
+- [ ] T030 [P] [US4] Create `docker-compose.dev.yml` override: volume-mount `apps/api-service/src` into api container; set `RELOAD=true`; `config/runtime/` still `:ro` in `docker-compose.dev.yml`
+- [ ] T031 [P] [US4] Create `alembic.ini` pointing `script_location = apps/api-service/alembic`; leave `sqlalchemy.url` as placeholder (overridden in env.py) in `alembic.ini`
+- [ ] T032 [P] [US4] Create `apps/api-service/alembic/env.py` with async migration runner — reads `DATABASE_URL` from environment via `os.environ`, uses `asyncio.run(run_async_migrations())` pattern, imports `Base.metadata` inside a try/except (Feature 002 will populate it), runs with `asyncpg` dialect in `apps/api-service/alembic/env.py`
+- [ ] T033 [P] [US4] Create empty `apps/api-service/alembic/versions/` directory with a `.gitkeep` placeholder; first migration added by Feature 002 in `apps/api-service/alembic/versions/.gitkeep`
 
 **Checkpoint**: `docker compose up -d` → db and redis containers reach healthy status; `docker compose ps` shows all services; alembic directory structure correct.
 
@@ -150,7 +150,7 @@ actionable information (filename + field path + violation).
 **Purpose**: Final integration validation, documentation completeness, and quality gate confirmation.
 
 - [ ] T034 [P] Verify `packages/shared/src/finsight/shared/__init__.py` exports `__version__ = "0.1.0"` and all public symbols from `types.py` in `packages/shared/src/finsight/shared/__init__.py`
-- [ ] T035 [P] Confirm `load_all_configs()` docstring documents that it loads exactly 5 YAML files and that Feature 003 will extend `AllConfigs` with `api: ApiConfig`; add inline comment noting the extension point in `apps/api/src/api/lib/config.py`
+- [ ] T035 [P] Confirm `load_all_configs()` docstring documents that it loads exactly 5 YAML files and that Feature 003 will extend `AllConfigs` with `api: ApiConfig`; add inline comment noting the extension point in `apps/api-service/src/api/lib/config.py`
 - [ ] T036 [P] Run the complete quality gate: `uv run pytest` (all offline, all pass) + `uv run mypy --strict` (zero errors) + `uv run ruff check` (zero warnings) — fix any remaining issues across all files
 
 ---
@@ -201,7 +201,7 @@ Task T016: config/runtime/watchdog.yaml
 Task T017: config/schemas/watchdog.py
 Task T018: config/runtime/scheduler.yaml
 Task T019: config/schemas/scheduler.py
-Task T020: apps/api/src/api/lib/logging.py
+Task T020: apps/api-service/src/api/lib/logging.py
 ```
 
 ---
@@ -213,7 +213,7 @@ Task T020: apps/api/src/api/lib/logging.py
 1. Complete Phase 1: Setup (workspace skeleton)
 2. Complete Phase 2: Foundational (YAML + schemas — blocks everything)
 3. Complete Phase 3: US1 (config loader + settings + 7 tests)
-4. **STOP and VALIDATE**: `uv run pytest apps/api/tests/test_config.py` — 7/7 pass
+4. **STOP and VALIDATE**: `uv run pytest apps/api-service/tests/test_config.py` — 7/7 pass
 5. Foundation ready; all subsequent features can start their config loading
 
 ### Incremental Delivery

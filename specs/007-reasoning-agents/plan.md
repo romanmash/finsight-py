@@ -4,7 +4,7 @@
 
 ## Summary
 
-Implement four reasoning agents — Analyst, Pattern Specialist, Bookkeeper/Librarian, and Reporter — that operate on pre-assembled research packets and produce typed Pydantic output models. Each agent makes at most one LLM call (none for the Bookkeeper), respects strict boundary rules (no data fetching, no advice, sole KB writer), and records every run via the `AgentRun` cost-tracking infrastructure from Feature 005.
+Implement four reasoning agents — Analyst, Technician (Pattern Specialist), Bookkeeper/Librarian, and Reporter — that operate on pre-assembled research packets and produce typed Pydantic output models. Each agent makes at most one LLM call (none for the Bookkeeper), respects strict boundary rules (no data fetching, no advice, sole KB writer), and records every run via the `AgentRun` cost-tracking infrastructure from Feature 005.
 
 ## Technical Context
 
@@ -13,15 +13,15 @@ Implement four reasoning agents — Analyst, Pattern Specialist, Bookkeeper/Libr
 **Storage**: PostgreSQL 16 + pgvector (`knowledge_entries` table created by Feature 002 migration; embedding column nullable)
 **Testing**: pytest + pytest-asyncio + unittest.mock.AsyncMock; offline (no network, no Docker)
 **Target Platform**: Linux server (Docker) / Windows 11 dev (Podman)
-**Project Type**: Python monorepo sub-packages (`packages/shared`, `apps/api`)
-**Performance Goals**: Analyst < 60 s, Pattern Specialist < 30 s, Bookkeeper write < 5 s, Reporter < 10 s
+**Project Type**: Python monorepo sub-packages (`packages/shared`, `apps/api-service`)
+**Performance Goals**: Analyst < 60 s, Technician (Pattern Specialist) < 30 s, Bookkeeper write < 5 s, Reporter < 10 s
 **Constraints**: mypy --strict zero errors; ruff zero warnings; all tests offline; PatternReport schema must not contain recommendation/action/price_target fields
 **Scale/Scope**: Single-operator personal tool; 4 agents; ~15 source files + 4 test files
 
 ## Constitution Check
 
 - [x] Everything-as-Code — agent model names, thresholds, and prompt toggles live in `config/runtime/agents.yaml`; no hardcoded model strings in Python
-- [x] Agent Boundaries — Analyst: interprets only (no fetch). Pattern Specialist: technical only (no advice). Bookkeeper: sole KB writer. Reporter: formats only (no analysis). Each boundary enforced by schema design and prompt instruction.
+- [x] Agent Boundaries — Analyst: interprets only (no fetch). Technician (Pattern Specialist): technical only (no advice). Bookkeeper: sole KB writer. Reporter: formats only (no analysis). Each boundary enforced by schema design and prompt instruction.
 - [x] MCP Server Independence — N/A; reasoning agents do not call MCP tool servers
 - [x] Cost Observability — every LLM call wrapped in `record_agent_run` helper (Feature 005); captures tokens_in, tokens_out, cost_usd, provider, model, duration_ms
 - [x] Fail-Safe Defaults — invalid `agents.yaml` triggers `sys.exit(1)` at startup; LLM parse failure retried once; second failure marks mission FAILED
@@ -50,7 +50,7 @@ packages/shared/src/finsight/shared/models/
 ├── knowledge_entry.py    # ProvenanceRecord + KnowledgeEntry Pydantic schema
 └── report.py             # ReportSection + FormattedReport Pydantic model
 
-apps/api/src/api/agents/
+apps/api-service/src/api/agents/
 ├── analyst_agent.py      # AnalystAgent: accepts ResearchPacket, returns Assessment, one LLM call
 ├── analyst_agent.prompt.py  # SYSTEM_PROMPT + build_user_prompt(packet: ResearchPacket) -> str
 ├── pattern_agent.py      # PatternAgent: accepts price/volume history, returns PatternReport
@@ -60,13 +60,13 @@ apps/api/src/api/agents/
 ├── reporter_agent.py     # ReporterAgent: accepts Assessment+PatternReport, returns FormattedReport
 └── reporter_agent.prompt.py   # SYSTEM_PROMPT + build_user_prompt(...) -> str
 
-apps/api/src/api/db/models/
+apps/api-service/src/api/db/models/
 └── knowledge_entry.py   # SQLAlchemy ORM model (created in Feature 002; referenced here)
 
 # No new migration — knowledge_entries table is included in Feature 002's
 # 001_initial_schema.py migration. Feature 007 only adds usage of the existing table.
 
-apps/api/tests/agents/
+apps/api-service/tests/agents/
 ├── test_analyst.py       # 3 test cases: assessment, conflicting signals, no signal
 ├── test_pattern.py       # 3 test cases: pattern found, no pattern, no investment advice
 ├── test_bookkeeper.py    # 3 test cases: write entry, deduplication, conflict flagging
@@ -91,7 +91,7 @@ apps/api/tests/agents/
 ### Phase 2: ORM Model Reference
 
 **Files**:
-- `apps/api/src/api/db/models/knowledge_entry.py` — `KnowledgeEntryORM` is created in Feature 002.
+- `apps/api-service/src/api/db/models/knowledge_entry.py` — `KnowledgeEntryORM` is created in Feature 002.
   This feature adds no new ORM files; it imports and uses the existing model.
 
 **Key decisions**:
@@ -104,10 +104,10 @@ apps/api/tests/agents/
 ### Phase 3: Agent Implementations
 
 **Files**:
-- `apps/api/src/api/agents/analyst_agent.py` + `analyst_agent.prompt.py`
-- `apps/api/src/api/agents/pattern_agent.py` + `pattern_agent.prompt.py`
-- `apps/api/src/api/agents/bookkeeper_agent.py` + `bookkeeper_agent.prompt.py`
-- `apps/api/src/api/agents/reporter_agent.py` + `reporter_agent.prompt.py`
+- `apps/api-service/src/api/agents/analyst_agent.py` + `analyst_agent.prompt.py`
+- `apps/api-service/src/api/agents/pattern_agent.py` + `pattern_agent.prompt.py`
+- `apps/api-service/src/api/agents/bookkeeper_agent.py` + `bookkeeper_agent.prompt.py`
+- `apps/api-service/src/api/agents/reporter_agent.py` + `reporter_agent.prompt.py`
 
 **Key decisions**:
 - `AnalystAgent.run(packet: ResearchPacket, mission_id: UUID) -> Assessment`: calls `llm.with_structured_output(Assessment).ainvoke(messages)`, wraps in `record_agent_run`
@@ -118,10 +118,10 @@ apps/api/tests/agents/
 ### Phase 4: Tests
 
 **Files**:
-- `apps/api/tests/agents/test_analyst.py`
-- `apps/api/tests/agents/test_pattern.py`
-- `apps/api/tests/agents/test_bookkeeper.py`
-- `apps/api/tests/agents/test_reporter.py`
+- `apps/api-service/tests/agents/test_analyst.py`
+- `apps/api-service/tests/agents/test_pattern.py`
+- `apps/api-service/tests/agents/test_bookkeeper.py`
+- `apps/api-service/tests/agents/test_reporter.py`
 
 **Key decisions**:
 - LLM calls mocked via `patch.object(ChatOpenAI, "with_structured_output", ...)` — see Testing Strategy for the correct pattern

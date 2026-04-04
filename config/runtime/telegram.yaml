@@ -1,4 +1,4 @@
-﻿rateLimitPerUserPerMinute: 10
+rateLimitPerUserPerMinute: 10
 commandBehavior:
   allowFreeTextOperatorQuery: true
   enabledCommands:

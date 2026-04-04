@@ -17,7 +17,7 @@ and schedules are fully configurable in scheduler.yaml.
 **Storage**: PostgreSQL (missions table + langgraph_checkpoints schema), Redis (Celery broker + beat schedule)
 **Testing**: pytest + pytest-asyncio + Celery task_always_eager + SqliteSaver checkpointer (offline)
 **Target Platform**: Linux server (Docker) — api + celery-worker + celery-beat containers
-**Project Type**: Orchestration layer within apps/api
+**Project Type**: Orchestration layer within apps/api-service
 **Performance Goals**: Operator query → response < 3 min; alert-triggered mission starts < 60 s; daily brief < 5 min
 **Constraints**: mypy --strict; offline tests; no Celery broker needed in tests (always_eager)
 **Scale/Scope**: 3 pipeline types; 5 Celery periodic tasks; 1 supervisor graph
@@ -37,7 +37,7 @@ and schedules are fully configurable in scheduler.yaml.
 ### Source Code
 
 ```text
-apps/api/src/api/
+apps/api-service/src/api/
 ├── agents/
 │   ├── manager_agent.py         # ManagerAgent: PipelineClassification output only
 │   └── manager_agent.prompt.py
@@ -64,7 +64,7 @@ config/runtime/
 config/schemas/
 └── scheduler.py                 # Pydantic v2 schema
 
-apps/api/tests/orchestration/
+apps/api-service/tests/orchestration/
 ├── conftest.py                  # always_eager fixture, mock agents
 ├── test_manager.py              # intent classification
 ├── test_supervisor.py           # graph routing
@@ -79,14 +79,14 @@ apps/api/tests/orchestration/
 **Files**: `config/runtime/scheduler.yaml`, `config/schemas/scheduler.py`
 
 **Key decisions**:
-- `pipelines.investigation.agent_sequence: [researcher, analyst, pattern_specialist, bookkeeper, reporter]`
+- `pipelines.investigation.agent_sequence: [researcher, analyst, technician, bookkeeper, reporter]`
 - `pipelines.daily_brief.agent_sequence: [researcher, analyst, reporter]`
 - `pipelines.daily_brief.cron: "0 7 * * MON-FRI"`
 - `alert_poll_interval_seconds: 30`
 
 ### Phase 2: Celery App + Beat Schedule
 
-**Files**: `apps/api/src/api/lib/queues.py`, `docker-compose.yml`
+**Files**: `apps/api-service/src/api/lib/queues.py`, `docker-compose.yml`
 
 **Key decisions**:
 - `Celery("finsight", broker=settings.redis_url, backend=settings.redis_url)`
@@ -103,7 +103,7 @@ apps/api/tests/orchestration/
   `telegram` queue is consumed by the telegram-bot container's own Celery worker (Feature 009).
   `mission_worker` dispatches to it by name via `celery_app.send_task(...)` — no import of the
   telegram-bot package is required.
-- **Celery + asyncio pattern**: All 7 agents are `async def`. Celery tasks are synchronous
+- **Celery + asyncio pattern**: all 9 agents are `async def`. Celery tasks are synchronous
   by default. Each Celery task bridges the two worlds with `asyncio.run(agent.run(...))`.
   This is the correct pattern for Python 3.10+ — do NOT use `celery[gevent]` (gevent
   monkey-patches are incompatible with asyncio). Worker concurrency uses the default
@@ -117,7 +117,7 @@ apps/api/tests/orchestration/
 
 ### Phase 3: LangGraph Supervisor
 
-**Files**: `apps/api/src/api/graphs/state.py`, `supervisor.py`, `nodes.py`
+**Files**: `apps/api-service/src/api/graphs/state.py`, `supervisor.py`, `nodes.py`
 
 **Key decisions**:
 - `GraphState` TypedDict with all inter-agent fields
@@ -127,7 +127,7 @@ apps/api/tests/orchestration/
 
 ### Phase 4: Celery Workers
 
-**Files**: `apps/api/src/api/workers/*.py`
+**Files**: `apps/api-service/src/api/workers/*.py`
 
 **Key decisions**:
 - `mission_worker.py`: receives mission_id → creates LangGraph graph instance → runs with checkpointer → updates mission status
@@ -136,7 +136,7 @@ apps/api/tests/orchestration/
 
 ### Phase 5: Mission Routes
 
-**Files**: `apps/api/src/api/routes/missions.py`
+**Files**: `apps/api-service/src/api/routes/missions.py`
 
 **Key decisions**:
 - `POST /missions` — creates Mission (PENDING), dispatches Celery task, returns mission_id
@@ -145,7 +145,7 @@ apps/api/tests/orchestration/
 
 ### Phase 6: Manager Agent
 
-**Files**: `apps/api/src/api/agents/manager_agent.py` + `.prompt.py`
+**Files**: `apps/api-service/src/api/agents/manager_agent.py` + `.prompt.py`
 
 **Key decisions**:
 - Input: raw text query

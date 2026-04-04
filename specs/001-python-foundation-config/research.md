@@ -10,13 +10,13 @@
 workspace member.
 
 **Rationale**: `uv` is the locked stack choice. Workspace support means a single `uv sync` installs
-all packages and their cross-dependencies. Each sub-package (`packages/shared`, `apps/api`, etc.)
+all packages and their cross-dependencies. Each sub-package (`packages/shared`, `apps/api-service`, etc.)
 declares its own dependencies; `uv` resolves a single lock file for the whole workspace.
 
 **Key pattern**:
 ```toml
 [tool.uv.workspace]
-members = ["packages/shared", "apps/api", "apps/mcp-servers/*", "apps/dashboard", "apps/telegram-bot"]
+members = ["packages/shared", "apps/api-service", "apps/mcp-servers/*", "apps/dashboard", "apps/telegram-bot"]
 ```
 
 Each member is also a `tool.uv.sources` entry so cross-package imports work as editable installs:

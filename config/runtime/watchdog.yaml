@@ -1,4 +1,6 @@
-priceAlertThresholdPct: 2.0
-volumeSpikeMultiplier: 2.5
-earningsPreBriefDaysAhead: 3
-newsLookbackMinutes: 30
+poll_interval_seconds: 30
+alert_cooldown_seconds: 300
+default_thresholds:
+  price_change_pct: 2.0
+  volume_spike_multiplier: 2.5
+  rsi_overbought: 70.0

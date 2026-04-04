@@ -18,7 +18,7 @@
 
 **Purpose**: Create test file stubs and ensure all directories exist. No logic yet.
 
-- [ ] T001 Create `apps/api/tests/agents/test_watchdog.py` (empty module) and `apps/api/tests/agents/test_researcher.py` (empty module) in `apps/api/tests/agents/`
+- [ ] T001 Create `apps/api-service/tests/agents/test_watchdog.py` (empty module) and `apps/api-service/tests/agents/test_researcher.py` (empty module) in `apps/api-service/tests/agents/`
 - [ ] T002 [P] Create `packages/shared/src/finsight/shared/models/research_packet.py` stub (empty module) in `packages/shared/src/finsight/shared/models/research_packet.py`
 
 **Checkpoint**: All directories exist; existing Feature 005 test conftest still passes.
@@ -50,7 +50,7 @@ Pydantic model that Researcher returns. Both required by both agents' tests.
     - `data_gaps: list[str] = []` — populated when a tool returns no data (e.g., `"fundamentals: tool returned no data"`)
   - Export from `packages/shared/src/finsight/shared/models/__init__.py`
   in `packages/shared/src/finsight/shared/models/research_packet.py`
-- [ ] T006 [P] Add `AlertRepository.get_recent(ticker: str, condition_keyword: str, window_hours: int) -> list[AlertORM]` method to `apps/api/src/api/db/repositories/alert.py` — queries alerts WHERE `trigger_condition ILIKE %condition_keyword%` AND `watchlist_item.ticker = ticker` AND `created_at > now() - interval '{window_hours} hours'` AND `deleted_at IS NULL`; used by Watchdog deduplication in `apps/api/src/api/db/repositories/alert.py`
+- [ ] T006 [P] Add `AlertRepository.get_recent(ticker: str, condition_keyword: str, window_hours: int) -> list[AlertORM]` method to `apps/api-service/src/api/db/repositories/alert.py` — queries alerts WHERE `trigger_condition ILIKE %condition_keyword%` AND `watchlist_item.ticker = ticker` AND `created_at > now() - interval '{window_hours} hours'` AND `deleted_at IS NULL`; used by Watchdog deduplication in `apps/api-service/src/api/db/repositories/alert.py`
 
 **Checkpoint**: `ResearchPacket` importable from `finsight.shared.models`; `WatchdogConfig` has new fields; `AlertRepository.get_recent()` type-checks.
 
@@ -61,9 +61,9 @@ Pydantic model that Researcher returns. Both required by both agents' tests.
 **Goal**: `WatchdogAgent` evaluates price and volume thresholds for all active watchlist items.
 On breach: creates `AlertORM` + `MissionORM`; deduplication prevents duplicate alerts; no LLM call.
 
-**Independent Test**: `uv run pytest apps/api/tests/agents/test_watchdog.py -k "price or breach or dedup"` — all pass offline.
+**Independent Test**: `uv run pytest apps/api-service/tests/agents/test_watchdog.py -k "price or breach or dedup"` — all pass offline.
 
-- [ ] T007 [US1] Create `apps/api/src/api/agents/watchdog_agent.prompt.py` containing only a module-level docstring:
+- [ ] T007 [US1] Create `apps/api-service/src/api/agents/watchdog_agent.prompt.py` containing only a module-level docstring:
   ```python
   """
   WatchdogAgent — Threshold Evaluator
@@ -80,8 +80,8 @@ On breach: creates `AlertORM` + `MissionORM`; deduplication prevents duplicate a
   Null per-item threshold falls back to watchdog.yaml default.
   """
   ```
-  in `apps/api/src/api/agents/watchdog_agent.prompt.py`
-- [ ] T008 [US1] Create `apps/api/src/api/agents/watchdog_agent.py` with `WatchdogAgent`:
+  in `apps/api-service/src/api/agents/watchdog_agent.prompt.py`
+- [ ] T008 [US1] Create `apps/api-service/src/api/agents/watchdog_agent.py` with `WatchdogAgent`:
   - Does NOT extend `BaseAgent` (no LLM; custom run pattern)
   - `__init__(self, watchdog_config: WatchdogConfig, watchlist_repo: WatchlistItemRepository, alert_repo: AlertRepository, mission_repo: MissionRepository, mcp_client: MCPClient, agent_run_repo: AgentRunRepository)`
   - `async def run(self, mission_id: UUID) -> WatchdogResult`:
@@ -95,8 +95,8 @@ On breach: creates `AlertORM` + `MissionORM`; deduplication prevents duplicate a
   - `_call_tool(tool_name, params) -> dict | None` — same pattern as BaseAgent (MCPClient + catch MCPToolError)
   - `_effective_threshold(item: WatchlistItemORM, yaml_default: float, item_field: str) -> float` — returns item field value if non-null, else yaml default
   - `WatchdogResult(BaseModel)`: `alerts_created: int`, `missions_opened: int`, `items_evaluated: int`, `dedup_skipped: int`
-  in `apps/api/src/api/agents/watchdog_agent.py`
-- [ ] T009 [US1] Write `apps/api/tests/agents/test_watchdog.py` US1 tests (mock all I/O):
+  in `apps/api-service/src/api/agents/watchdog_agent.py`
+- [ ] T009 [US1] Write `apps/api-service/tests/agents/test_watchdog.py` US1 tests (mock all I/O):
   - Fixtures: `mock_watchlist_repo` (returns 2 active items), `mock_alert_repo`, `mock_mission_repo`, `mock_agent_run_repo`, `mock_mcp_client`, `watchdog_config` (from test WatchdogConfig)
   - `test_price_breach_creates_alert_and_mission` — mock `get_price` returning price 5% above prev_close (threshold=3%); assert `alert_repo.create()` called once; assert `mission_repo.create()` called once; assert `agent_run_repo.create(cost_usd=Decimal("0.00"))` called
   - `test_no_breach_creates_no_alert` — mock `get_price` returning price 1% move (threshold=3%); assert `alert_repo.create()` NOT called
@@ -104,9 +104,9 @@ On breach: creates `AlertORM` + `MissionORM`; deduplication prevents duplicate a
   - `test_multiple_items_evaluated_independently` — 2 watchlist items: one breaches, one doesn't; assert exactly 1 alert created
   - `test_per_item_threshold_overrides_yaml_default` — item has `price_alert_above=102.0` (specific price level); price=103.0 → breach; assert alert created
   - `test_mcp_tool_failure_skips_item_gracefully` — mock `get_price` raises MCPToolError; assert no exception propagates; assert no alert for that item; `items_evaluated` count still correct
-  in `apps/api/tests/agents/test_watchdog.py`
+  in `apps/api-service/tests/agents/test_watchdog.py`
 
-**Checkpoint**: `uv run pytest apps/api/tests/agents/test_watchdog.py` — all 6 tests pass offline.
+**Checkpoint**: `uv run pytest apps/api-service/tests/agents/test_watchdog.py` — all 6 tests pass offline.
 
 ---
 
@@ -116,10 +116,10 @@ On breach: creates `AlertORM` + `MissionORM`; deduplication prevents duplicate a
 assembles all results into `ResearchPacket`, records absent data in `data_gaps`, and returns the
 packet. No LLM call; no analytical content in output.
 
-**Independent Test**: `uv run pytest apps/api/tests/agents/test_researcher.py` — all pass offline.
+**Independent Test**: `uv run pytest apps/api-service/tests/agents/test_researcher.py` — all pass offline.
 
-- [ ] T010 [P] [US2] Create `apps/api/src/api/agents/researcher_agent.prompt.py` with system prompt documenting the Researcher's role: data collector only, no analysis, all tool results assembled verbatim, absent data recorded in data_gaps; import `SYSTEM_ROLE_PREAMBLE` from `agents/shared/prompts.py` in `apps/api/src/api/agents/researcher_agent.prompt.py`
-- [ ] T011 [US2] Create `apps/api/src/api/agents/researcher_agent.py` with `ResearcherAgent`:
+- [ ] T010 [P] [US2] Create `apps/api-service/src/api/agents/researcher_agent.prompt.py` with system prompt documenting the Researcher's role: data collector only, no analysis, all tool results assembled verbatim, absent data recorded in data_gaps; import `SYSTEM_ROLE_PREAMBLE` from `agents/shared/prompts.py` in `apps/api-service/src/api/agents/researcher_agent.prompt.py`
+- [ ] T011 [US2] Create `apps/api-service/src/api/agents/researcher_agent.py` with `ResearcherAgent`:
   - Does NOT extend `BaseAgent` (no LLM; pure data assembly)
   - `__init__(self, agent_run_repo: AgentRunRepository, mcp_client: MCPClient)`
   - `async def run(self, input: ResearchInput, mission_id: UUID) -> ResearchPacket` where `ResearchInput(BaseModel)` has `ticker: str`, `mission_id: UUID`:
@@ -133,8 +133,8 @@ packet. No LLM call; no analytical content in output.
     4. Record `AgentRunORM` with `cost_usd=Decimal("0.00")`, `tokens_in=0`, `tokens_out=0`, `agent_name="researcher"`, `status="complete"`, `duration_ms`
     5. Return `ResearchPacket`
   - `_call_tool(tool_name, params) -> dict | None` — same pattern as BaseAgent; logs MCPToolError, returns None
-  in `apps/api/src/api/agents/researcher_agent.py`
-- [ ] T012 [US2] Write `apps/api/tests/agents/test_researcher.py` (mock all I/O):
+  in `apps/api-service/src/api/agents/researcher_agent.py`
+- [ ] T012 [US2] Write `apps/api-service/tests/agents/test_researcher.py` (mock all I/O):
   - Fixtures: `mock_agent_run_repo`, `mock_mcp_client` (returns fixture data for each tool)
   - `test_all_tools_called_concurrently` — assert `mock_mcp_client.call_tool` called exactly 4 times with correct tool names
   - `test_packet_fields_populated` — mock all 4 tools returning data; assert `packet.price_history` non-empty, `packet.fundamentals` not None, `packet.news_items` non-empty, `packet.kb_entries` non-empty, `packet.data_gaps == []`
@@ -143,9 +143,9 @@ packet. No LLM call; no analytical content in output.
   - `test_no_analytical_fields_in_output` — assert `ResearchPacket` model fields do not include any field named `analysis`, `recommendation`, `conclusion`, `interpretation`, `opinion`
   - `test_agent_run_recorded_with_zero_cost` — assert `agent_run_repo.create(cost_usd=Decimal("0.00"), tokens_in=0)` called once
   - `test_partial_tool_failure_still_completes` — mock get_ohlcv raises MCPToolError; other tools succeed; assert packet returned with data_gaps containing "price_history" entry; no exception raised
-  in `apps/api/tests/agents/test_researcher.py`
+  in `apps/api-service/tests/agents/test_researcher.py`
 
-**Checkpoint**: `uv run pytest apps/api/tests/agents/test_researcher.py` — all 7 tests pass offline.
+**Checkpoint**: `uv run pytest apps/api-service/tests/agents/test_researcher.py` — all 7 tests pass offline.
 
 ---
 
@@ -154,30 +154,30 @@ packet. No LLM call; no analytical content in output.
 **Goal**: `WatchdogAgent` extended with news-volume evaluation. News spike check uses
 `news_spike_rate_per_hour` from watchdog.yaml config; alert raised at appropriate severity level.
 
-**Independent Test**: `uv run pytest apps/api/tests/agents/test_watchdog.py -k "news"` — all pass offline.
+**Independent Test**: `uv run pytest apps/api-service/tests/agents/test_watchdog.py -k "news"` — all pass offline.
 
-- [ ] T013 [US3] Extend `apps/api/src/api/agents/watchdog_agent.py` — `_evaluate_news_volume(news_items: list[dict], threshold_per_hour: int, ticker: str) -> tuple[bool, str]`:
+- [ ] T013 [US3] Extend `apps/api-service/src/api/agents/watchdog_agent.py` — `_evaluate_news_volume(news_items: list[dict], threshold_per_hour: int, ticker: str) -> tuple[bool, str]`:
   - Count articles published in the last hour from the news_items list
   - If count >= threshold: return `(True, f"{ticker} news volume spike: {count} articles in last hour (threshold: {threshold_per_hour})")`
   - Else: return `(False, "")`
   - Call this check in `run()` for each watchlist item alongside price/volume checks; apply same dedup logic
   - Severity: LOW for 1–2x threshold, MEDIUM for 2–5x, HIGH for >5x (encoded as an `_assess_severity(ratio: float) -> str` method)
-  in `apps/api/src/api/agents/watchdog_agent.py`
-- [ ] T014 [US3] Add US3 tests to `apps/api/tests/agents/test_watchdog.py`:
+  in `apps/api-service/src/api/agents/watchdog_agent.py`
+- [ ] T014 [US3] Add US3 tests to `apps/api-service/tests/agents/test_watchdog.py`:
   - `test_news_spike_creates_alert` — mock `get_news` returning 10 items all published within last hour (threshold=5/hour); assert alert created with "news volume spike" in trigger_condition
   - `test_normal_news_volume_no_alert` — mock `get_news` returning 2 items in last hour; assert no news-volume alert created
   - `test_news_spike_severity_high` — 30 articles/hour with threshold=5 (ratio=6x) → assert alert severity="critical" or "high"
-  in `apps/api/tests/agents/test_watchdog.py`
+  in `apps/api-service/tests/agents/test_watchdog.py`
 
-**Checkpoint**: `uv run pytest apps/api/tests/agents/test_watchdog.py` — all 9 tests pass offline.
+**Checkpoint**: `uv run pytest apps/api-service/tests/agents/test_watchdog.py` — all 9 tests pass offline.
 
 ---
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T015 [P] Run `uv run mypy --strict apps/api/src/api/agents/watchdog_agent.py apps/api/src/api/agents/researcher_agent.py packages/shared/src/finsight/shared/models/research_packet.py` — fix all type errors until zero errors remain
-- [ ] T016 [P] Run `uv run ruff check apps/api/src/api/agents/watchdog_agent.py apps/api/src/api/agents/researcher_agent.py` — fix all warnings
-- [ ] T017 Run full test suite: `uv run pytest apps/api/tests/agents/` — all 9+ watchdog tests + 7 researcher tests pass offline; confirm no real HTTP calls or DB connections
+- [ ] T015 [P] Run `uv run mypy --strict apps/api-service/src/api/agents/watchdog_agent.py apps/api-service/src/api/agents/researcher_agent.py packages/shared/src/finsight/shared/models/research_packet.py` — fix all type errors until zero errors remain
+- [ ] T016 [P] Run `uv run ruff check apps/api-service/src/api/agents/watchdog_agent.py apps/api-service/src/api/agents/researcher_agent.py` — fix all warnings
+- [ ] T017 Run full test suite: `uv run pytest apps/api-service/tests/agents/` — all 9+ watchdog tests + 7 researcher tests pass offline; confirm no real HTTP calls or DB connections
 
 ---
 
@@ -228,7 +228,7 @@ Workstream B (US2): T010 (researcher prompt) + T011 (researcher_agent.py) → T0
 1. Complete Phase 1: Setup (stubs)
 2. Complete Phase 2: Foundational (config, ResearchPacket, AlertRepository.get_recent)
 3. Complete Phase 3: US1 (WatchdogAgent price+volume threshold + 6 tests)
-4. **STOP and VALIDATE**: `uv run pytest apps/api/tests/agents/test_watchdog.py` — all pass
+4. **STOP and VALIDATE**: `uv run pytest apps/api-service/tests/agents/test_watchdog.py` — all pass
 5. Automated alert creation is working — Feature 008 can connect it to Celery
 
 ### Incremental Delivery

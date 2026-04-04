@@ -17,7 +17,7 @@ mocked LLM responses.
 **Storage**: PostgreSQL (WatchlistItem, Alert, Mission reads/writes via Feature 002 repos)
 **Testing**: pytest + pytest-asyncio + unittest.mock + respx (offline)
 **Target Platform**: Linux server (Docker) as Celery worker tasks
-**Project Type**: Agent implementations (apps/api sub-package)
+**Project Type**: Agent implementations (apps/api-service sub-package)
 **Performance Goals**: Watchdog evaluates 50 items in < 30 s; Researcher assembles packet in < 60 s
 **Constraints**: mypy --strict; offline tests; Researcher output contains ONLY factual data
 **Scale/Scope**: 2 agents; watchlist up to 50 items
@@ -37,7 +37,7 @@ mocked LLM responses.
 ### Source Code
 
 ```text
-apps/api/src/api/agents/
+apps/api-service/src/api/agents/
 ├── watchdog_agent.py        # WatchdogAgent: evaluates thresholds, creates Alert + Mission
 ├── watchdog_agent.prompt.py # WatchdogAgent system prompt
 ├── researcher_agent.py      # ResearcherAgent: calls MCP tools, returns ResearchPacket
@@ -53,7 +53,7 @@ config/runtime/
 config/schemas/
 └── watchdog.py              # Pydantic v2 schema
 
-apps/api/tests/agents/
+apps/api-service/tests/agents/
 ├── test_watchdog.py         # threshold breach → alert created; no breach → no alert; dedup
 └── test_researcher.py       # packet fields populated; no interpretation; absent data recorded
 ```
@@ -80,7 +80,7 @@ apps/api/tests/agents/
 
 ### Phase 3: Watchdog Agent
 
-**Files**: `apps/api/src/api/agents/watchdog_agent.py` + `.prompt.py`
+**Files**: `apps/api-service/src/api/agents/watchdog_agent.py` + `.prompt.py`
 
 **Key decisions**:
 - Calls `MCPClient.call_tool("market.get_price", ...)` and `MCPClient.call_tool("news.get_news", ...)` for each watchlist item
@@ -100,7 +100,7 @@ apps/api/tests/agents/
 
 ### Phase 4: Researcher Agent
 
-**Files**: `apps/api/src/api/agents/researcher_agent.py` + `.prompt.py`
+**Files**: `apps/api-service/src/api/agents/researcher_agent.py` + `.prompt.py`
 
 **Key decisions**:
 - Input: `ResearchInput(ticker: str, mission_id: UUID)`
@@ -111,7 +111,7 @@ apps/api/tests/agents/
 
 ### Phase 5: Tests
 
-**Files**: `apps/api/tests/agents/test_watchdog.py`, `test_researcher.py`
+**Files**: `apps/api-service/tests/agents/test_watchdog.py`, `test_researcher.py`
 
 ## Key Design Decisions
 

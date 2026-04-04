@@ -6,7 +6,7 @@
 
 Build three independent FastMCP servers (market-data, news-macro, rag-retrieval), each with its
 own tool registry, Redis-backed response caching (TTLs from mcp.yaml), typed Pydantic response
-models, health endpoint, and fail-fast startup. Add an MCP client in apps/api that routes tool
+models, health endpoint, and fail-fast startup. Add an MCP client in apps/api-service that routes tool
 calls to the correct server by name. All tools are testable offline via respx HTTP mocking.
 
 ## Technical Context
@@ -18,7 +18,7 @@ calls to the correct server by name. All tools are testable offline via respx HT
 **Target Platform**: Linux server (Docker) — 3 separate containers
 **Project Type**: 3 independent FastMCP microservices + API MCP client
 **Performance Goals**: Cached tool response < 20 ms; uncached market data < 3 s; RAG search < 500 ms
-**Constraints**: mypy --strict; ruff zero warnings; tests offline; servers must NOT import from apps/api
+**Constraints**: mypy --strict; ruff zero warnings; tests offline; servers must NOT import from apps/api-service
 **Scale/Scope**: 3 servers, ~12 tools total, Redis TTL cache per tool
 
 ## Constitution Check
@@ -64,7 +64,7 @@ apps/mcp-servers/rag-retrieval/src/rag_retrieval/
     ├── search.py        # search_knowledge(query, limit, filters) → list[KnowledgeResult]
     └── retrieve.py      # get_knowledge_entry(id) → KnowledgeResult
 
-apps/api/src/api/mcp/
+apps/api-service/src/api/mcp/
 ├── __init__.py
 └── client.py            # MCPClient: tool routing, typed responses, timeout handling
 
@@ -74,7 +74,7 @@ config/schemas/mcp.py    # Pydantic v2 schema
 apps/mcp-servers/market-data/tests/test_tools.py
 apps/mcp-servers/news-macro/tests/test_tools.py
 apps/mcp-servers/rag-retrieval/tests/test_tools.py
-apps/api/tests/mcp/test_client.py
+apps/api-service/tests/mcp/test_client.py
 ```
 
 ## Implementation Phases
@@ -122,7 +122,7 @@ apps/api/tests/mcp/test_client.py
 
 ### Phase 5: MCP Client
 
-**Files**: `apps/api/src/api/mcp/client.py`
+**Files**: `apps/api-service/src/api/mcp/client.py`
 
 **Key decisions**:
 - **Transport protocol**: FastMCP servers are accessed via HTTP (not stdio). Each server is a

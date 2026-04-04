@@ -1,22 +1,27 @@
 ---
-description: "Review code changes against the constitution and spec requirements"
+description: "Review code changes against constitution and spec requirements"
 ---
 
-Review the current changes against FinSight's quality standards:
+Review current changes against FinSight quality standards:
 
-1. Read `.specify/memory/constitution.md` for project principles
-2. Check the relevant spec: `specs/$ARGUMENTS/spec.md` (if argument provided) or infer from changed files
-3. Verify:
-   - [ ] Agent boundaries respected — no agent crosses into another's domain
-   - [ ] All config from YAML — no hardcoded thresholds, model names, or schedules
-   - [ ] TypeScript strict — no `any`, explicit return types, all imports from `@finsight/shared-types`
-   - [ ] Tests exist for new behavior — offline tests only (mocked APIs)
-   - [ ] Conventional commit message format
-   - [ ] No scope creep — only files listed in the current spec's plan
-   - [ ] Error handling — fail-fast on config errors, graceful on runtime errors
-   - [ ] Agent state protocol — Redis state before/after execution with 10min TTL
-   - [ ] Cost tracking — every LLM call records tokens + cost in AgentRun
+1. Read `.specify/memory/constitution.md`
+2. Read relevant spec and plan (`specs/$ARGUMENTS/...`) if provided
+3. Verify findings against this checklist:
+   - [ ] Scope is limited to current spec
+   - [ ] Agent boundaries are respected
+   - [ ] Runtime behavior is config-driven from YAML
+   - [ ] No secrets or credentials in source/docs/tests
+   - [ ] Strict typing quality maintained
+   - [ ] Tests cover new behavior and run offline
+   - [ ] Error handling is explicit and fail-fast where required
+   - [ ] Cost tracking requirements are preserved
 
-4. Run `pnpm -r typecheck` and report any errors
-5. Run `pnpm -r test` and report any failures
-6. Provide a summary: PASS/FAIL with specific issues listed
+4. Run and report:
+   - `uv run mypy --strict`
+   - `uv run ruff check`
+   - `uv run pytest`
+
+Provide output as:
+- Findings (ordered by severity with file references)
+- Open questions/assumptions
+- PASS/FAIL decision

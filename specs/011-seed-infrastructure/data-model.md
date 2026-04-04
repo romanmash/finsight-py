@@ -2,7 +2,7 @@
 
 ## Seed Data Constants
 
-**Location**: `apps/api/src/api/seeds/constants.py`
+**Location**: `apps/api-service/src/api/seeds/constants.py`
 
 Fixed UUIDs for all demo entities:
 

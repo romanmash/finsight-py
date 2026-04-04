@@ -106,7 +106,7 @@
 ## KnowledgeEntry
 
 **Type**: SQLAlchemy 2.x async ORM model + Pydantic v2 schema
-**Location**: `packages/shared/src/finsight/shared/models/knowledge_entry.py` (Pydantic schema), `apps/api/src/api/models/knowledge_entry_orm.py` (SQLAlchemy ORM)
+**Location**: `packages/shared/src/finsight/shared/models/knowledge_entry.py` (Pydantic schema), `apps/api-service/src/api/models/knowledge_entry_orm.py` (SQLAlchemy ORM)
 
 | Field | Python Type | DB Column | Description | Constraints |
 |-------|-------------|-----------|-------------|-------------|

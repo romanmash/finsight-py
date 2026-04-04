@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "finsight-workspace"
+version = "0.1.0"
+description = "FinSight AI Hub Python workspace"
+requires-python = ">=3.13"
+
+[tool.uv.workspace]
+members = [
+  "packages/shared",
+  "apps/api-service",
+  "apps/mcp-servers/market-data",
+  "apps/mcp-servers/news-macro",
+  "apps/mcp-servers/rag-retrieval",
+  "apps/dashboard",
+  "apps/telegram-bot",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+finsight-shared = { workspace = true }
+
+[dependency-groups]
+dev = [
+  "mypy>=1.10",
+  "ruff>=0.4",
+  "pytest>=8.2",
+  "pytest-asyncio>=0.23",
+  "types-PyYAML",
+  "types-croniter",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = [".", "apps/api-service/src", "packages/shared/src"]
+addopts = ["-p", "no:cacheprovider"]
+norecursedirs = ["pytest-cache-files-*", ".pytest_cache", ".venv", ".git"]
+testpaths = ["apps/api-service/tests"]
+
+[tool.mypy]
+python_version = "3.13"
+files = ["apps/api-service", "config", "packages/shared"]
+strict = true
+warn_unused_configs = true
+cache_dir = ".cache/mypy"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+cache-dir = ".cache/ruff"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

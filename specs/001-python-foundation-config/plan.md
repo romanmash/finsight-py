@@ -52,7 +52,7 @@ specs/001-python-foundation-config/
 pyproject.toml                                    # uv workspace root; mypy + ruff config
 .python-version                                   # "3.13"
 .env.example                                      # all required env vars documented
-alembic.ini                                       # points to apps/api/alembic/
+alembic.ini                                       # points to apps/api-service/alembic/
 docker-compose.yml                                # core services; later features extend
 docker-compose.dev.yml                            # volume mounts for live reload
 conftest.py                                       # root pytest config (asyncio_mode=auto)
@@ -66,7 +66,7 @@ packages/shared/
     └── types.py                                  # common type aliases (ID, Timestamp, etc.)
 
 # API application
-apps/api/
+apps/api-service/
 ├── pyproject.toml
 ├── alembic/
 │   ├── env.py                                    # async migration runner
@@ -106,7 +106,7 @@ config/schemas/
 └── scheduler.py
 
 # Tests
-apps/api/tests/
+apps/api-service/tests/
 ├── __init__.py
 └── test_config.py                                # config load, fail-fast, env injection
 ```
@@ -119,7 +119,7 @@ apps/api/tests/
 - `pyproject.toml` — uv workspace root; declares all members; configures mypy `--strict`, ruff rules, pytest `asyncio_mode = "auto"`
 - `.python-version` — contains `3.13`
 - `packages/shared/pyproject.toml` — package name `finsight-shared`; no external dependencies; exports `finsight.shared`
-- `apps/api/pyproject.toml` — package name `finsight-api`; depends on `finsight-shared`; lists all API deps
+- `apps/api-service/pyproject.toml` — package name `finsight-api`; depends on `finsight-shared`; lists all API deps
 - `apps/mcp-servers/market-data/pyproject.toml` — package name `finsight-mcp-market-data`; stub for now
 - `apps/mcp-servers/news-macro/pyproject.toml` — package name `finsight-mcp-news-macro`; stub
 - `apps/mcp-servers/rag-retrieval/pyproject.toml` — package name `finsight-mcp-rag-retrieval`; stub
@@ -139,13 +139,13 @@ apps/api/tests/
 
 **Key decisions**:
 - `packages/shared` has zero external dependencies — only Python stdlib
-- All domain type aliases defined here are imported by both `apps/api` and config schemas
+- All domain type aliases defined here are imported by both `apps/api-service` and config schemas
 - No Pydantic models in this file — those come in Feature 002
 
 ### Phase 3: Config YAML Files + Pydantic Schemas
 
 **Files**:
-- `config/runtime/agents.yaml` — defines all 7 agents with model, provider, temperature, max_tokens, max_retries, timeout_seconds
+- `config/runtime/agents.yaml` — defines all 9 agents with model, provider, temperature, max_tokens, max_retries, timeout_seconds
 - `config/runtime/mcp.yaml` — defines 3 MCP servers with url, timeout_seconds, cache_ttl_seconds
 - `config/runtime/pricing.yaml` — model cost map; includes at least `openai/gpt-4o`, `openai/gpt-4o-mini`, `anthropic/claude-3-5-sonnet`
 - `config/runtime/watchdog.yaml` — poll_interval_seconds, alert_cooldown_seconds, default_thresholds
@@ -165,13 +165,13 @@ apps/api/tests/
 ### Phase 4: Settings + Config Loader
 
 **Files**:
-- `apps/api/src/api/__init__.py` — empty
-- `apps/api/src/api/lib/config.py` — contains:
+- `apps/api-service/src/api/__init__.py` — empty
+- `apps/api-service/src/api/lib/config.py` — contains:
   - `Settings(BaseSettings)` — all secrets/env vars; `model_config = SettingsConfigDict(env_file=".env", extra="ignore")`
   - `load_yaml_config(path, model)` — loads + validates one YAML file; calls `sys.exit(1)` on `ValidationError` or `YAMLError`
   - `load_all_configs()` — loads all 5 YAML files; returns a `AllConfigs` dataclass holding each schema instance
   - `get_settings()` — cached singleton returning `Settings()`
-- `apps/api/src/api/lib/logging.py` — `configure_logging(level)` sets up structlog with JSON renderer
+- `apps/api-service/src/api/lib/logging.py` — `configure_logging(level)` sets up structlog with JSON renderer
 
 **Key decisions**:
 - `load_all_configs()` is called once at FastAPI lifespan startup, not at import time (avoids issues in test environments)
@@ -181,9 +181,9 @@ apps/api/tests/
 ### Phase 5: Alembic Setup
 
 **Files**:
-- `alembic.ini` — `script_location = apps/api/alembic`; `sqlalchemy.url` left as placeholder (overridden in `env.py`)
-- `apps/api/alembic/env.py` — async migration runner; reads `DATABASE_URL` from environment; imports `Base.metadata` (Feature 002 will populate it)
-- `apps/api/alembic/versions/` — empty directory; first migration added by Feature 002
+- `alembic.ini` — `script_location = apps/api-service/alembic`; `sqlalchemy.url` left as placeholder (overridden in `env.py`)
+- `apps/api-service/alembic/env.py` — async migration runner; reads `DATABASE_URL` from environment; imports `Base.metadata` (Feature 002 will populate it)
+- `apps/api-service/alembic/versions/` — empty directory; first migration added by Feature 002
 
 **Key decisions**:
 - `env.py` uses `asyncio.run(run_async_migrations())` pattern for SQLAlchemy async engine compatibility
@@ -195,7 +195,7 @@ apps/api/tests/
 - `docker-compose.yml` — core services created in this feature:
   - `db`: `pgvector/pgvector:pg16`; port 5432; healthcheck; volume `pgdata`
   - `redis`: `redis:7-alpine`; port 6379; healthcheck
-  - `api`: builds from `apps/api/`; port 8000; depends on `db`, `redis`; env from `.env`
+  - `api`: builds from `apps/api-service/`; port 8000; depends on `db`, `redis`; env from `.env`
   - `market-data-mcp`: builds from `apps/mcp-servers/market-data/`; port 8001
   - `news-macro-mcp`: builds from `apps/mcp-servers/news-macro/`; port 8002
   - `rag-retrieval-mcp`: builds from `apps/mcp-servers/rag-retrieval/`; port 8003
@@ -235,8 +235,8 @@ LANGCHAIN_API_KEY=                 # optional — required only when LANGCHAIN_T
 
 **Files**:
 - `conftest.py` (root) — sets `asyncio_mode = "auto"` in `pytest.ini_options`; shared fixtures: `tmp_config_dir` (creates temp YAML files), `mock_env` (monkeypatches env vars)
-- `apps/api/tests/__init__.py` — empty
-- `apps/api/tests/test_config.py` — tests:
+- `apps/api-service/tests/__init__.py` — empty
+- `apps/api-service/tests/test_config.py` — tests:
   - `test_valid_config_loads` — writes valid YAML to tmp dir, loads it, asserts model fields
   - `test_invalid_yaml_type_exits` — writes YAML with wrong type, asserts `SystemExit` raised
   - `test_missing_required_field_exits` — omits required field, asserts `SystemExit`

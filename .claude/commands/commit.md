@@ -4,7 +4,7 @@ description: "Generate a conventional commit message for staged changes"
 
 Generate a commit message for the current staged changes following these rules:
 
-1. Check `git diff --staged` to see what changed
+1. Run `git diff --staged --name-status` and `git diff --staged` to inspect what changed.
 2. Format: `<type>(<scope>): <description>`
 
 Types:
@@ -16,23 +16,28 @@ Types:
 - `chore` — build process, tooling, dependencies
 
 Scopes (use the most specific that applies):
-- `types` — @finsight/shared-types package
-- `config` — config loader, YAML files, Zod schemas
-- `api` — Hono routes, middleware, auth
+- `shared` — `packages/shared`
+- `config` — runtime YAML + Pydantic schema/config loading
+- `api` — FastAPI routes, middleware, auth
 - `mcp` — MCP servers or MCP client
-- `agents` — any of the 9 agents
-- `manager` — Manager agent specifically
-- `kb` — Knowledge Base / Bookkeeper
-- `dashboard` — React admin dashboard
+- `agents` — agent implementations
+- `graph` — LangGraph orchestration
+- `kb` — knowledge base / Bookkeeper paths
+- `dashboard` — Dash operator console
 - `telegram` — Telegram bot
-- `prisma` — schema, migrations, seed
+- `db` — SQLAlchemy models, Alembic migrations
 - `infra` — Docker, Pulumi, CI/CD, scripts
-- `spec` — specs/ directory changes
+- `spec` — specs directory changes
 
 Rules:
 - Subject line max 72 characters
 - Use imperative mood ("add" not "added" or "adds")
-- Don't end subject with period
+- Do not end subject with a period
 - Body (if needed) explains WHY, not WHAT
+
+Before finalizing the message, verify quality gates are green:
+- `uv run mypy --strict`
+- `uv run ruff check`
+- `uv run pytest`
 
 Output ONLY the commit message, nothing else.

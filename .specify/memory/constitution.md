@@ -1,36 +1,3 @@
-<!--
-SYNC IMPACT REPORT
-==================
-Version change: 1.1 → 2.0.0 (MAJOR — complete technology stack and project purpose replacement)
-
-Modified principles:
-  I.   Everything-as-Code          → unchanged in intent; Zod → Pydantic v2, pnpm → uv
-  II.  Agent Boundaries            → unchanged; agent count corrected 9 → 7
-  III. MCP Server Independence     → updated: 6 Hono servers → 3 FastMCP servers
-  IV.  Cost Observability          → updated: field names camelCase → snake_case (Python)
-  V.   Fail-Safe Defaults          → updated: Node/Zod refs → Python/Pydantic refs
-  VI.  Test-First Where Practical  → updated: msw → respx, Vitest → pytest
-  VII. Simplicity Over Cleverness  → rewritten: LangGraph replaces Vercel AI SDK;
-                                     FastAPI replaces Hono; Celery replaces BullMQ
-
-Added sections:   none
-Removed sections: none (project purpose section rewritten in-place)
-
-Templates requiring updates:
-  ✅ .specify/templates/plan-template.md      — technology-agnostic, no changes needed
-  ✅ .specify/templates/spec-template.md      — technology-agnostic, no changes needed
-  ✅ .specify/templates/tasks-template.md     — technology-agnostic, no changes needed
-  ✅ .specify/templates/agent-file-template.md — populated by update-agent-context.ps1, no manual edit needed
-  ⚠  AGENTS.md                               — must be rewritten for Python stack (pending)
-  ⚠  docs/CONTEXT.md                         — references TypeScript position context; update pending
-  ⚠  specs/README.md                         — feature catalogue needs Python feature list (pending)
-
-Follow-up TODOs:
-  - Update AGENTS.md technology stack table and commands section for Python
-  - Update docs/CONTEXT.md to remove TypeScript position framing
-  - Create Python specs 001-011 via /speckit.specify
--->
-
 # FinSight AI Hub — Constitution
 
 ## Project Purpose
@@ -58,7 +25,7 @@ it MUST be configurable without code changes.
 
 ### II. Agent Boundaries (NON-NEGOTIABLE)
 
-Each of the 7 agents has a **sole responsibility** that does not overlap with any other agent's
+Each of the 9 agents has a **sole responsibility** that does not overlap with any other agent's
 domain. Violations create debugging nightmares and break observability.
 
 | Rule | Description |
@@ -68,10 +35,12 @@ domain. Violations create debugging nightmares and break observability.
 | No autonomous trades | No trade execution of any kind in MVP. Decision support only. |
 | Reporter formats only | Reporter never analyses. It receives structured output and formats it for Telegram or Dashboard delivery. |
 | Manager never reasons about content | Manager classifies intent, routes to specialists, and composes results. It does not generate investment analysis. |
-| Pattern Specialist stays technical | Pattern Specialist examines price/volume/technical behavior only. It does not produce investment advice. |
+| Screener focuses on candidate generation | Screener produces ranked candidates from configured rules/signals only; it does not execute trades. |
+| Trader remains decision support only | Trader proposes trade setups under guardrails; no autonomous execution. |
+| Technician stays technical | Technician examines price/volume/technical behavior only. It does not produce investment advice. |
 
-**The 7 agents**: Manager, Watchdog, Researcher, Analyst, Pattern Specialist, Bookkeeper/Librarian,
-Reporter.
+**The 9 agents**: Manager, Watchdog, Researcher, Analyst, Technician, Trader, Screener,
+Bookkeeper/Librarian, Reporter.
 
 ### III. MCP Server Independence
 
@@ -150,10 +119,10 @@ All tests run with `pytest`. Async tests use `pytest-asyncio`.
 | Observability | LangSmith (Python) + structlog | Full LLM trace + structured JSON logs |
 | Bot | python-telegram-bot v20 async | Mature async SDK; voice messages → Whisper API transcription |
 | Dashboard | Dash (Plotly) | Enterprise-standard Python dashboard; touchscreen-ready ops console |
-| IaC | Pulumi Python | TypeScript-free IaC; Python-native |
+| IaC | Pulumi Python | Python-native IaC |
 | Container | Docker (prod server), Podman (dev laptop) | OCI-compatible, same compose files |
 | Config Validation | Pydantic v2 Settings + YAML | Industry standard Python config; startup validation |
-| Monorepo | uv workspaces | Modern Python dependency management; replaces pnpm |
+| Monorepo | uv workspaces | Modern Python dependency management |
 | Testing | pytest + respx + pytest-asyncio | Universal Python test stack |
 
 ### Deployment Topology

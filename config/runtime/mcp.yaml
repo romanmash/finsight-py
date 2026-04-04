@@ -1,49 +1,13 @@
-invoke:
-  defaultTimeoutMs: 5000
-  defaultRetry:
-    maxAttempts: 2
-    backoffMs: 100
-providers:
-  marketDataBaseUrl: https://finnhub.io/api/v1
-  fmpBaseUrl: https://financialmodelingprep.com/api/v3
-  gdeltBaseUrl: https://api.gdeltproject.org/api/v2
-  alphaVantageBaseUrl: https://www.alphavantage.co/query
-  newsBaseUrl: https://finnhub.io/api/v1
-localProvider:
-  baseUrl: http://localhost:1234
-  healthProbeIntervalMs: 300000
-  healthProbeTimeoutMs: 2000
-retrieval:
-  vectorWeight: 0.7
-  bm25Weight: 0.3
-  rrfK: 60
-trader:
-  requireApprovalForNonMock: true
 servers:
-  marketData:
+  market-data:
     url: http://market-data-mcp:3001
-    timeoutMs: 5000
-    retry: { maxAttempts: 2, backoffMs: 100 }
-    cache: { quoteTtlSec: 60, fundamentalsTtlSec: 3600, earningsTtlSec: 14400, ratingsTtlSec: 21600 }
-  macroSignals:
-    url: http://macro-signals-mcp:3002
-    timeoutMs: 8000
-    retry: { maxAttempts: 2, backoffMs: 150 }
-    cache: { gdeltTtlSec: 1800, ecoCalendarTtlSec: 14400, indicatorTtlSec: 86400 }
-  news:
-    url: http://news-mcp:3003
-    timeoutMs: 5000
-    retry: { maxAttempts: 2, backoffMs: 100 }
-    cache: { latestTtlSec: 300, sentimentTtlSec: 900 }
-  ragRetrieval:
+    timeout_seconds: 5
+    cache_ttl_seconds: 60
+  news-macro:
+    url: http://news-macro-mcp:3002
+    timeout_seconds: 8
+    cache_ttl_seconds: 300
+  rag-retrieval:
     url: http://rag-retrieval-mcp:3004
-    timeoutMs: 3000
-    retry: { maxAttempts: 1, backoffMs: 0 }
-  enterpriseConnector:
-    url: http://enterprise-connector-mcp:3005
-    timeoutMs: 4000
-    retry: { maxAttempts: 1, backoffMs: 0 }
-  traderPlatform:
-    url: http://trader-platform-mcp:3006
-    timeoutMs: 3000
-    retry: { maxAttempts: 1, backoffMs: 0 }
+    timeout_seconds: 3
+    cache_ttl_seconds: 120
