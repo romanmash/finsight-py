@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "${script_dir}/.." && pwd)"
+
 # Run: bash scripts/logs.sh <service>
 # logs.sh: Stream logs for one named service from remote docker compose.
 
@@ -46,9 +49,29 @@ SERVER_USER="${SERVER_USER:-${DEPLOY_USER:-}}"
 SERVER_PATH="${SERVER_PATH:-${DEPLOY_PATH:-}}"
 SERVER_SSH_KEY="${SERVER_SSH_KEY:-}"
 
-if [[ "${SERVER_SSH_KEY}" == "~/"* ]]; then
-  SERVER_SSH_KEY="${HOME}/${SERVER_SSH_KEY#~/}"
-fi
+resolve_ssh_key_path() {
+  local key_path="$1"
+  [[ "$key_path" == "~/"* ]] && key_path="${HOME}/${key_path#~/}"
+  # Git Bash on Windows can receive backslash paths from Python tests/env vars.
+  key_path="${key_path//\\//}"
+
+  if [[ -f "$key_path" ]]; then
+    printf '%s\n' "$key_path"
+    return 0
+  fi
+
+  # Support repo-relative paths when script is launched from another cwd.
+  if [[ "$key_path" != /* && ! "$key_path" =~ ^[A-Za-z]:/ ]]; then
+    local repo_candidate="${repo_root}/${key_path}"
+    if [[ -f "$repo_candidate" ]]; then
+      printf '%s\n' "$repo_candidate"
+      return 0
+    fi
+  fi
+
+  printf '%s\n' "$key_path"
+  return 1
+}
 
 VALID_SERVICES=(
   api
@@ -86,6 +109,8 @@ if [[ ${#missing[@]} -gt 0 ]]; then
   echo "Missing required environment variables: ${missing[*]}" >&2
   exit 1
 fi
+
+SERVER_SSH_KEY="$(resolve_ssh_key_path "${SERVER_SSH_KEY}")" || true
 
 if [[ ! -f "${SERVER_SSH_KEY}" ]]; then
   echo "SERVER_SSH_KEY does not exist: ${SERVER_SSH_KEY}" >&2
