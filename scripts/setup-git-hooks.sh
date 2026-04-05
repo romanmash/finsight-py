@@ -7,6 +7,8 @@ cd "$repo_root"
 git config core.hooksPath .githooks
 
 mkdir -p .cache/uv .cache/pycache
+chmod +x .githooks/pre-commit .githooks/pre-push
+chmod +x .codex/hooks/python-quality-check.sh .codex/hooks/python-pytest-check.sh
 
 echo "Configured git hooksPath=.githooks"
 echo "Linux hooks ready: .githooks/pre-commit and .githooks/pre-push"
