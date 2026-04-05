@@ -41,6 +41,10 @@ SERVER_PATH="${SERVER_PATH:-${DEPLOY_PATH:-}}"
 SERVER_SSH_KEY="${SERVER_SSH_KEY:-}"
 HEALTHCHECK_URLS="${HEALTHCHECK_URLS:-http://localhost:8000/health}"
 
+if [[ "${SERVER_SSH_KEY}" == "~/"* ]]; then
+  SERVER_SSH_KEY="${HOME}/${SERVER_SSH_KEY#~/}"
+fi
+
 missing=()
 [[ -z "${SERVER_HOST}" ]] && missing+=("SERVER_HOST")
 [[ -z "${SERVER_USER}" ]] && missing+=("SERVER_USER")
@@ -65,7 +69,7 @@ for tool in rsync ssh; do
 done
 
 SSH_CMD=(ssh -i "${SERVER_SSH_KEY}" -o ConnectTimeout=10 "${SERVER_USER}@${SERVER_HOST}")
-RSYNC_SSH="ssh -i ${SERVER_SSH_KEY} -o ConnectTimeout=10"
+RSYNC_SSH="$(printf 'ssh -i %q -o ConnectTimeout=10' "${SERVER_SSH_KEY}")"
 
 echo "[deploy] syncing repository to ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}"
 rsync -avz --exclude='.env' --exclude='__pycache__' --exclude='.git' \

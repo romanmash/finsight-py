@@ -23,6 +23,15 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+_ADMIN_TEST_PASSWORD = "admin-test-password"
+_VIEWER_TEST_PASSWORD = "viewer-test-password"
+
+
+@pytest.fixture(autouse=True)
+def _seed_password_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SEED_ADMIN_PASSWORD", _ADMIN_TEST_PASSWORD)
+    monkeypatch.setenv("SEED_VIEWER_PASSWORD", _VIEWER_TEST_PASSWORD)
+
 
 @pytest.fixture()
 async def seed_session() -> AsyncIterator[AsyncSession]:

@@ -46,6 +46,10 @@ SERVER_USER="${SERVER_USER:-${DEPLOY_USER:-}}"
 SERVER_PATH="${SERVER_PATH:-${DEPLOY_PATH:-}}"
 SERVER_SSH_KEY="${SERVER_SSH_KEY:-}"
 
+if [[ "${SERVER_SSH_KEY}" == "~/"* ]]; then
+  SERVER_SSH_KEY="${HOME}/${SERVER_SSH_KEY#~/}"
+fi
+
 VALID_SERVICES=(
   api
   celery-beat
@@ -80,6 +84,11 @@ missing=()
 [[ -z "${SERVER_SSH_KEY}" ]] && missing+=("SERVER_SSH_KEY")
 if [[ ${#missing[@]} -gt 0 ]]; then
   echo "Missing required environment variables: ${missing[*]}" >&2
+  exit 1
+fi
+
+if [[ ! -f "${SERVER_SSH_KEY}" ]]; then
+  echo "SERVER_SSH_KEY does not exist: ${SERVER_SSH_KEY}" >&2
   exit 1
 fi
 

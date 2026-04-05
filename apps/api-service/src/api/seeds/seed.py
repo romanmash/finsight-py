@@ -31,6 +31,12 @@ async def seed(session: AsyncSession) -> None:
 
 async def main() -> None:
     """Run seeders against DATABASE_URL and print service token for .env."""
+    token = create_access_token(
+        sub=_SERVICE_SUBJECT,
+        role=_SERVICE_ROLE,
+        ttl_minutes=_SERVICE_TTL_MINUTES,
+    )
+
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
         raise RuntimeError("DATABASE_URL is required")
@@ -41,11 +47,6 @@ async def main() -> None:
         async with session_factory() as session:
             await seed(session)
             await session.commit()
-        token = create_access_token(
-            sub=_SERVICE_SUBJECT,
-            role=_SERVICE_ROLE,
-            ttl_minutes=_SERVICE_TTL_MINUTES,
-        )
         print(f"TELEGRAM_SERVICE_TOKEN={token}")
     finally:
         await engine.dispose()

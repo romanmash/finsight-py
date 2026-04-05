@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -13,6 +14,8 @@ from api.seeds.constants import ADMIN_OPERATOR_ID, VIEWER_OPERATOR_ID
 
 _SEED_CREATED_AT = datetime(2026, 4, 1, 8, 0, tzinfo=UTC)
 _SEED_UPDATED_AT = datetime(2026, 4, 1, 8, 5, tzinfo=UTC)
+_ADMIN_PASSWORD_ENV = "SEED_ADMIN_PASSWORD"
+_VIEWER_PASSWORD_ENV = "SEED_VIEWER_PASSWORD"
 
 
 async def _upsert_operator(
@@ -48,14 +51,24 @@ def _hash_password(plain_password: str) -> str:
     return bcrypt.hashpw(plain_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
+def _required_env(var_name: str) -> str:
+    value = os.getenv(var_name)
+    if not value:
+        raise RuntimeError(f"{var_name} is required for seeding operators")
+    return value
+
+
 async def seed_operators(session: AsyncSession) -> None:
     """Seed demo operators with stable primary keys."""
+    admin_password = _required_env(_ADMIN_PASSWORD_ENV)
+    viewer_password = _required_env(_VIEWER_PASSWORD_ENV)
+
     await _upsert_operator(
         session,
         operator_id=ADMIN_OPERATOR_ID,
         email="admin@finsight.local",
         role="admin",
-        plain_password="admin-demo-password",
+        plain_password=admin_password,
         telegram_user_id=123456789,
         telegram_chat_id=123456789,
     )
@@ -64,7 +77,7 @@ async def seed_operators(session: AsyncSession) -> None:
         operator_id=VIEWER_OPERATOR_ID,
         email="viewer@finsight.local",
         role="viewer",
-        plain_password="viewer-demo-password",
+        plain_password=viewer_password,
         telegram_user_id=None,
         telegram_chat_id=None,
     )

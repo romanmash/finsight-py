@@ -4,6 +4,7 @@
 
 - All prior features (001-010) complete
 - `.env` with `SERVER_HOST`, `SERVER_USER`, `SERVER_PATH`, `SERVER_SSH_KEY`
+- `.env` with `SEED_ADMIN_PASSWORD`, `SEED_VIEWER_PASSWORD` for operator seed records
 - SSH key-based auth to server configured
 
 ## Deploy to Server
