@@ -21,7 +21,7 @@
 uv sync
 cp .env.example .env
 uv run alembic upgrade head
-uv run python -m scripts.seed
+uv run python -m api.seeds.seed
 uv run pytest
 ```
 

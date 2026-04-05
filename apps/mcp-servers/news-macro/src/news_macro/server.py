@@ -24,6 +24,13 @@ from news_macro.tools.sentiment import get_sentiment
 logger = structlog.get_logger(__name__)
 
 
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _load_config() -> McpConfig:
     path = Path("config/runtime/mcp.yaml")
     try:
@@ -57,12 +64,13 @@ async def startup_health_check() -> None:
     except (RedisError, OSError) as exc:
         raise SystemExit(f"Redis unavailable: {exc}") from exc
 
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(_provider_probe_url)
-            response.raise_for_status()
-    except httpx.HTTPError as exc:
-        raise SystemExit(f"Finnhub unavailable: {exc}") from exc
+    if not _env_flag("MCP_SKIP_PROVIDER_PROBE", default=False):
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(_provider_probe_url)
+                response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise SystemExit(f"Finnhub unavailable: {exc}") from exc
 
     logger.info("startup health check passed", server="news-macro")
 

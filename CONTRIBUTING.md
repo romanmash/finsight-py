@@ -87,9 +87,9 @@ refactor(api): extract JWT validation into reusable middleware
 # Prerequisites: Python 3.13, uv
 uv sync                          # Install all workspace dependencies
 cp .env.example .env             # Configure environment variables
-docker compose up -d postgres redis  # Start database + cache
+docker compose up -d db redis        # Start database + cache
 uv run alembic upgrade head      # Apply migrations
-uv run python -m scripts.seed    # Load demo data
+uv run python -m api.seeds.seed  # Load demo data
 uv run pytest                    # Verify everything works
 ```
 

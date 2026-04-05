@@ -1,17 +1,27 @@
-﻿services:
+services:
   api:
-    environment:
-      RELOAD: "true"
+    command:
+      [
+        "uvicorn",
+        "api.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+        "--reload-dir",
+        "/app/apps/api-service/src",
+      ]
     volumes:
-      - ./apps/api-service/src:/app/src
+      - ./apps/api-service/src:/app/apps/api-service/src
       - ./config/runtime:/app/config/runtime:ro
 
   worker-watchdog:
     volumes:
-      - ./apps/api-service/src:/app/src
+      - ./apps/api-service/src:/app/apps/api-service/src
       - ./config/runtime:/app/config/runtime:ro
 
   worker-brief:
     volumes:
-      - ./apps/api-service/src:/app/src
+      - ./apps/api-service/src:/app/apps/api-service/src
       - ./config/runtime:/app/config/runtime:ro

@@ -1,6 +1,6 @@
 servers:
   market-data:
-    url: https://market-data-mcp:8001
+    url: http://market-data-mcp:8001
     openbb_provider: yfinance
     timeout_seconds: 10
     cache_ttl_seconds: 300
@@ -16,7 +16,7 @@ servers:
       get_options_chain:
         cache_ttl_seconds: 120
   news-macro:
-    url: https://news-macro-mcp:8002
+    url: http://news-macro-mcp:8002
     timeout_seconds: 15
     cache_ttl_seconds: 300
     tools:
@@ -27,7 +27,7 @@ servers:
       get_macro_signals:
         cache_ttl_seconds: 600
   rag-retrieval:
-    url: https://rag-retrieval-mcp:8003
+    url: http://rag-retrieval-mcp:8003
     timeout_seconds: 10
     cache_ttl_seconds: 120
     tools:

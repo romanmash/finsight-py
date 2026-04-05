@@ -27,11 +27,15 @@ services:
 
   api:
     build:
-      context: ./apps/api-service
+      context: .
+      dockerfile: ./apps/api-service/Dockerfile
     ports:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/finsight
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
@@ -42,40 +46,56 @@ services:
 
   market-data-mcp:
     build:
-      context: ./apps/mcp-servers/market-data
+      context: .
+      dockerfile: ./apps/mcp-servers/market-data/Dockerfile
     ports:
       - "8001:8001"
     env_file:
       - .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      MCP_SKIP_PROVIDER_PROBE: "true"
     volumes:
       - ./config/runtime:/app/config/runtime:ro
 
   news-macro-mcp:
     build:
-      context: ./apps/mcp-servers/news-macro
+      context: .
+      dockerfile: ./apps/mcp-servers/news-macro/Dockerfile
     ports:
       - "8002:8002"
     env_file:
       - .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      MCP_SKIP_PROVIDER_PROBE: "true"
     volumes:
       - ./config/runtime:/app/config/runtime:ro
 
   rag-retrieval-mcp:
     build:
-      context: ./apps/mcp-servers/rag-retrieval
+      context: .
+      dockerfile: ./apps/mcp-servers/rag-retrieval/Dockerfile
     ports:
       - "8003:8003"
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/finsight
+      REDIS_URL: redis://redis:6379/0
     volumes:
       - ./config/runtime:/app/config/runtime:ro
 
   worker-watchdog:
     build:
-      context: ./apps/api-service
+      context: .
+      dockerfile: ./apps/api-service/Dockerfile
     command: ["celery", "-A", "api.lib.queues", "worker", "-Q", "watchdog"]
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/finsight
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
@@ -86,10 +106,14 @@ services:
 
   worker-brief:
     build:
-      context: ./apps/api-service
+      context: .
+      dockerfile: ./apps/api-service/Dockerfile
     command: ["celery", "-A", "api.lib.queues", "worker", "-Q", "brief"]
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/finsight
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
@@ -100,10 +124,14 @@ services:
 
   celery-beat:
     build:
-      context: ./apps/api-service
+      context: .
+      dockerfile: ./apps/api-service/Dockerfile
     command: ["celery", "-A", "api.lib.queues", "beat", "-l", "info"]
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/finsight
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
@@ -114,10 +142,14 @@ services:
 
   worker-mission:
     build:
-      context: ./apps/api-service
+      context: .
+      dockerfile: ./apps/api-service/Dockerfile
     command: ["celery", "-A", "api.lib.queues", "worker", "-Q", "mission"]
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/finsight
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
@@ -128,10 +160,14 @@ services:
 
   worker-alert:
     build:
-      context: ./apps/api-service
+      context: .
+      dockerfile: ./apps/api-service/Dockerfile
     command: ["celery", "-A", "api.lib.queues", "worker", "-Q", "alert"]
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/finsight
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
@@ -142,10 +178,14 @@ services:
 
   worker-screener:
     build:
-      context: ./apps/api-service
+      context: .
+      dockerfile: ./apps/api-service/Dockerfile
     command: ["celery", "-A", "api.lib.queues", "worker", "-Q", "screener"]
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/finsight
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
@@ -158,8 +198,12 @@ services:
     build:
       context: ./apps/telegram-bot
     command: ["python", "-m", "telegram_bot.main"]
+    profiles: ["telegram"]
     env_file:
       - .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      FINSIGHT_API_BASE_URL: http://api:8000
     depends_on:
       redis:
         condition: service_healthy
@@ -170,8 +214,12 @@ services:
     build:
       context: ./apps/telegram-bot
     command: ["celery", "-A", "telegram_bot.notifier", "worker", "-Q", "telegram"]
+    profiles: ["telegram"]
     env_file:
       - .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      FINSIGHT_API_BASE_URL: http://api:8000
     depends_on:
       redis:
         condition: service_healthy

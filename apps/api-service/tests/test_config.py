@@ -215,7 +215,30 @@ kb_limit: 5
     assert isinstance(configs.researcher, ResearcherConfig)
 
 
-def test_mcp_config_rejects_http_url(tmp_config_dir: Path) -> None:
+def test_mcp_config_allows_http_url_in_dev(
+    tmp_config_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "dev")
+    path = tmp_config_dir / "mcp.yaml"
+    _write(
+        path,
+        """
+servers:
+  market-data:
+    url: http://market-data-mcp:8001
+    timeout_seconds: 5
+    cache_ttl_seconds: 60
+""".strip(),
+    )
+
+    config = load_yaml_config(path, McpConfig)
+    assert str(config.servers["market-data"].url).startswith("http://")
+
+
+def test_mcp_config_rejects_http_url_in_production(
+    tmp_config_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "production")
     path = tmp_config_dir / "mcp.yaml"
     _write(
         path,
@@ -231,4 +254,4 @@ servers:
     with pytest.raises(SystemExit) as exc:
         load_yaml_config(path, McpConfig)
 
-    assert "MCP server URL must use https://" in str(exc.value)
+    assert "MCP server URL must use https:// in production" in str(exc.value)
