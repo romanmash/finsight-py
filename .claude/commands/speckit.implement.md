@@ -13,7 +13,7 @@ You MUST consider user input before proceeding.
 ## Execution Protocol
 
 1. Run prerequisites checker:
-   - `.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks`
+   - `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks`
 2. Load implementation context:
    - `tasks.md` (required)
    - `plan.md` (required)
