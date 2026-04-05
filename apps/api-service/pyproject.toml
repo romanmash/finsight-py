@@ -38,6 +38,9 @@ dependencies = [
   "langgraph-checkpoint-postgres>=2.0",
 ]
 
+[project.scripts]
+finsight-seed = "api.seeds.seed:run"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 

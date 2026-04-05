@@ -1,96 +1,20 @@
 name: ci-cd
 
 on:
-  pull_request:
-    branches:
-      - develop # Default integration branch for validation-only runs (override by editing workflow).
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  typecheck:
-    name: Typecheck
-    runs-on: [self-hosted, linux]
+  ci:
+    runs-on: ubuntu-latest
+    env:
+      UV_CACHE_DIR: .cache/uv
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v3
         with:
           python-version: "3.13"
-      - uses: astral-sh/setup-uv@v3
-      - run: uv sync --dev
-      - run: uv run mypy --strict
-      - name: Typecheck summary
-        if: always()
-        run: echo "- typecheck: completed" >> "$GITHUB_STEP_SUMMARY"
-
-  lint:
-    name: Lint
-    runs-on: [self-hosted, linux]
-    needs: typecheck
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-      - uses: astral-sh/setup-uv@v3
-      - run: uv sync --dev
-      - run: uv run ruff check
-      - name: Lint summary
-        if: always()
-        run: echo "- lint: completed" >> "$GITHUB_STEP_SUMMARY"
-
-  test:
-    name: Test
-    runs-on: [self-hosted, linux]
-    needs: lint
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-      - uses: astral-sh/setup-uv@v3
-      - run: uv sync --dev
-      - run: uv run pytest
-      - name: Test summary
-        if: always()
-        run: echo "- test: completed" >> "$GITHUB_STEP_SUMMARY"
-
-  build:
-    name: Build
-    runs-on: [self-hosted, linux]
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-      - name: Validate compose files
-        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml config >/dev/null
-      - name: Build summary
-        if: always()
-        run: echo "- build: completed" >> "$GITHUB_STEP_SUMMARY"
-
-  deploy:
-    name: Deploy
-    runs-on: [self-hosted, linux]
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Docker capability check
-        run: docker --version
-      - name: Deploy
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
-          COMPOSE_PROJECT_NAME: ${{ vars.COMPOSE_PROJECT_NAME }}
-          HEALTHCHECK_URLS: ${{ vars.HEALTHCHECK_URLS }}
-        run: bash scripts/deploy.sh
-      - name: Deploy summary
-        if: always()
-        run: |
-          {
-            echo "## CI/CD Outcome"
-            echo "- event: ${{ github.event_name }}"
-            echo "- ref: ${{ github.ref }}"
-            echo "- deploy: completed"
-          } >> "$GITHUB_STEP_SUMMARY"
+      - run: uv sync --all-packages
+      - run: uv run mypy --strict apps/ packages/
+      - run: uv run ruff check apps/ packages/
+      - run: uv run pytest --tb=short -q
