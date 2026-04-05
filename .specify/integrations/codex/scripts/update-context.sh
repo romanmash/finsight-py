@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # update-context.sh — Codex CLI integration: create/update AGENTS.md
 #
 # Thin wrapper that delegates to the shared update-agent-context script.

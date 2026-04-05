@@ -9,10 +9,10 @@
                   ".specify/templates/plan-template.md":  "873e84b226fe3d24afe28046931b20db9bbb9210366428dc958a515349ed6e68",
                   ".specify/templates/spec-template.md":  "785dc50d856dd92d6515eca0761e16dce0c9ba0a3cd07154fd33eae77932422a",
                   ".specify/templates/tasks-template.md":  "5da92ac1fbf5be2f9018a5064497995bf3592761ccb6b3951503c63d851297e8",
-                  ".specify/scripts/bash/check-prerequisites.sh":  "aff361639c504b95a2901493f5022788adc01a6792fd37f132de8f57782e4b80",
-                  ".specify/scripts/bash/common.sh":  "237a34d1ba8d3cbf19613f1cfc05cf592401db42db5e4a05a0f2d98a30f8bf89",
-                  ".specify/scripts/bash/create-new-feature.sh":  "7347a89d1b1a9b410e935a88b5c539431905125b57261e14d7abce09c03f60e9",
-                  ".specify/scripts/bash/setup-plan.sh":  "bcaa0ccbf45b7d9ea9bff04006500d7eb28a2bdf82bcc819986b21e5294bf76c",
-                  ".specify/scripts/bash/update-agent-context.sh":  "71ad33747bc039b9a6d5d92aab2cab3f51e56471a25eac27bf29b0120a67d3e5"
+                  ".specify/scripts/bash/check-prerequisites.sh":  "54984696861d685a581365d679449e3d9f983a1fbc28e15c2535ecf4b5dc7827",
+                  ".specify/scripts/bash/common.sh":  "68734b99bde79fa6033a732e821845b7e72d4177c45e5e338ff427d4f2a4d817",
+                  ".specify/scripts/bash/create-new-feature.sh":  "bf740eba1e9aee362d0b43eb5030110bbf4a43215157507d245309519e74ffcd",
+                  ".specify/scripts/bash/setup-plan.sh":  "bde24bd9849d750ba4071e8bdab027446514e9bacd68e3b85fbd6800abd30444",
+                  ".specify/scripts/bash/update-agent-context.sh":  "3d41e6e62c69af16aa9e1910db91f131f3ebdb6e2a7b61b2b1da25150c2b3827"
               }
 }

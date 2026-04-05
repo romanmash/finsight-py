@@ -12,6 +12,6 @@
     ".claude/skills/speckit-specify/SKILL.md": "b93118fcb5bd010b66b62a7b3b7ca680a898908f9726031792cab426453c0e1c",
     ".claude/skills/speckit-tasks/SKILL.md": "cb1a926eaf8ac36798dbd5b54ded7a185b808ea5ad1c07e8941da993a372a01a",
     ".claude/skills/speckit-taskstoissues/SKILL.md": "3d9bffdf29af422821c28f91b2732caa8d8713d15b292641ef6567cf52c86c60",
-    ".specify/integrations/claude/scripts/update-context.sh": "21a5aa3fc644f693a29d35975ce21e5a949cdc1d0258b11c21940754c3644fa6"
+    ".specify/integrations/claude/scripts/update-context.sh": "76170245342b5a330ce35ffe9954db9af68628d5d6dcb23ca99e5844e68b2210"
   }
 }
