@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+echo "[pre-push] running pytest"
+"$repo_root/.codex/hooks/python-pytest-check.sh"
+
+echo "[pre-push] passed"

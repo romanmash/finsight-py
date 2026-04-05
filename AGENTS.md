@@ -107,7 +107,7 @@ export SPECIFY_FEATURE=002-async-data-layer   # adjust per feature
 /speckit.implement                      # executes all tasks
 ```
 
-**After `/speckit.plan` runs**: It will call `update-agent-context.ps1` which updates this file
+**After `/speckit.plan` runs**: It will call `update-agent-context.sh` which updates this file
 (AGENTS.md) with new technology context from the plan. This is expected — the script preserves
 manually-written sections between the MANUAL ADDITIONS markers.
 
@@ -119,7 +119,7 @@ uv run mypy --strict             # Type check (zero errors required)
 uv run ruff check                # Lint (zero warnings required)
 uv run pytest                    # Run all tests (offline, no Docker required)
 uv run alembic upgrade head      # Apply database migrations
-uv run python -m scripts.seed    # Load demo data
+uv run python -m api.seeds.seed  # Load demo data
 docker compose up -d             # Start all containers (server)
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # Dev mode
 ```

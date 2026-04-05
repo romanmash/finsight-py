@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+echo "[pre-commit] running python quality checks"
+"$repo_root/.codex/hooks/python-quality-check.sh"
+
+echo "[pre-commit] passed"

@@ -45,7 +45,6 @@ Codex hook equivalents:
 
 ```bash
 bash .codex/hooks/python-quality-check.sh
-pwsh .codex/hooks/python-quality-check.ps1
 ```
 
 ## Git Hooks
@@ -53,13 +52,10 @@ pwsh .codex/hooks/python-quality-check.ps1
 Install repo-managed hooks once per clone:
 
 ```bash
-pwsh scripts/setup-git-hooks.ps1
-# or
 bash scripts/setup-git-hooks.sh
 ```
 
-`setup-git-hooks.ps1` also sets user-level `UV_CACHE_DIR` and `PYTHONPYCACHEPREFIX` to this repo's `.cache/` paths.
-`setup-git-hooks.sh` prints equivalent `export` lines for your shell profile.
+`setup-git-hooks.sh` prints `export` lines for your shell profile.
 
 Hooks installed:
 - `pre-commit`: `uv run ruff check` + `uv run mypy --strict`
