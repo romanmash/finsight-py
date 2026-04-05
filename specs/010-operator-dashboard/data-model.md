@@ -1,4 +1,4 @@
-# Data Model: Operator Dashboard (010)
+﻿# Data Model: Operator Dashboard (010)
 
 The dashboard is a read-mostly consumer of the API. It writes only through dedicated API
 endpoints (watchlist CRUD, alert acknowledgement). No direct database access from the dashboard
@@ -32,7 +32,7 @@ structures used client-side.
 **Type**: API response shape (dataclass, not ORM)
 **Location**: `apps/dashboard/src/dashboard/api_client.py`
 
-Returned by `GET /api/missions?status=active&limit=N`.
+Returned by `GET /missions?status=running&limit=N`.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -51,7 +51,7 @@ Returned by `GET /api/missions?status=active&limit=N`.
 **Type**: API response shape
 **Location**: `apps/dashboard/src/dashboard/api_client.py`
 
-Returned by `GET /api/missions/{id}`.
+Returned by `GET /missions/{id}`.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -85,7 +85,7 @@ Returned by `GET /api/missions/{id}`.
 **Type**: API response shape
 **Location**: `apps/dashboard/src/dashboard/api_client.py`
 
-Returned by `GET /api/watchlist` and used by the watchlist editor form.
+Returned by `GET /watchlist` and used by the watchlist editor form.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -93,7 +93,7 @@ Returned by `GET /api/watchlist` and used by the watchlist editor form.
 | `ticker` | `str` | Asset symbol |
 | `name` | `str` | Display name |
 | `sector` | `str \| None` | Sector classification |
-| `list_type` | `str` | `portfolio` or `interesting` |
+| `list_type` | `str` | `core`, `satellite`, or `experimental` |
 | `active` | `bool` | Whether Watchdog evaluates this item |
 | `alert_threshold_pct` | `float \| None` | Price-move alert threshold (percent) |
 
@@ -104,7 +104,7 @@ Returned by `GET /api/watchlist` and used by the watchlist editor form.
 **Type**: API response shape
 **Location**: `apps/dashboard/src/dashboard/api_client.py`
 
-Returned by `GET /api/kb/search?q=<query>&limit=N`.
+Returned by `GET /knowledge/search?q=<query>&limit=N`.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -125,7 +125,7 @@ Returned by `GET /api/kb/search?q=<query>&limit=N`.
 **Type**: API response shape
 **Location**: `apps/dashboard/src/dashboard/api_client.py`
 
-Returned by `GET /api/alerts?acknowledged=false`.
+Returned by `GET /alerts?acknowledged=false`.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -151,3 +151,5 @@ Held in `dcc.Store(id="auth-store", storage_type="session")`. Never written to `
 | `access_token` | `str \| None` | Current JWT access token |
 | `expires_at` | `float \| None` | Unix timestamp of token expiry |
 | `operator_role` | `str \| None` | `admin` or `viewer` |
+
+

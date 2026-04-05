@@ -28,4 +28,5 @@ class AlertORM(TimestampMixin, Base):
     trigger_condition: Mapped[str] = mapped_column(String(512), nullable=False)
     observed_value: Mapped[float | None] = mapped_column(Float, nullable=True)
     threshold_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

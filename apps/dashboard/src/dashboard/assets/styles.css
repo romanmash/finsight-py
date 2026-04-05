@@ -1,0 +1,60 @@
+:root {
+  --touch-target: 48px;
+  --bg: #f5f8fb;
+  --panel: #ffffff;
+  --text: #17212c;
+  --border: #d5e0ec;
+  --danger: #c53b3b;
+  --ok: #1f8f60;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+button,
+.card,
+.nav-link,
+.mission-card,
+.alert-badge,
+input,
+select,
+textarea {
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+}
+
+.dashboard-shell {
+  padding: 16px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.alert-badge {
+  border-radius: 999px;
+  padding: 8px 14px;
+  display: inline-block;
+}
+
+.alert-badge.is-alert {
+  color: #fff;
+  background: var(--danger);
+}
+
+.alert-badge.is-ok {
+  color: #fff;
+  background: var(--ok);
+}
+
+.kb-entry-card.has-conflict {
+  border-left: 4px solid #e3a115;
+}

@@ -1,0 +1,8 @@
+api_base_url: "http://api:8000"
+poll_interval_ms: 5000
+mission_poll_interval_ms: 10000
+auth_bypass_localhost: true
+page_size_missions: 20
+page_size_kb: 25
+stale_threshold_seconds: 30
+touch_target_min_px: 48

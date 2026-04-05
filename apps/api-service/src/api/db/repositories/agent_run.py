@@ -92,3 +92,8 @@ class AgentRunRepository:
         )
         return list(result.scalars().all())
 
+    async def list_recent(self, *, limit: int) -> list[AgentRunORM]:
+        result = await self._session.execute(
+            select(AgentRunORM).order_by(AgentRunORM.started_at.desc()).limit(limit)
+        )
+        return list(result.scalars().all())

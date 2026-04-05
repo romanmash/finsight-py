@@ -7,15 +7,14 @@
 Build the Dash (Plotly) operator console for FinSight AI Hub. The dashboard provides instant
 situational awareness (mission list, watchlist status, unacknowledged alerts, recent agent
 activity), a mission detail view with full evidence chain, a watchlist editor, a KB browser, and
-a system health panel. All data is fetched from the FastAPI backend via HTTP; the dashboard never
-touches the database directly. Live updates are delivered by `dcc.Interval` polling — no
+a system health panel. This feature also includes FastAPI route extensions required by the dashboard (watchlist, alerts, knowledge browser, and dashboard health aggregation). All dashboard data is fetched from the FastAPI backend via HTTP; the dashboard never touches the database directly. Live updates are delivered by `dcc.Interval` polling — no
 WebSockets. The UI is touchscreen-ready with 48 px minimum touch targets.
 
 ## Technical Context
 
 **Language/Version**: Python 3.13
 **Primary Dependencies**: `dash>=2.16`, `plotly`, `httpx`, `pydantic>=2.0`, `pyyaml`, `structlog`
-**Storage**: None (read-only consumer of FastAPI; no direct DB access)
+**Storage**: Dashboard: none (HTTP consumer only); API extensions: PostgreSQL via existing repositories
 **Testing**: `pytest`, `pytest-asyncio`, `respx` (offline, no browser, no Docker)
 **Target Platform**: Linux server (Docker) / Windows 11 dev (Podman); browser on operator laptop
 **Project Type**: Dash multi-page web application inside uv workspace
@@ -39,6 +38,12 @@ WebSockets. The UI is touchscreen-ready with 48 px minimum touch targets.
 ### Source Code
 
 ```text
+apps/api-service/
+└── src/api/routes/
+    ├── watchlist.py                      # CRUD routes for watchlist items
+    ├── alerts.py                         # list + acknowledge alert routes
+    ├── knowledge.py                      # KB browse/search routes for dashboard
+    └── dashboard.py                      # consolidated dashboard health/activity routes
 apps/dashboard/
 ├── pyproject.toml
 ├── src/
@@ -65,7 +70,6 @@ apps/dashboard/
 │       └── assets/
 │           └── styles.css                # Touch target sizing, global typography
 ├── tests/
-│   ├── __init__.py
 │   ├── conftest.py                       # respx mocks, config fixtures
 │   └── test_callbacks.py                 # Offline callback unit tests
 config/
@@ -74,8 +78,18 @@ config/
 └── schemas/
     └── dashboard.py                      # Pydantic v2 DashboardConfig schema
 ```
-
 ## Implementation Phases
+
+### Phase 0: API Surface Completion
+
+**Files**:
+- `apps/api-service/src/api/routes/watchlist.py` — list/create/update/delete watchlist items
+- `apps/api-service/src/api/routes/alerts.py` — list alerts + acknowledge alert action
+- `apps/api-service/src/api/routes/knowledge.py` — browse/search knowledge entries for dashboard
+- `apps/api-service/src/api/routes/dashboard.py` — overview-friendly aggregate endpoint(s) for status/activity
+- `apps/api-service/src/api/main.py` — include new routers
+
+**Key design**: Implement missing dashboard-facing routes in this feature so the dashboard stays a pure HTTP consumer and does not require direct database access.
 
 ### Phase 1: Config Schema and App Skeleton
 
@@ -96,7 +110,7 @@ error path before `sys.exit(1)`.
 
 **Files**:
 - `apps/dashboard/src/dashboard/auth.py` — `get_token(store_data)` and `refresh_if_needed(store_data)`
-  functions; returns the bypass sentinel when `auth_bypass_localhost=true` and the request
+  functions; returns `BYPASS_TOKEN_SENTINEL` when `auth_bypass_localhost=true` and the request
   originates from `127.0.0.1`; token written only to `dcc.Store` session storage
 - `apps/dashboard/src/dashboard/api_client.py` — `ApiClient` class wrapping `httpx.AsyncClient`;
   methods: `get_missions`, `get_mission`, `get_watchlist`, `upsert_watchlist_item`,
@@ -136,7 +150,7 @@ error path before `sys.exit(1)`.
 
 - `watchlist.py` — layout: table of current watchlist items (ticker, name, sector, list_type,
   active toggle, threshold); "Add Item" button opens `watchlist_form` modal; save triggers POST
-  to `/api/watchlist`; delete triggers DELETE; table refreshes via `dcc.Interval`
+  to `/watchlist`; delete triggers DELETE; table refreshes via `dcc.Interval`
 
 - `kb.py` — layout: search input + "Search" button; results rendered as list of `kb_entry_card`;
   conflict entries highlighted with amber border; pagination via `page_size_kb` from config
@@ -161,7 +175,7 @@ error path before `sys.exit(1)`.
   - Watchlist delete callback calls DELETE endpoint
   - KB search callback returns entries matching query
   - Health callback marks indicators stale when last_updated > 30 s ago
-  - Auth bypass returns `None` token when `auth_bypass_localhost=true`
+  - Auth bypass returns `BYPASS_TOKEN_SENTINEL` when `auth_bypass_localhost=true`
   - Auth refresh calls `/auth/refresh` when token is within 30 s of expiry
 
 ## Key Design Decisions
@@ -192,3 +206,5 @@ Coverage targets: all callback branches (success path, API error path, empty res
 
 - **Requires**: 001 (config/shared), 002 (data layer — entities visible in dashboard), 003 (auth — JWT login + role protection), 004 (MCP platform), 005 (agent infrastructure), 006 (collector agents — Watchdog alert model), 007 (reasoning agents — Bookkeeper writes KB entries displayed in dashboard), 008 (orchestration — missions routes, mission status), 009 (Telegram bot — proactive delivery model)
 - **Required by**: 011 (seed data populates entities visible in the dashboard)
+
+

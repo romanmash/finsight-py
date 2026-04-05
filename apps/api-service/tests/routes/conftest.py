@@ -44,6 +44,7 @@ def auth_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/0")
     monkeypatch.setenv("SECRET_KEY", "test-secret-key")
     monkeypatch.setenv("ENVIRONMENT", "test")
+    monkeypatch.setenv("DASHBOARD_BYPASS_TOKEN", "test-dashboard-bypass-token")
 
 
 @pytest.fixture()

@@ -1,4 +1,4 @@
-﻿"""Public health route."""
+"""Public health route."""
 
 from __future__ import annotations
 

@@ -177,6 +177,19 @@ services:
         condition: service_healthy
     volumes:
       - ./config/runtime:/app/config/runtime:ro
+
+  dashboard:
+    build:
+      context: ./apps/dashboard
+    command: ["python", "-m", "dashboard.main"]
+    ports:
+      - "8050:8050"
+    env_file:
+      - .env
+    depends_on:
+      api:
+        condition: service_started
+    volumes:
+      - ./config/runtime:/app/config/runtime:ro
 volumes:
   pgdata:
-

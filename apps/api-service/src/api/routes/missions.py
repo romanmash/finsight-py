@@ -1,4 +1,4 @@
-﻿"""Mission orchestration API routes."""
+"""Mission orchestration API routes."""
 
 from __future__ import annotations
 
@@ -22,9 +22,7 @@ _service_or_admin = require_role("admin", "service")
 _service_or_viewer_admin = require_role("admin", "viewer", "service")
 _viewer_or_admin = require_role("admin", "viewer")
 ServiceOrAdminOperator = Annotated[TokenPayload, Depends(_service_or_admin)]
-ServiceOrViewerOrAdminOperator = Annotated[
-    TokenPayload, Depends(_service_or_viewer_admin)
-]
+ServiceOrViewerOrAdminOperator = Annotated[TokenPayload, Depends(_service_or_viewer_admin)]
 ViewerOrAdminOperator = Annotated[TokenPayload, Depends(_viewer_or_admin)]
 
 
@@ -47,6 +45,7 @@ class MissionResponse(BaseModel):
 class AgentRunResponse(BaseModel):
     agent_name: str
     status: str
+    output_data: dict[str, object] | None
     tokens_in: int
     tokens_out: int
     cost_usd: Decimal
@@ -75,6 +74,7 @@ def _serialize_agent_run(run: Any) -> AgentRunResponse:
     return AgentRunResponse(
         agent_name=run.agent_name,
         status=run.status,
+        output_data=run.output_snapshot,
         tokens_in=run.tokens_in,
         tokens_out=run.tokens_out,
         cost_usd=run.cost_usd,

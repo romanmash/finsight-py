@@ -14,11 +14,15 @@ from starlette.responses import Response
 
 from api.lib.config import get_settings, load_all_configs
 from api.lib.logging import configure_logging
+from api.routes.alerts import router as alerts_router
 from api.routes.auth import limiter
 from api.routes.auth import router as auth_router
+from api.routes.dashboard import router as dashboard_router
 from api.routes.health import router as health_router
+from api.routes.knowledge import router as knowledge_router
 from api.routes.missions import router as missions_router
 from api.routes.operators import router as operators_router
+from api.routes.watchlist import router as watchlist_router
 
 configs = load_all_configs()
 
@@ -56,3 +60,7 @@ app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(health_router, tags=["health"])
 app.include_router(operators_router, prefix="/operators", tags=["operators"])
 app.include_router(missions_router, prefix="/missions", tags=["missions"])
+app.include_router(watchlist_router, prefix="/watchlist", tags=["watchlist"])
+app.include_router(alerts_router, prefix="/alerts", tags=["alerts"])
+app.include_router(knowledge_router, prefix="/knowledge", tags=["knowledge"])
+app.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])

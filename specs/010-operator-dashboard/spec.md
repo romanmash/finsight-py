@@ -148,7 +148,9 @@ navigate all primary sections, acknowledge an alert, and open a mission detail v
   of the system. It does not require any infrastructure beyond what the standard stack already
   provides. It runs as a separate container within that stack; it does not share a process with
   the API.
-
+- **FR-010**: The system MUST expose dashboard-facing API routes for watchlist management,
+  alert listing/acknowledgement, knowledge browsing, and consolidated service health so the
+  dashboard can remain a pure HTTP consumer.
 ### Key Entities
 
 - **MissionCard**: A summary view of a mission. Shows mission type, target, status, start time,
@@ -178,9 +180,9 @@ navigate all primary sections, acknowledge an alert, and open a mission detail v
   internet, so authentication on the local machine can be relaxed.
 - The dashboard polls the API for updates at a configured interval (default every 5 seconds);
   real-time push (WebSocket) is out of scope for MVP.
-- The dashboard is a single-page application served as static files; it communicates with the
-  API only via HTTP calls.
+- The dashboard is implemented as a Dash multi-page Python web app and communicates with the API only via HTTP calls.
 - Touchscreen compatibility targets the specific laptop's screen size; mobile phone compatibility
   is out of scope.
 - The dashboard is the admin interface; the Telegram bot is the primary operator interaction for
   queries and alerts.
+

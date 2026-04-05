@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import builtins
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
@@ -27,8 +28,6 @@ class AlertRepository:
         trigger_condition = data.get("trigger_condition")
         observed_value = data.get("observed_value")
         threshold_value = data.get("threshold_value")
-
-        from uuid import UUID
 
         if not isinstance(watchlist_item_id, UUID):
             raise TypeError("watchlist_item_id must be UUID")
@@ -58,9 +57,17 @@ class AlertRepository:
         await self._session.flush()
         return entity
 
+    async def list(self, *, unacknowledged_only: bool = False, limit: int = 100) -> list[AlertORM]:
+        stmt = select(AlertORM)
+        if unacknowledged_only:
+            stmt = stmt.where(AlertORM.deleted_at.is_(None), AlertORM.acknowledged_at.is_(None))
+        stmt = stmt.order_by(AlertORM.created_at.desc()).limit(limit)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
     async def get_recent(
         self, ticker: str, condition_type: str, window_hours: int
-    ) -> list[AlertORM]:
+    ) -> builtins.list[AlertORM]:
         cutoff = datetime.now(UTC) - timedelta(hours=window_hours)
         stmt = (
             select(AlertORM)
@@ -76,7 +83,7 @@ class AlertRepository:
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def list_unprocessed(self, limit: int = 100) -> list[AlertORM]:
+    async def list_unprocessed(self, limit: int = 100) -> builtins.list[AlertORM]:
         stmt = (
             select(AlertORM)
             .where(
@@ -89,6 +96,16 @@ class AlertRepository:
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
+    async def acknowledge(self, alert_id: UUID) -> AlertORM | None:
+        stmt = select(AlertORM).where(AlertORM.id == alert_id, AlertORM.deleted_at.is_(None))
+        result = await self._session.execute(stmt)
+        alert = result.scalars().first()
+        if alert is None:
+            return None
+        alert.acknowledged_at = datetime.now(UTC)
+        await self._session.flush()
+        return alert
+
     async def set_mission_id(self, alert_id: UUID, mission_id: UUID) -> AlertORM | None:
         stmt = select(AlertORM).where(AlertORM.id == alert_id)
         result = await self._session.execute(stmt)
@@ -98,3 +115,5 @@ class AlertRepository:
         alert.mission_id = mission_id
         await self._session.flush()
         return alert
+
+

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator, Generator
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from decimal import Decimal
 from types import SimpleNamespace
 from typing import Any
 from uuid import UUID, uuid4
@@ -81,7 +82,22 @@ class _FakeMissionRepo:
 class _FakeAgentRunRepo:
     async def list_by_mission(self, mission_id: UUID) -> list[Any]:
         _ = mission_id
-        return []
+        return [
+            SimpleNamespace(
+                agent_name="analyst",
+                status="completed",
+                output_snapshot={"summary": "Bullish setup"},
+                tokens_in=100,
+                tokens_out=50,
+                cost_usd=Decimal("0.01000000"),
+                provider="openai",
+                model="gpt-5-mini",
+                duration_ms=1234,
+                error_message=None,
+                started_at=datetime.now(UTC),
+                completed_at=datetime.now(UTC),
+            )
+        ]
 
 
 class _FakeSession:
@@ -202,3 +218,22 @@ async def test_list_recent_missions_for_service_viewer_forbidden(
         headers=_auth_header(viewer_token),
     )
     assert response.status_code == 403
+
+
+async def test_get_mission_includes_agent_output_payload(
+    app_client: AsyncClient,
+    viewer_token: str,
+    _override_mission_deps: _FakeMissionRepo,
+    _override_session_dependency: None,
+) -> None:
+    _ = _override_session_dependency
+    mission_id = _override_mission_deps._stored.id
+    response = await app_client.get(
+        f"/missions/{mission_id}",
+        headers=_auth_header(viewer_token),
+    )
+    assert response.status_code == 200
+    body = response.json()
+    runs = body.get("agent_runs")
+    assert isinstance(runs, list)
+    assert isinstance(runs[0].get("output_data"), dict)

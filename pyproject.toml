@@ -38,18 +38,18 @@ dev = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-pythonpath = [".", "apps/api-service/src", "apps/telegram-bot/src", "packages/shared/src"]
+pythonpath = [".", "apps/api-service/src", "apps/telegram-bot/src", "apps/dashboard/src", "packages/shared/src"]
 addopts = ["-p", "no:cacheprovider"]
 norecursedirs = ["pytest-cache-files-*", ".pytest_cache", ".venv", ".git"]
-testpaths = ["apps/api-service/tests", "apps/telegram-bot/tests"]
+testpaths = ["apps/api-service/tests", "apps/telegram-bot/tests", "apps/dashboard/tests"]
 
 [tool.mypy]
 python_version = "3.13"
-files = ["apps/api-service", "apps/telegram-bot", "config", "packages/shared"]
+files = ["apps/api-service", "apps/telegram-bot", "apps/dashboard", "config", "packages/shared"]
 strict = true
 warn_unused_configs = true
 cache_dir = ".cache/mypy"
-exclude = "^apps/api-service/tests/|^apps/telegram-bot/tests/"
+exclude = "^apps/api-service/tests/|^apps/telegram-bot/tests/|^apps/dashboard/tests/"
 
 [tool.ruff]
 line-length = 100
@@ -58,3 +58,5 @@ cache-dir = ".cache/ruff"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+
+
