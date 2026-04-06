@@ -35,3 +35,10 @@ servers:
         cache_ttl_seconds: 60
       get_knowledge_entry:
         cache_ttl_seconds: 300
+debug:
+  health_endpoints:
+    api: "http://api:8000/health"
+    mcp-market: "http://market-data-mcp:8001/health"
+    mcp-news: "http://news-macro-mcp:8002/health"
+    mcp-rag: "http://rag-retrieval-mcp:8003/health"
+    dashboard: "http://dashboard:8050/"

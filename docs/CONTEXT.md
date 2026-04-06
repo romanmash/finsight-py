@@ -8,6 +8,8 @@ FinSight is a Python-first, spec-driven system.
 - Deployment on Ubuntu server
 - Local model endpoint available on LAN
 - Offline-capable tests and tooling
+- WSL2 may expose Docker as either `docker` (native Linux CLI) or `docker.exe` (Windows bridge)
+- Repo wrapper `scripts/docker-auto.sh` is the standard automation entrypoint for Docker commands
 
 ## Architecture Constraints
 

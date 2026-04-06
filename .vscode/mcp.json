@@ -1,0 +1,19 @@
+{
+  "servers": {
+    "debug-infra": {
+      "type": "http",
+      "url": "http://localhost:8010/mcp/"
+    },
+    "debug-browser": {
+      "type": "stdio",
+      "command": "bash",
+      "args": [
+        "scripts/docker-auto.sh",
+        "run", "-i", "--rm",
+        "--network", "finsight_default",
+        "-e", "E2E_DASHBOARD_URL=http://dashboard:8050",
+        "mcp/playwright"
+      ]
+    }
+  }
+}

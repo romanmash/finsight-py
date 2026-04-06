@@ -86,6 +86,31 @@ services:
     volumes:
       - ./config/runtime:/app/config/runtime:ro
 
+  debug-mcp:
+    build:
+      context: .
+      dockerfile: ./apps/mcp-servers/debug/Dockerfile
+    profiles: ["debug"]
+    ports:
+      - "8010:8010"
+    env_file:
+      - .env
+    environment:
+      DEBUG_MCP_TOKEN: ${DEBUG_MCP_TOKEN:-}
+      DEBUG_DB_URL: ${DEBUG_DB_URL}
+      DEBUG_DB_PASSWORD: ${DEBUG_DB_PASSWORD}
+      DEBUG_MCP_ENV: ${DEBUG_MCP_ENV:-dev}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/runtime:/app/config/runtime:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   worker-watchdog:
     build:
       context: .

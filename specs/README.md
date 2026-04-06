@@ -31,6 +31,7 @@ Features are ordered by dependency. Implement them in sequence.
 | 009 | Telegram Bot & Voice | [`009-telegram-bot-voice/`](./009-telegram-bot-voice/) | 008 |
 | 010 | Operator Dashboard | [`010-operator-dashboard/`](./010-operator-dashboard/) | 003, 008 |
 | 011 | Seed & Infrastructure | [`011-seed-infrastructure/`](./011-seed-infrastructure/) | All above |
+| 012 | Debug MCP Server | [`012-debug-mcp-server/`](./012-debug-mcp-server/) | 004, 008, 011 |
 
 ## Stack Summary (Python-First)
 

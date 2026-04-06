@@ -14,6 +14,7 @@ resolution-markers = [
 members = [
     "finsight-api",
     "finsight-dashboard",
+    "finsight-mcp-debug",
     "finsight-mcp-market-data",
     "finsight-mcp-news-macro",
     "finsight-mcp-rag-retrieval",
@@ -773,6 +774,20 @@ wheels = [
 ]
 
 [[package]]
+name = "docker"
+version = "7.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pywin32", marker = "sys_platform == 'win32'" },
+    { name = "requests" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/91/9b/4a2ea29aeba62471211598dac5d96825bb49348fa07e906ea930394a83ce/docker-7.1.0.tar.gz", hash = "sha256:ad8c70e6e3f8926cb8a92619b832b4ea5299e2831c14284663184e200546fa6c", size = 117834, upload-time = "2024-05-23T11:13:57.216Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e3/26/57c6fb270950d476074c087527a558ccb6f4436657314bfb6cdf484114c4/docker-7.1.0-py3-none-any.whl", hash = "sha256:c96b93b7f0a746f9e77d325bcfb87422a3d8bd4f03136ae8a85b37f1898d5fc0", size = 147774, upload-time = "2024-05-23T11:13:55.01Z" },
+]
+
+[[package]]
 name = "docstring-parser"
 version = "0.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -994,6 +1009,35 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "structlog", specifier = ">=24.1" },
+]
+
+[[package]]
+name = "finsight-mcp-debug"
+version = "0.1.0"
+source = { editable = "apps/mcp-servers/debug" }
+dependencies = [
+    { name = "asyncpg" },
+    { name = "docker" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "redis", extra = ["hiredis"] },
+    { name = "structlog" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "asyncpg", specifier = ">=0.29" },
+    { name = "docker", specifier = ">=7.1" },
+    { name = "fastapi", specifier = ">=0.110" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "pydantic", specifier = ">=2.7" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "redis", extras = ["hiredis"], specifier = ">=5.0" },
+    { name = "structlog", specifier = ">=24.1" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.29" },
 ]
 
 [[package]]

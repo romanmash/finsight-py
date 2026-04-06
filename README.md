@@ -41,6 +41,20 @@ uv run ruff check
 uv run pytest
 ```
 
+## Debug MCP
+
+FinSight includes an opt-in debug MCP server and browser MCP registration for autonomous diagnosis workflows.
+
+```bash
+docker compose --profile debug up -d debug-mcp
+curl -s http://localhost:8010/health
+```
+
+- Codex MCP registration: `.vscode/mcp.json`
+- Claude MCP registration: `.claude/settings.json`
+- Browser MCP uses compose network `finsight_default` (adjust if your compose project name differs)
+- WSL2 Docker wrapper: `bash scripts/docker-auto.sh ...` (auto-selects `docker` or `docker.exe`)
+
 If Codex sandbox hangs in WSL2, use `danger-full-access` mode in Codex settings/config.
 
 Codex hook equivalents:

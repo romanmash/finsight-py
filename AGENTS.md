@@ -131,7 +131,28 @@ uv run alembic upgrade head      # Apply database migrations
 uv run python -m api.seeds.seed  # Load demo data
 docker compose up -d             # Start all containers (server)
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # Dev mode
+docker compose --profile debug up -d debug-mcp  # Start debug MCP server only
+bash scripts/docker-auto.sh compose up -d  # Portable Docker invocation (docker or docker.exe)
 ```
+
+## Debug MCP Setup
+
+- Start debug server with compose profile: `docker compose --profile debug up -d debug-mcp`
+- Verify server health: `curl http://localhost:8010/health`
+- Codex MCP config lives in `.vscode/mcp.json` (`debug-infra` HTTP + `debug-browser` stdio docker)
+- Claude MCP config lives in `.claude/settings.json` under `mcpServers`
+- `debug-browser` uses Docker network `finsight_default` (from `COMPOSE_PROJECT_NAME=finsight` + default network)
+- If the project name differs locally, verify with `docker network ls` and update both MCP config files
+
+## WSL2 Docker Interop
+
+- Use `bash scripts/docker-auto.sh ...` in automation to support both Linux Docker CLI and Windows Docker bridge.
+- Resolution order is deterministic: `docker` first, fallback to `docker.exe`.
+- Example checks:
+  - `bash scripts/docker-auto.sh version`
+  - `bash scripts/docker-auto.sh compose ps`
+  - `bash scripts/docker-auto.sh network ls`
+- MCP browser configs already use this wrapper, so agents can run browser MCP from WSL2 without manual command rewrites.
 
 ## Key Files
 
