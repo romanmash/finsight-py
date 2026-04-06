@@ -2,23 +2,39 @@
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
-tmp_root="$repo_root/.cache"
+cache_root="$repo_root/.cache"
 run_id="$(date +%Y%m%d%H%M%S)-$$"
-base_tmp="$tmp_root/pytest-runs/$run_id"
-cache_dir="$tmp_root/pytest-cache"
-mkdir -p "$tmp_root/uv" "$tmp_root/pycache" "$tmp_root/mypy" "$tmp_root/ruff" "$base_tmp" "$cache_dir"
+base_tmp="$cache_root/pytest-runs/$run_id"
+cache_dir="$cache_root/pytest-cache"
+mkdir -p "$cache_root/pycache" "$cache_root/mypy" "$cache_root/ruff" "$base_tmp" "$cache_dir"
 
-export UV_CACHE_DIR="$tmp_root/uv"
-export PYTHONPYCACHEPREFIX="$tmp_root/pycache"
+mkdir -p "$cache_root/uv"
+export UV_CACHE_DIR="$cache_root/uv"
+export PYTHONPYCACHEPREFIX="$cache_root/pycache"
+
+if ! command -v uv >/dev/null 2>&1; then
+  echo "[codex-hook] uv not found on PATH. Run: source \"$HOME/.local/bin/env\"" >&2
+  exit 127
+fi
+
+if ! uv run --no-sync --all-packages --group dev python -c "import fastapi, sqlalchemy, pydantic" >/dev/null 2>&1; then
+  echo "[codex-hook] .venv is missing required packages." >&2
+  echo "[codex-hook] Run: uv sync --all-packages --group dev" >&2
+  exit 1
+fi
 
 echo "[codex-hook] ruff"
-uv run ruff check --cache-dir "$tmp_root/ruff"
+uv run --no-sync --all-packages --group dev ruff check --cache-dir "$cache_root/ruff"
 
 echo "[codex-hook] mypy"
-uv run mypy --strict --cache-dir "$tmp_root/mypy"
+uv run --no-sync --all-packages --group dev mypy --strict --cache-dir "$cache_root/mypy"
 
 echo "[codex-hook] pytest"
 cd "$repo_root"
-uv run pytest --basetemp="$base_tmp" -o cache_dir="$cache_dir"
+if [[ -n "${PYTEST_ARGS:-}" ]]; then
+  uv run --no-sync --all-packages --group dev pytest $PYTEST_ARGS --basetemp="$base_tmp" -o cache_dir="$cache_dir"
+else
+  uv run --no-sync --all-packages --group dev pytest --basetemp="$base_tmp" -o cache_dir="$cache_dir"
+fi
 
 echo "[codex-hook] ok"

@@ -77,6 +77,9 @@ refactor(api): extract JWT validation into reusable middleware
 5. **Read** the implementation plan: `specs/NNN-feature-name/plan.md`
 6. **Implement** only the files listed in the plan (use `/implement NNN-feature-name`)
 7. **Test** with `uv run pytest` — all tests must pass offline
+   Default capture mode is `--capture=sys` (configured in `pyproject.toml`).
+   If Codex sandbox hangs in WSL2, use `danger-full-access` mode:
+   use `.codex/config.toml` (repo-local), and if needed mirror the same settings in `~/.codex/config.toml`, then restart VS Code/Codex.
 8. **Typecheck** with `uv run mypy --strict` — zero errors (required)
 9. **Lint** with `uv run ruff check` — zero warnings (required)
 10. **Commit** using conventional commit format
@@ -86,6 +89,7 @@ refactor(api): extract JWT validation into reusable middleware
 ```bash
 # Prerequisites: Python 3.13, uv
 uv sync                          # Install all workspace dependencies
+source "$HOME/.local/bin/env"    # Ensure uv is on PATH (or export PATH="$HOME/.local/bin:$PATH")
 cp .env.example .env             # Configure environment variables
 docker compose up -d db redis        # Start database + cache
 uv run alembic upgrade head      # Apply migrations
@@ -98,6 +102,8 @@ uv run pytest                    # Verify everything works
 - [ ] Typecheck passes: `uv run mypy --strict` (zero errors)
 - [ ] Lint passes: `uv run ruff check` (zero warnings)
 - [ ] Tests pass offline: `uv run pytest` (no network, no Docker)
+  - Default capture mode is `--capture=sys` from `pyproject.toml`
+  - If running via Codex sandbox in WSL2, use `danger-full-access` mode from `.codex/config.toml`
 - [ ] Explicit return types on all Python functions
 - [ ] All config from YAML — no hardcoded values
 - [ ] Agent boundaries respected — no cross-domain leaks

@@ -23,7 +23,8 @@ def test_deploy_script_requires_server_env_vars() -> None:
     assert 'missing+=("SERVER_USER")' in script
     assert 'missing+=("SERVER_PATH")' in script
     assert 'missing+=("SERVER_SSH_KEY")' in script
-    assert 'if [[ "${SERVER_SSH_KEY}" == "~/"* ]]; then' in script
+    assert "resolve_ssh_key_path()" in script
+    assert '[[ "$key_path" == "~/"* ]]' in script
 
 
 def test_logs_script_has_service_validation_and_alias() -> None:

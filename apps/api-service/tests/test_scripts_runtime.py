@@ -70,7 +70,7 @@ def _write_executable(path: Path, content: str) -> None:
 
 @pytest.fixture()
 def script_tmp_dir() -> Iterator[Path]:
-    root = Path(".cache/tests")
+    root = Path(".cache/tests").resolve()
     root.mkdir(parents=True, exist_ok=True)
     test_dir = root / f"script-runtime-{uuid.uuid4().hex}"
     test_dir.mkdir(parents=True, exist_ok=False)
@@ -87,6 +87,9 @@ def _run_script(
     env: dict[str, str],
     args: list[str],
 ) -> subprocess.CompletedProcess[str]:
+    if _BASH is None:
+        msg = "bash is unavailable"
+        raise RuntimeError(msg)
     return subprocess.run(
         [_BASH, str(script_path), *args],
         cwd=cwd,

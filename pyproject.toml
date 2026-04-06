@@ -39,7 +39,7 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 pythonpath = [".", "apps/api-service/src", "apps/telegram-bot/src", "apps/dashboard/src", "packages/shared/src"]
-addopts = ["-p", "no:cacheprovider"]
+addopts = ["-p", "no:cacheprovider", "--capture=sys"]
 norecursedirs = ["pytest-cache-files-*", ".pytest_cache", ".venv", ".git"]
 testpaths = ["apps/api-service/tests", "apps/telegram-bot/tests", "apps/dashboard/tests"]
 

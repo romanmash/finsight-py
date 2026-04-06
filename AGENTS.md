@@ -86,6 +86,15 @@ scripts/                       → deploy.sh, logs.sh
 8. **Lint** with `uv run ruff check` (zero warnings)
 9. **Commit** using conventional commit format
 
+### Codex/Sandbox Test Note
+
+- Project default pytest capture is `--capture=sys` (set in `pyproject.toml`) to avoid fd-capture temp-file issues in WSL2/Codex.
+- In WSL2/Codex environments where pytest hangs, use `danger-full-access` mode.
+- Repository default is `.codex/config.toml` with `sandbox_mode = "danger-full-access"` and `approval_policy = "on-request"`.
+- If your tooling ignores repo-local config, mirror the same settings in `~/.codex/config.toml`.
+- After changing sandbox mode, restart VS Code/Codex.
+- Use normal `uv run pytest` in this mode.
+
 ## SpecKit Skill Workflow
 
 SpecKit skills (`/speckit.plan`, `/speckit.tasks`, `/speckit.implement`) use the current **git

@@ -41,6 +41,8 @@ uv run ruff check
 uv run pytest
 ```
 
+If Codex sandbox hangs in WSL2, use `danger-full-access` mode in Codex settings/config.
+
 Codex hook equivalents:
 
 ```bash
@@ -56,6 +58,12 @@ bash scripts/setup-git-hooks.sh
 ```
 
 `setup-git-hooks.sh` prints `export` lines for your shell profile.
+It also prints the recommended `uv` PATH setup:
+
+```bash
+source "$HOME/.local/bin/env"
+# or: export PATH="$HOME/.local/bin:$PATH"
+```
 
 Hooks installed:
 - `pre-commit`: `uv run ruff check` + `uv run mypy --strict`
