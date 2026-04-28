@@ -1,6 +1,21 @@
 # FinSight AI Hub
 
-Python-first multi-agent fintech market intelligence platform.
+Python-first multi-agent fintech market intelligence platform for operator decision support.
+
+## What This Project Is For
+
+FinSight is designed for a human market operator who wants high-signal analysis without manually
+stitching together data from multiple terminals and feeds.
+
+- Ingests market, news, and knowledge-base context through MCP tool servers
+- Orchestrates specialist agents to produce structured briefs and alerts
+- Delivers outputs through Telegram and a local Dash operator console
+- Never executes trades; the human operator remains the final decision maker
+
+## Architecture Walkthrough
+
+- High-level technical pitch (source): [`docs/pitch/PITCH.md`](docs/pitch/PITCH.md)
+- Browser-ready rendered pitch (demo): [`docs/pitch/PITCH.html`](docs/pitch/PITCH.html)
 
 ## Quick Start
 
@@ -14,6 +29,29 @@ uv run pytest
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow, commit conventions, and PR checklist.
+
+## Project Status
+
+- Release notes: [CHANGELOG.md](CHANGELOG.md)
+- License: [MIT](LICENSE)
+
+## Versioning And Releases
+
+- Single source of truth: `[project].version` in `pyproject.toml`
+- GitHub-visible version: annotated git tag `vX.Y.Z` (and optional GitHub release)
+
+Release flow:
+
+```bash
+# 1) Bump [project].version in pyproject.toml
+# 2) Add/update matching section in CHANGELOG.md: ## [X.Y.Z] - YYYY-MM-DD
+bash scripts/release.sh --dry-run
+bash scripts/release.sh --push
+# optional, if gh CLI is configured:
+bash scripts/release.sh --push --github-release
+```
+
+This avoids version copy/paste drift and keeps runtime/app version aligned with GitHub tags.
 
 ## Repository Structure
 
