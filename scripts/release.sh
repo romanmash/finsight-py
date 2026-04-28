@@ -59,8 +59,19 @@ if [[ -n "$(git status --porcelain)" ]]; then
   exit 1
 fi
 
+if command -v uv >/dev/null 2>&1; then
+  python_cmd=(uv run python)
+elif command -v python3 >/dev/null 2>&1; then
+  python_cmd=(python3)
+elif command -v python >/dev/null 2>&1; then
+  python_cmd=(python)
+else
+  echo "Python runtime not found. Install uv or python3." >&2
+  exit 1
+fi
+
 version="$(
-python - <<'PY'
+"${python_cmd[@]}" - <<'PY'
 import tomllib
 from pathlib import Path
 
