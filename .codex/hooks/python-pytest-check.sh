@@ -6,6 +6,7 @@ cache_root="$repo_root/.cache"
 run_id="$(date +%Y%m%d%H%M%S)-$$"
 base_tmp="$cache_root/pytest-runs/$run_id"
 cache_dir="$cache_root/pytest-cache"
+sync_log="$cache_root/uv-sync-$run_id.log"
 mkdir -p "$cache_root/pycache" "$base_tmp" "$cache_dir"
 
 uname_lower="$(uname -s | tr '[:upper:]' '[:lower:]')"
@@ -30,11 +31,17 @@ ensure_env_ready() {
   fi
 
   echo "[codex-hook] .venv is missing required packages. Running uv sync..." >&2
-  if ! uv sync --all-packages --group dev >/dev/null 2>&1; then
+  if ! uv sync --all-packages --group dev >"$sync_log" 2>&1; then
     echo "[codex-hook] uv sync failed. Clearing uv cache and retrying once..." >&2
+    tail -n 40 "$sync_log" >&2 || true
     rm -rf "$UV_CACHE_DIR"
     mkdir -p "$UV_CACHE_DIR"
-    uv sync --all-packages --group dev --refresh >/dev/null 2>&1 || return 1
+    rm -rf "$repo_root/.venv"
+    if ! uv sync --all-packages --group dev --refresh >"$sync_log" 2>&1; then
+      echo "[codex-hook] uv sync retry failed after full reset." >&2
+      tail -n 80 "$sync_log" >&2 || true
+      return 1
+    fi
   fi
 
   uv run --no-sync --all-packages --group dev python -c "import fastapi, sqlalchemy, pydantic" >/dev/null 2>&1
