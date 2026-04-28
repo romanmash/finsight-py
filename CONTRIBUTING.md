@@ -84,6 +84,16 @@ refactor(api): extract JWT validation into reusable middleware
 9. **Lint** with `uv run ruff check` — zero warnings (required)
 10. **Commit** using conventional commit format
 
+## Quality Gates
+
+Run these before committing:
+
+```bash
+uv run mypy --strict
+uv run ruff check
+uv run pytest
+```
+
 ## Setup
 
 ```bash
@@ -96,6 +106,41 @@ uv run alembic upgrade head      # Apply migrations
 uv run python -m api.seeds.seed  # Load demo data
 uv run pytest                    # Verify everything works
 ```
+
+## Git Hooks
+
+Install repo-managed hooks once per clone:
+
+```bash
+bash scripts/setup-git-hooks.sh
+```
+
+Installed hooks:
+
+- `pre-commit`: `ruff`, `mypy`, `pytest` via `.codex/hooks/python-quality-check.sh`
+- `pre-push`: `pytest` via `.codex/hooks/python-pytest-check.sh`
+
+Hook notes:
+
+- Hooks auto-heal missing `.venv` dependencies with `uv sync --all-packages --group dev`.
+- On sync failure, hooks clear uv cache and retry once with `--refresh`.
+- Windows/WSL mixed workflows are supported via OS-specific uv caches (`.cache/uv-win` and `.cache/uv-linux`).
+
+## Debug MCP
+
+Start debug server:
+
+```bash
+docker compose --profile debug up -d debug-mcp
+curl -s http://localhost:8010/health
+```
+
+Related config:
+
+- Codex MCP registration: `.vscode/mcp.json`
+- Claude MCP registration: `.claude/settings.json`
+- Browser MCP uses compose network `finsight_default` (adjust if your compose project name differs)
+- WSL2 Docker wrapper: `bash scripts/docker-auto.sh ...`
 
 ## Versioning and Releases
 

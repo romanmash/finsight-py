@@ -47,74 +47,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow, commit conventions, and PR 
 - `config/schemas/` - Pydantic validation models
 - `specs/` - feature specs and execution order
 
-## Development Workflow
+## Documentation Boundaries
 
-1. Read `.specify/memory/constitution.md`
-2. Read `specs/README.md` and the target `specs/NNN-*/spec.md` + `plan.md`
-3. Implement only in current spec scope
-4. Run quality gates and commit with Conventional Commits
-
-## Quality Gates
-
-```bash
-uv run mypy --strict
-uv run ruff check
-uv run pytest
-```
-
-## Debug MCP
-
-FinSight includes an opt-in debug MCP server and browser MCP registration for autonomous diagnosis workflows.
-
-```bash
-docker compose --profile debug up -d debug-mcp
-curl -s http://localhost:8010/health
-```
-
-- Codex MCP registration: `.vscode/mcp.json`
-- Claude MCP registration: `.claude/settings.json`
-- Browser MCP uses compose network `finsight_default` (adjust if your compose project name differs)
-- WSL2 Docker wrapper: `bash scripts/docker-auto.sh ...` (auto-selects `docker` or `docker.exe`)
-
-If Codex sandbox hangs in WSL2, use `danger-full-access` mode in Codex settings/config.
-
-Codex hook equivalents:
-
-```bash
-bash .codex/hooks/python-quality-check.sh
-```
-
-## Git Hooks
-
-Install repo-managed hooks once per clone:
-
-```bash
-bash scripts/setup-git-hooks.sh
-```
-
-`setup-git-hooks.sh` prints `export` lines for your shell profile.
-It also prints the recommended `uv` PATH setup:
-
-```bash
-source "$HOME/.local/bin/env"
-# or: export PATH="$HOME/.local/bin:$PATH"
-```
-
-Hooks installed:
-- `pre-commit`: `uv run ruff check` + `uv run mypy --strict`
-- `pre-push`: `uv run pytest`
-
-## AI Agent Support
-
-- `AGENTS.md` is the universal source of agent instructions (Codex-primary).
-- `CLAUDE.md` stays as a thin entrypoint for Claude tooling.
-- `.codex/hooks/` contains local Codex quality helper scripts.
+- Product and architecture context: [docs/README.md](docs/README.md)
+- Contributor workflow and quality gates: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Feature specifications and execution order: [specs/README.md](specs/README.md)
 
 ## Core References
 
-- `AGENTS.md`
-- `.codex/README.md`
-- `.specify/memory/constitution.md`
-- `docs/CONTEXT.md`
-- `docs/STACK.md`
-- `specs/README.md`
+- [AGENTS.md](AGENTS.md)
+- [.specify/memory/constitution.md](.specify/memory/constitution.md)
+- [docs/CONTEXT.md](docs/CONTEXT.md)
+- [docs/STACK.md](docs/STACK.md)
+- [specs/README.md](specs/README.md)

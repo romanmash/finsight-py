@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-04-28
+
+### Added
+
+- Git hooks now auto-heal Python environments more robustly across Windows/WSL:
+  on sync failure they clear uv cache, recreate `.venv`, retry with `--refresh`,
+  and print sync diagnostics.
+
+### Changed
+
+- Documentation boundaries were cleaned up:
+  `README.md` is now product-facing, contributor operations are centralized in
+  `CONTRIBUTING.md`, and `docs/README.md` explicitly references root-level `specs/`.
+
 ## [0.1.2] - 2026-04-28
 
 ### Added

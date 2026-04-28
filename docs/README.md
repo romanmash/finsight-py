@@ -1,14 +1,20 @@
 # Documentation Index
 
-This folder contains active Python architecture and workflow references.
+This folder contains project architecture and operational context documents.
+
+Boundary:
+
+- `docs/` holds architecture/context references.
+- `specs/` live at the repository root (`/specs`), not inside `docs/`.
+- Contributor workflow and quality gates live in `CONTRIBUTING.md`.
 
 ## Read Order
 
 1. `docs/CONTEXT.md`
 2. `docs/STACK.md`
-3. `specs/README.md`
-4. `specs/NNN-feature-name/spec.md`
-5. `specs/NNN-feature-name/plan.md`
+3. `../specs/README.md`
+4. `../specs/NNN-feature-name/spec.md`
+5. `../specs/NNN-feature-name/plan.md`
 
 ## Files
 
