@@ -97,6 +97,32 @@ uv run python -m api.seeds.seed  # Load demo data
 uv run pytest                    # Verify everything works
 ```
 
+## Versioning and Releases
+
+- Single source of truth: `[project].version` in `pyproject.toml`
+- GitHub-visible version: annotated git tag `vX.Y.Z` (and optional GitHub release)
+- Release notes source: `CHANGELOG.md`
+
+Required release sequence:
+
+1. Bump `[project].version` in `pyproject.toml`
+2. Add/update matching changelog header in `CHANGELOG.md`:
+   `## [X.Y.Z] - YYYY-MM-DD`
+3. Run release validation/tagging script:
+
+```bash
+bash scripts/release.sh --dry-run
+bash scripts/release.sh --push
+# optional, if gh CLI is configured:
+bash scripts/release.sh --push --github-release
+```
+
+`scripts/release.sh` enforces changelog/version alignment and will fail if:
+
+- working tree is dirty
+- tag already exists
+- changelog entry for `X.Y.Z` is missing or empty
+
 ## Pull Request Checklist
 
 - [ ] Typecheck passes: `uv run mypy --strict` (zero errors)

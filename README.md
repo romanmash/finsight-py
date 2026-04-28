@@ -34,24 +34,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow, commit conventions, and PR 
 
 - Release notes: [CHANGELOG.md](CHANGELOG.md)
 - License: [MIT](LICENSE)
-
-## Versioning And Releases
-
-- Single source of truth: `[project].version` in `pyproject.toml`
-- GitHub-visible version: annotated git tag `vX.Y.Z` (and optional GitHub release)
-
-Release flow:
-
-```bash
-# 1) Bump [project].version in pyproject.toml
-# 2) Add/update matching section in CHANGELOG.md: ## [X.Y.Z] - YYYY-MM-DD
-bash scripts/release.sh --dry-run
-bash scripts/release.sh --push
-# optional, if gh CLI is configured:
-bash scripts/release.sh --push --github-release
-```
-
-This avoids version copy/paste drift and keeps runtime/app version aligned with GitHub tags.
+- Versioning/release process: [CONTRIBUTING.md](CONTRIBUTING.md#versioning-and-releases)
 
 ## Repository Structure
 
