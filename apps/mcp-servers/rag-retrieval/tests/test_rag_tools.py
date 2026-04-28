@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import uuid4
@@ -59,7 +60,7 @@ def fake_cache(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture()
-async def sqlite_setup(monkeypatch: pytest.MonkeyPatch) -> None:
+async def sqlite_setup(monkeypatch: pytest.MonkeyPatch) -> AsyncGenerator[None]:
     engine = create_async_engine("sqlite+aiosqlite:///./.cache/tests/rag-retrieval.db")
     session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with engine.begin() as conn:

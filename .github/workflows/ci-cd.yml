@@ -11,10 +11,11 @@ jobs:
       UV_CACHE_DIR: .cache/uv
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: uv sync --all-packages
+      - uses: astral-sh/setup-uv@v3
+      - run: uv sync --all-packages --group dev
       - run: uv run mypy --strict apps/ packages/
       - run: uv run ruff check apps/ packages/
       - run: uv run pytest --tb=short -q
