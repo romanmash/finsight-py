@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-04-29
+
+### Changed
+
+- Clarified current implementation status in root and specs READMEs:
+  7 specialist agents are active, while Screener and Trader remain planned
+  work in progress with partial/mock scaffolding.
+
 ## [0.1.3] - 2026-04-28
 
 ### Added

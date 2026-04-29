@@ -14,6 +14,10 @@ Each feature directory contains three artifacts:
 | `plan.md` | SDD — Technical design, file list, architecture decisions | Plan |
 | `tasks.md` | Implementation checklist grouped by user story | Implement |
 
+## Work in Progress
+
+Implemented specs `001`-`012` document the original 9-agent design intent. In the current implementation, 7 specialist agents are active in production-facing flows, while `screener` and `trader` remain partially implemented (mock/scaffold level) and are still in progress.
+
 ## Build Order
 
 Features are ordered by dependency. Implement them in sequence.

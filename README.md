@@ -17,10 +17,20 @@ FinSight is designed for an investor who wants high-signal analysis without manu
 
 ## How It Works
 
-- A LangGraph supervisor coordinates specialist agents that each own one responsibility.
-- Four FastMCP tool servers provide market data, news/macro signals, semantic retrieval, and runtime diagnostics.
-- The API and background pipelines run on FastAPI + Celery + Redis with PostgreSQL-backed state and checkpoints.
-- Investors interact through Telegram (text/voice) and a Dash console, receive structured briefs, and make the final decision.
+- A LangGraph supervisor graph orchestrates a 7-agent system and persists execution state with fault-tolerant PostgreSQL checkpointing. The specialist agents with each own responsibility are:
+  - Manager (intent classifier, runs in supervisor flow)
+  - Researcher (data collection)
+  - Watchdog (threshold/alert scanning)
+  - Analyst (thesis/risk reasoning)
+  - Technician (technical pattern analysis)
+  - Bookkeeper (knowledge-base writer, pgvector)
+  - Reporter (final brief formatter)
+  > `Screener` and `Trader` agents are planned but not fully implemented yet.
+- Celery workers are runtime executors (not additional AI agent roles) and handle queues/schedules such as mission, alert, brief, watchdog, screener scans, telegram delivery, and planned trader-ticketing flows.
+- Four FastMCP tool servers expose domain tools for market data (OpenBB), news and macro signals (Finnhub + GDELT), semantic retrieval (pgvector RAG), and AI-driven runtime diagnostics.
+- A JWT-authenticated FastAPI backend coordinates synchronous APIs with asynchronous Celery + Redis pipelines for mission execution, alerts, and scheduled analysis jobs.
+- User interaction runs through Telegram (text + voice via Whisper) and a Dash operator console; the system delivers structured briefs while the investor remains the final decision maker.
+- Engineering discipline is built in: Spec-Driven Development (SpecKit), Everything-as-Code runtime config, provider-agnostic LLM abstraction with token/cost tracking, LangSmith + structlog observability, strict typing (`mypy`), offline-first tests (`pytest`), CI/CD (GitHub Actions), and IaC (Pulumi).
 
 ## Architecture Pitch
 
@@ -32,7 +42,7 @@ FinSight is designed for an investor who wants high-signal analysis without manu
 - Core platform: `Python`, `uv`, `FastAPI`, `Pydantic`
 - Agent system: `LangGraph`, `LangChain`, `FastMCP`, `LangSmith`
 - Data and storage: `PostgreSQL`, `pgvector`, `SQLAlchemy`, `Alembic`, `Redis`, `Celery`
-- Interfaces: `Telegram` (voice via `Whisper`), `Dash`
+- Interfaces: `Telegram`, `Whisper`, `Dash`
 - Delivery and quality: `Docker`, `Pulumi`, `GitHub Actions`, `pytest`, `mypy`
 
 ## Quick Start
@@ -61,22 +71,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow, commit conventions, and PR 
 
 ## Documentation
 
-Boundaries:
-
-- Product and architecture context: [docs/README.md](docs/README.md)
-- Contributor workflow and quality gates: [CONTRIBUTING.md](CONTRIBUTING.md)
-- Feature specifications and execution order: [specs/README.md](specs/README.md)
-
-Project links:
-
-- Release notes: [CHANGELOG.md](CHANGELOG.md)
-- License: [MIT](LICENSE)
-- Versioning and release process: [CONTRIBUTING.md](CONTRIBUTING.md#versioning-and-releases)
-
-Core references:
-
-- [AGENTS.md](AGENTS.md) - agent collaboration rules and constraints
-- [.specify/memory/constitution.md](.specify/memory/constitution.md) - non-negotiable engineering principles
+- [CHANGELOG.md](CHANGELOG.md) - release notes and version history
+- [LICENSE](LICENSE) - MIT license terms
+- [CONTRIBUTING.md](CONTRIBUTING.md) - contributor workflow, quality gates, and release process
+- [docs/README.md](docs/README.md) - documentation map and boundaries
 - [docs/CONTEXT.md](docs/CONTEXT.md) - architecture decisions and runtime constraints
 - [docs/STACK.md](docs/STACK.md) - locked technology stack and rationale
-- [specs/README.md](specs/README.md) - feature catalogue and dependency order
+- [specs/README.md](specs/README.md) - feature catalogue and spec execution order
+- [AGENTS.md](AGENTS.md) - agent collaboration rules and constraints
+- [.specify/memory/constitution.md](.specify/memory/constitution.md) - non-negotiable engineering principles
