@@ -979,7 +979,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pydantic-settings", specifier = ">=2.3" },
     { name = "python-jose", extras = ["cryptography"], specifier = ">=3.3" },
-    { name = "python-multipart", specifier = ">=0.0.9" },
+    { name = "python-multipart", specifier = ">=0.0.27" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "redis", extras = ["hiredis"], specifier = ">=5.0" },
     { name = "slowapi", specifier = ">=0.1" },
@@ -2425,7 +2425,7 @@ wheels = [
 
 [[package]]
 name = "openbb-core"
-version = "1.6.7"
+version = "1.6.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -2443,9 +2443,9 @@ dependencies = [
     { name = "uvicorn" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/35/86/c27141584a3ea10836f3b6da17394c6066bed19c105bb960de9217811914/openbb_core-1.6.7.tar.gz", hash = "sha256:9f576b08c0e211e5d6a5190bf7020e1636e48e9ed05f0d2083b1808edbcd7d8b", size = 243934, upload-time = "2026-03-31T02:19:36.977Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/67/d3/4c99668437ea5fea84c3b2ac609cbaaf68827258f723da10583195127933/openbb_core-1.6.9.tar.gz", hash = "sha256:3cfaeae08104f395c80ce2949ed93142b835075b5cb7e7e8a1729d81cac65d01", size = 244609, upload-time = "2026-05-08T01:18:59.891Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c7/b0/9085c7919af8c8bbc889072322f08d468b279a52a3928a22f038d4084bd7/openbb_core-1.6.7-py3-none-any.whl", hash = "sha256:60318c16aebdf936e321e428b363e75698c2b7d934a21d0fbd6fb75e33b435dc", size = 379430, upload-time = "2026-03-31T02:19:38.198Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/5e/91641f227ef4d7fa5fed0d13c92cf191089bf256b9456f4bdca0db1eb3bc/openbb_core-1.6.9-py3-none-any.whl", hash = "sha256:09172982421960bf66ff0c8944921eaea0e1a79b8e4a6aa71550ec03b5944981", size = 380273, upload-time = "2026-05-08T01:19:01.197Z" },
 ]
 
 [[package]]
@@ -3352,11 +3352,11 @@ cryptography = [
 
 [[package]]
 name = "python-multipart"
-version = "0.0.22"
+version = "0.0.27"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/94/01/979e98d542a70714b0cb2b6728ed0b7c46792b695e3eaec3e20711271ca3/python_multipart-0.0.22.tar.gz", hash = "sha256:7340bef99a7e0032613f56dc36027b959fd3b30a787ed62d310e951f7c3a3a58", size = 37612, upload-time = "2026-01-25T10:15:56.219Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/9b/f23807317a113dc36e74e75eb265a02dd1a4d9082abc3c1064acd22997c4/python_multipart-0.0.27.tar.gz", hash = "sha256:9870a6a8c5a20a5bf4f07c017bd1489006ff8836cff097b6933355ee2b49b602", size = 44043, upload-time = "2026-04-27T10:51:26.649Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1b/d0/397f9626e711ff749a95d96b7af99b9c566a9bb5129b8e4c10fc4d100304/python_multipart-0.0.22-py3-none-any.whl", hash = "sha256:2b2cd894c83d21bf49d702499531c7bafd057d730c201782048f7945d82de155", size = 24579, upload-time = "2026-01-25T10:15:54.811Z" },
+    { url = "https://files.pythonhosted.org/packages/99/78/4126abcbdbd3c559d43e0db7f7b9173fc6befe45d39a2856cc0b8ec2a5a6/python_multipart-0.0.27-py3-none-any.whl", hash = "sha256:6fccfad17a27334bd0193681b369f476eda3409f17381a2d65aa7df3f7275645", size = 29254, upload-time = "2026-04-27T10:51:24.997Z" },
 ]
 
 [[package]]
